@@ -232,7 +232,7 @@ const Scan = ({ user }) => {
             <div className="space-y-4">
               <p className="text-center text-gray-600 text-lg">Select operation mode to begin scanning</p>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   onClick={() => setModeAndFocus('inbound')}
                   className="flex flex-col items-center justify-center p-6 bg-green-50 border-2 border-green-200 rounded-xl hover:bg-green-100 hover:border-green-400 transition-all"
@@ -341,10 +341,10 @@ const Scan = ({ user }) => {
                     {cameraError && (
                       <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex items-center space-x-2">
                         <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                        <span>{cameraError}</span>
+                        <span className="flex-1">{cameraError}</span>
                         <button
                           onClick={startCameraScanner}
-                          className="ml-auto text-red-600 hover:underline text-sm"
+                          className="flex-shrink-0 text-red-600 hover:underline text-sm"
                         >
                           Retry
                         </button>
@@ -353,8 +353,8 @@ const Scan = ({ user }) => {
                     <div
                       ref={cameraContainerRef}
                       id="camera-reader"
-                      className="w-full aspect-video bg-gray-900 rounded-lg overflow-hidden relative"
-                      style={{ maxHeight: '400px' }}
+                      className="w-full bg-gray-900 rounded-lg overflow-hidden relative"
+                      style={{ aspectRatio: '16/9', maxHeight: '500px' }}
                     >
                       {!isCameraActive && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-4">
@@ -364,7 +364,7 @@ const Scan = ({ user }) => {
                       )}
                     </div>
                     {isCameraActive && (
-                      <div className="flex items-center justify-between text-sm text-gray-500">
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-gray-500">
                         <span className="flex items-center space-x-1 text-green-600">
                           <CheckCircle className="w-4 h-4" />
                           <span>Camera active - Point at ISBN barcode</span>

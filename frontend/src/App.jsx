@@ -18,6 +18,21 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Detect mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setMobileMenuOpen(false);
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -61,8 +76,55 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
-        {user && <NavBar user={user} onLogout={logout} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />}
-        <main className={user ? (sidebarCollapsed ? 'ml-16' : 'ml-64') : 'ml-0'} style={{ transition: 'margin-left 0.3s ease' }}>
+        {/* Mobile Top Bar */}
+        {user && isMobile && (
+          <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b shadow-sm z-40 flex items-center px-4">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 rounded-lg hover:bg-gray-100"
+              aria-label="Open menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <h1 className="ml-4 font-semibold text-gray-900">BookInventory</h1>
+          </header>
+        )}
+
+        {/* Sidebar / Mobile Drawer */}
+        {user && (
+          <NavBar
+            user={user}
+            onLogout={logout}
+            collapsed={sidebarCollapsed}
+            onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+            isMobile={isMobile}
+            isOpen={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
+          />
+        )}
+
+        {/* Mobile Drawer Overlay */}
+        {user && isMobile && mobileMenuOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        <main
+          className={user
+            ? isMobile
+              ? 'pt-16'
+              : sidebarCollapsed
+                ? 'ml-16'
+                : 'ml-64'
+            : 'ml-0'
+          }
+          style={{ transition: 'margin-left 0.3s ease' }}
+        >
           <Routes>
             <Route
               path="/login"
