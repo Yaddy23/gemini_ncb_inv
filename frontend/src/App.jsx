@@ -17,6 +17,7 @@ import PrivateRoute from './components/PrivateRoute';
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -60,8 +61,8 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
-        {user && <NavBar user={user} onLogout={logout} />}
-        <main className={user ? 'ml-64 transition-all' : 'ml-0'}>
+        {user && <NavBar user={user} onLogout={logout} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />}
+        <main className={user ? (sidebarCollapsed ? 'ml-16' : 'ml-64') : 'ml-0'} style={{ transition: 'margin-left 0.3s ease' }}>
           <Routes>
             <Route
               path="/login"

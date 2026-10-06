@@ -1,55 +1,64 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, LogIn, LogOut, User, Plus, Barcode, ShoppingBag, Settings, Loader } from 'lucide-react';
+import { Menu, LogIn, LogOut, User, Plus, Barcode, ShoppingBag, Settings, Loader, ChevronLeft, ChevronRight, LayoutDashboard } from 'lucide-react';
 
-const NavBar = ({ user, onLogout }) => {
+const NavBar = ({ user, onLogout, collapsed, onToggle }) => {
   return (
-    <nav className="fixed left-0 top-0 h-screen w-64 bg-white border-r shadow-lg z-50">
+    <nav className={`fixed left-0 top-0 h-screen bg-white border-r shadow-lg z-50 transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`}>
       <div className="flex flex-col h-full p-4">
         <div className="flex items-center space-x-3 mb-6">
-          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
             <Menu className="w-5 h-5 text-primary" />
           </div>
-          <div>
-            <h2 className="font-semibold text-primary">BookInventory</h2>
-            <p className="text-xs text-gray-500">Management System</p>
-          </div>
+          {!collapsed && (
+            <div>
+              <h2 className="font-semibold text-primary">BookInventory</h2>
+              <p className="text-xs text-gray-500">Management System</p>
+            </div>
+          )}
+          <button
+            onClick={onToggle}
+            className={`ml-auto p-2 rounded-lg hover:bg-gray-100 transition-colors ${collapsed ? 'ml-0' : 'ml-auto'}`}
+            title={collapsed ? 'Expand menu' : 'Collapse menu'}
+          >
+            {collapsed ? <ChevronRight className="w-5 h-5 text-gray-600" /> : <ChevronLeft className="w-5 h-5 text-gray-600" />}
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto">
           <ul className="space-y-1">
             <li>
-              <Link to="/" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50">
-                <Barcode className="w-5 h-5" />
-                <span>Scan Books</span>
+              <Link to="/" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group">
+                <Barcode className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && <span className="transition-opacity duration-200">Scan Books</span>}
               </Link>
             </li>
             <li>
-              <Link to="/books" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50">
-                <ShoppingBag className="w-5 h-5" />
-                <span>Book Catalog</span>
+              <Link to="/books" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group">
+                <ShoppingBag className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && <span className="transition-opacity duration-200">Book Catalog</span>}
               </Link>
             </li>
             {user.role === 'Admin' && (
               <>
                 <li>
-                  <Link to="/import-export" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50">
-                    <Plus className="w-5 h-5" />
-                    <span>Import/Export</span>
+                  <Link to="/import-export" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group">
+                    <Plus className="w-5 h-5 flex-shrink-0" />
+                    {!collapsed && <span className="transition-opacity duration-200">Import/Export</span>}
                   </Link>
                 </li>
                 <li>
-                  <Link to="/admin" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50">
-                    <Settings className="w-5 h-5" />
-                    <span>Admin Panel</span>
+                  <Link to="/admin" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group">
+                    <Settings className="w-5 h-5 flex-shrink-0" />
+                    {!collapsed && <span className="transition-opacity duration-200">Admin Panel</span>}
                   </Link>
                 </li>
               </>
             )}
             <li>
-              <Link to="/profile" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50">
-                <User className="w-5 h-5" />
-                <span>Profile</span>
+              <Link to="/profile" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group">
+                <User className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && <span className="transition-opacity duration-200">Profile</span>}
               </Link>
             </li>
           </ul>
@@ -58,10 +67,10 @@ const NavBar = ({ user, onLogout }) => {
         <div className="pt-4 pb-2 border-t">
           <button
             onClick={onLogout}
-            className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-md"
+            className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-md group"
           >
-            <LogOut className="w-5 h-5" />
-            <span>Logout</span>
+            <LogOut className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && <span className="transition-opacity duration-200">Logout</span>}
           </button>
         </div>
       </div>
