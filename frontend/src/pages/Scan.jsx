@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import api from '../api/axios';
 import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Trash2, RotateCcw, Camera, X } from 'lucide-react';
 
@@ -154,57 +154,72 @@ const Scan = ({ user }) => {
     setCameraError(null);
 
     try {
-      // Get container dimensions
       const container = cameraContainerRef.current;
-      const rect = container.getBoundingClientRect();
-      const width = rect.width || 400;
-      const height = rect.height || 225;
 
-      const html5QrcodeScanner = new Html5QrcodeScanner(
-        'camera-reader',
+      // Force layout and get explicit dimensions
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      const rect = container.getBoundingClientRect();
+
+      if (rect.width === 0 || rect.height === 0) {
+        throw new Error('Camera container has no dimensions');
+      }
+
+      const width = Math.floor(rect.width);
+      const height = Math.floor(rect.height);
+
+      const html5Qrcode = new Html5Qrcode('camera-reader');
+
+      // Explicitly request camera permission first
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: width },
+          height: { ideal: height }
+        }
+      });
+      // Stop the test stream - we just wanted to trigger permission
+      stream.getTracks().forEach(track => track.stop());
+
+      await html5Qrcode.start(
+        { facingMode: 'environment' },
         {
           fps: 10,
-          qrbox: { width: 250, height: 100 },
-          aspectRatio: 1.777, // 16:9
-          videoConstraints: {
-            facingMode: 'environment',
-            width: { ideal: width },
-            height: { ideal: height }
-          }
+          qrbox: { width: 250, height: 100 }
         },
-        false // don't use experimental features
-      );
-
-      html5QrcodeScanner.render(
         (decodedText) => {
-          // Success callback - process the scanned ISBN
           if (decodedText && decodedText.length >= 8) {
             setIsbn(decodedText);
-            // Stop camera after successful scan
-            html5QrcodeScanner.clear().then(() => {
+            html5Qrcode.stop().then(() => {
               setCameraScanner(null);
               setIsCameraActive(false);
             }).catch(() => {});
           }
         },
         (errorMessage) => {
-          // Error callback - ignore, continuous scanning
-          // console.log('Scan error:', errorMessage);
+          // Ignore scan errors
         }
       );
 
-      setCameraScanner(html5QrcodeScanner);
+      setCameraScanner(html5Qrcode);
       setIsCameraActive(true);
     } catch (err) {
       console.error('Camera start error:', err);
-      setCameraError('Could not access camera. Please allow camera permissions and try again.');
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setCameraError('Camera permission denied. Please allow camera access in browser settings.');
+      } else if (err.name === 'NotFoundError') {
+        setCameraError('No camera found. Please connect a camera.');
+      } else if (err.name === 'OverconstrainedError') {
+        setCameraError('Camera does not support required resolution.');
+      } else {
+        setCameraError('Could not access camera: ' + err.message);
+      }
       setIsCameraActive(false);
     }
   };
 
   const stopCameraScanner = () => {
     if (cameraScanner) {
-      cameraScanner.clear().catch(() => {});
+      cameraScanner.stop().catch(() => {});
       setCameraScanner(null);
       setIsCameraActive(false);
     }
