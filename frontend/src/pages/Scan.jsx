@@ -403,15 +403,15 @@ const Scan = ({ user }) => {
                       {/* Overlay - managed by React, sibling to camera container */}
                       {isCameraActive && (
                         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-                          {/* Scan frame with corner markers - no dark overlay */}
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-20 border-2 border-primary/80 rounded-lg">
+                          {/* Scan frame - matches qrbox (250x100) proportion: 2.5:1 */}
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] max-w-[280px] h-auto aspect-[2.5/1] border-2 border-primary/90 rounded-lg">
                             {/* Corner markers */}
                             <div className="absolute -top-2 -left-2 w-6 h-6 border-t-2 border-l-2 border-primary" />
                             <div className="absolute -top-2 -right-2 w-6 h-6 border-t-2 border-r-2 border-primary" />
                             <div className="absolute -bottom-2 -left-2 w-6 h-6 border-b-2 border-l-2 border-primary" />
                             <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b-2 border-r-2 border-primary" />
-                            {/* Center crosshair */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 border border-primary/30 rounded" />
+                            {/* Center line for barcode alignment */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-px bg-primary/50" />
                           </div>
                           {/* Instruction text */}
                           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center text-white/90 text-sm font-medium bg-black/30 px-3 py-1 rounded">
