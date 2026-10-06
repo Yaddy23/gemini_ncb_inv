@@ -213,7 +213,7 @@ const Books = ({ user }) => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px] truncate">ISBN</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[500px] truncate">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[300px] truncate">
                   Title {isSearching && <Loader className="w-4 h-4 text-primary animate-spin ml-2 inline" />}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[200px] truncate">Author</th>
@@ -235,7 +235,7 @@ const Books = ({ user }) => {
                 books.map((book) => (
                   <tr key={book.ISBN} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 max-w-[120px]">{book.ISBN}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[500px]">{book.TITLE}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[300px]">{book.TITLE}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.AUTHOR || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.YEAR || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.PUBLISHER || 'N/A'}</td>
