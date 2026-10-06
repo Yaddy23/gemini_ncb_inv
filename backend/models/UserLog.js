@@ -1,0 +1,47 @@
+const mongoose = require('mongoose');
+
+const userLogSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  action: {
+    type: String,
+    required: true,
+    enum: [
+      'LOGIN',
+      'LOGOUT',
+      'CREATE_USER',
+      'UPDATE_USER',
+      'DELETE_USER',
+      'EXPORT_LOGS',
+      'CREATE_BOOK',
+      'UPDATE_BOOK',
+      'DELETE_BOOK',
+      'INBOUND_STOCK',
+      'OUTBOUND_STOCK',
+      'BULK_IMPORT',
+      'EXPORT_BOOKS',
+      'EXPORT_STOCK_TRANSACTIONS'
+    ]
+  },
+  details: {
+    type: String
+  },
+  ipAddress: {
+    type: String
+  },
+  userAgent: {
+    type: String
+  }
+}, {
+  timestamps: true
+});
+
+// Index for faster querying
+userLogSchema.index({ userId: 1, timestamp: -1 });
+userLogSchema.index({ action: 1 });
+userLogSchema.index({ timestamp: -1 });
+
+module.exports = mongoose.model('UserLog', userLogSchema);

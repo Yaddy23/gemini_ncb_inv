@@ -1,0 +1,319 @@
+const Book = require('../models/Book');
+const StockTransaction = require('../models/StockTransaction');
+const User = require('../models/User');
+const UserLog = require('../models/UserLog');
+
+// Helper function to log user activities
+const logUserActivity = async (userId, action, details = '', req = null) => {
+  try {
+    const logEntry = new UserLog({
+      userId,
+      action,
+      details,
+      ipAddress: req ? req.ip : null,
+      userAgent: req ? req.get('User-Agent') : null,
+    });
+    await logEntry.save();
+  } catch (error) {
+    console.error('Failed to log user activity:', error);
+    // Don't throw error to avoid breaking the main operation
+  }
+};
+
+// @desc    Get all books with pagination and search
+// @route   GET /api/books
+// @access  Private
+const getBooks = async (req, res) => {
+  try {
+    const pageSize = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
+    const search = req.query.search || '';
+    const sortBy = req.query.sortBy || 'createdAt';
+    const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
+
+    // Build search query
+    const searchQuery = search
+      ? {
+          $or: [
+            { TITLE: { $regex: search, $options: 'i' } },
+            { AUTHOR: { $regex: search, $options: 'i' } },
+            { ISBN: { $regex: search, $options: 'i' } },
+            { SUBJECT: { $regex: search, $options: 'i' } },
+            { PUBLISHER: { $regex: search, $options: 'i' } },
+          ],
+        }
+      : {};
+
+    const count = await Book.countDocuments(searchQuery);
+    const books = await Book.find(searchQuery)
+      .sort({ [sortBy]: sortOrder })
+      .limit(pageSize)
+      .skip(pageSize * (page - 1));
+
+    res.json({
+      books,
+      page,
+      pages: Math.ceil(count / pageSize),
+      total: count,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Lookup book by ISBN
+// @route   GET /api/books/lookup/:isbn
+// @access  Private
+const lookupBookByISBN = async (req, res) => {
+  try {
+    const { isbn } = req.params;
+    let book = await Book.findOne({ ISBN: isbn });
+
+    if (book) {
+      res.json(book);
+    } else {
+      // Try to fetch from Open Library API as fallback
+      try {
+        const response = await fetch(`https://openlibrary.org/isbn/${isbn}.json`);
+        if (response.ok) {
+          const data = await response.json();
+          // Format the data to match our book schema
+          const formattedData = {
+            ISBN: isbn,
+            TITLE: data.title || '',
+            AUTHOR: Array.isArray(data.authors)
+              ? data.authors.map(a => a.name).join(', ') || ''
+              : (data.authors && data.authors.name) || '',
+            PUBLISHER: data.publishers && data.publishers[0]
+              ? data.publishers[0].name || ''
+              : '',
+            YEAR: data.publish_date ? String(data.publish_date).match(/\d{4}/) ? String(data.publish_date).match(/\d{4}/)[0] : '' : '',
+            SUBJECT: Array.isArray(data.subjects) ? data.subjects.slice(0, 3).join(', ') : '',
+          };
+          res.json(formattedData);
+        } else {
+          res.status(404).json({ message: 'Book not found' });
+        }
+      } catch (apiError) {
+        res.status(404).json({ message: 'Book not found' });
+      }
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Create a new book
+// @route   POST /api/books
+// @access  Private/Admin
+const createBook = async (req, res) => {
+  try {
+    const { ISBN, SUBJECT, TITLE, EDITION, YEAR, AUTHOR, BIND, QTY, PRICE, PUBLISHER } = req.body;
+
+    // Check if book already exists
+    const bookExists = await Book.findOne({ ISBN });
+    if (bookExists) {
+      res.status(400);
+      throw new Error('Book with this ISBN already exists');
+    }
+
+    const book = await Book.create({
+      ISBN,
+      SUBJECT,
+      TITLE,
+      EDITION,
+      YEAR,
+      AUTHOR,
+      BIND,
+      QTY: QTY || 0,
+      PRICE: PRICE || 0.00,
+      PUBLISHER,
+    });
+
+    if (book) {
+      // Create stock transaction record for initial stock
+      await StockTransaction.create({
+        ISBN: book.ISBN,
+        action: 'ADJUSTMENT',
+        qtyChanged: book.QTY,
+        previousQty: 0,
+        newQty: book.QTY,
+        performedBy: req.user._id,
+      });
+
+      // Log book creation
+      await logUserActivity(req.user._id, 'CREATE_BOOK', `Created book: ${book.TITLE} (ISBN: ${book.ISBN})`, req);
+
+      res.status(201).json(book);
+    } else {
+      res.status(400);
+      throw new Error('Invalid book data');
+    }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Update a book
+// @route   PUT /api/books/:isbn
+// @access  Private/Admin
+const updateBook = async (req, res) => {
+  try {
+    const { isbn } = req.params;
+    const { ISBN, SUBJECT, TITLE, EDITION, YEAR, AUTHOR, BIND, QTY, PRICE, PUBLISHER } = req.body;
+
+    const book = await Book.findOne({ ISBN: isbn });
+    if (!book) {
+      res.status(404);
+      throw new Error('Book not found');
+    }
+
+    // If ISBN is being changed, check if new ISBN already exists
+    if (ISBN && ISBN !== isbn) {
+      const isbnExists = await Book.findOne({ ISBN });
+      if (isbnExists) {
+        res.status(400);
+        throw new Error('Book with this ISBN already exists');
+      }
+    }
+
+    // Track what changed for logging
+    const changes = [];
+    if (ISBN && ISBN !== isbn) changes.push(`ISBN: ${isbn} -> ${ISBN}`);
+    if (TITLE !== undefined && TITLE !== book.TITLE) changes.push(`Title: ${book.TITLE} -> ${TITLE}`);
+    if (AUTHOR !== undefined && AUTHOR !== book.AUTHOR) changes.push(`Author: ${book.AUTHOR} -> ${AUTHOR}`);
+    if (SUBJECT !== undefined && SUBJECT !== book.SUBJECT) changes.push(`Subject: ${book.SUBJECT} -> ${SUBJECT}`);
+    if (EDITION !== undefined && EDITION !== book.EDITION) changes.push(`Edition: ${book.EDITION} -> ${EDITION}`);
+    if (YEAR !== undefined && YEAR !== book.YEAR) changes.push(`Year: ${book.YEAR} -> ${YEAR}`);
+    if (BIND !== undefined && BIND !== book.BIND) changes.push(`Binding: ${book.BIND} -> ${BIND}`);
+    if (QTY !== undefined && QTY !== book.QTY) changes.push(`Quantity: ${book.QTY} -> ${QTY}`);
+    if (PRICE !== undefined && PRICE !== book.PRICE) changes.push(`Price: ${book.PRICE} -> ${PRICE}`);
+    if (PUBLISHER !== undefined && PUBLISHER !== book.PUBLISHER) changes.push(`Publisher: ${book.PUBLISHER} -> ${PUBLISHER}`);
+
+    const updatedBook = await Book.findOneAndUpdate(
+      { ISBN: isbn },
+      {
+        ISBN: ISBN || book.ISBN,
+        SUBJECT: SUBJECT !== undefined ? SUBJECT : book.SUBJECT,
+        TITLE: TITLE !== undefined ? TITLE : book.TITLE,
+        EDITION: EDITION !== undefined ? EDITION : book.EDITION,
+        YEAR: YEAR !== undefined ? YEAR : book.YEAR,
+        AUTHOR: AUTHOR !== undefined ? AUTHOR : book.AUTHOR,
+        BIND: BIND !== undefined ? BIND : book.BIND,
+        QTY: QTY !== undefined ? QTY : book.QTY,
+        PRICE: PRICE !== undefined ? PRICE : book.PRICE,
+        PUBLISHER: PUBLISHER !== undefined ? PUBLISHER : book.PUBLISHER,
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (updatedBook) {
+      // Log book update
+      if (changes.length > 0) {
+        await logUserActivity(req.user._id, 'UPDATE_BOOK', `Updated book "${updatedBook.TITLE}" (ISBN: ${updatedBook.ISBN}): ${changes.join(', ')}`, req);
+      }
+      res.json(updatedBook);
+    } else {
+      res.status(400);
+      throw new Error('Invalid book data');
+    }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a book
+// @route   DELETE /api/books/:isbn
+// @access  Private/Admin
+const deleteBook = async (req, res) => {
+  try {
+    const { isbn } = req.params;
+
+    const book = await Book.findOne({ ISBN: isbn });
+    if (!book) {
+      res.status(404);
+      throw new Error('Book not found');
+    }
+
+    const deletedBookTitle = book.TITLE;
+    const deletedBookISBN = book.ISBN;
+
+    await book.deleteOne();
+
+    // Also delete associated stock transactions
+    await StockTransaction.deleteMany({ ISBN: isbn });
+
+    // Log book deletion
+    await logUserActivity(req.user._id, 'DELETE_BOOK', `Deleted book: ${deletedBookTitle} (ISBN: ${deletedBookISBN})`, req);
+
+    res.json({ message: 'Book removed' });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Get dashboard stats
+// @route   GET /api/books/stats
+// @access  Private
+const getStats = async (req, res) => {
+  try {
+    const stats = await Book.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalBooks: { $sum: 1 },
+          totalQuantity: { $sum: '$QTY' },
+          lowStockCount: {
+            $sum: {
+              $cond: [{ $and: [{ $lt: ['$QTY', 5] }, { $gt: ['$QTY', 0] }] }, 1, 0]
+            }
+          },
+          outOfStockCount: {
+            $sum: { $cond: [{ $eq: ['$QTY', 0] }, 1, 0] }
+          },
+          inStockCount: {
+            $sum: { $cond: [{ $gt: ['$QTY', 0] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    const result = stats[0] || {
+      totalBooks: 0,
+      totalQuantity: 0,
+      lowStockCount: 0,
+      outOfStockCount: 0,
+      inStockCount: 0
+    };
+
+    // Also get today's transactions count
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayTransactions = await StockTransaction.countDocuments({
+      createdAt: { $gte: today, $lt: tomorrow }
+    });
+
+    res.json({
+      totalBooks: result.totalBooks,
+      totalQuantity: result.totalQuantity,
+      lowStock: result.lowStockCount,
+      outOfStock: result.outOfStockCount,
+      inStock: result.inStockCount,
+      todayTransactions
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  getBooks,
+  lookupBookByISBN,
+  createBook,
+  updateBook,
+  deleteBook,
+  getStats,
+};

@@ -1,0 +1,39 @@
+const mongoose = require('mongoose');
+
+const stockTransactionSchema = new mongoose.Schema({
+  ISBN: {
+    type: String,
+    required: true,
+    ref: 'Book'
+  },
+  action: {
+    type: String,
+    required: true,
+    enum: ['INBOUND', 'OUTBOUND', 'ADJUSTMENT', 'BULK_IMPORT']
+  },
+  qtyChanged: {
+    type: Number,
+    required: true
+  },
+  previousQty: {
+    type: Number,
+    required: true
+  },
+  newQty: {
+    type: Number,
+    required: true
+  },
+  performedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  }
+}, {
+  timestamps: true
+});
+
+// Index for faster querying
+stockTransactionSchema.index({ ISBN: 1, timestamp: -1 });
+stockTransactionSchema.index({ performedBy: 1 });
+
+module.exports = mongoose.model('StockTransaction', stockTransactionSchema);
