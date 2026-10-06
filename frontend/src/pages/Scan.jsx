@@ -366,23 +366,27 @@ const Scan = ({ user }) => {
                         </button>
                       </div>
                     )}
-                    <div
-                      ref={cameraContainerRef}
-                      id="camera-reader"
-                      className="w-full rounded-lg overflow-hidden relative"
-                      style={{
-                        aspectRatio: '16/9',
-                        maxHeight: '500px',
-                        backgroundColor: '#000' // fallback while video loads
-                      }}
-                    >
-                      {!isCameraActive && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-4">
-                          <Loader className="w-8 h-8 animate-spin text-primary mb-2" />
-                          <p className="text-center">Starting camera...</p>
-                        </div>
-                      )}
-                      {/* Scan Area Overlay - visible when camera is active */}
+                    <div className="relative">
+                      {/* Camera feed container - managed by library, not React */}
+                      <div
+                        ref={cameraContainerRef}
+                        id="camera-reader"
+                        className="w-full rounded-lg overflow-hidden"
+                        style={{
+                          aspectRatio: '16/9',
+                          maxHeight: '500px',
+                          backgroundColor: '#000'
+                        }}
+                      >
+                        {!isCameraActive && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-4">
+                            <Loader className="w-8 h-8 animate-spin text-primary mb-2" />
+                            <p className="text-center">Starting camera...</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Overlay - managed by React, sibling to camera container */}
                       {isCameraActive && (
                         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
                           {/* Scan frame with corner markers - no dark overlay */}
