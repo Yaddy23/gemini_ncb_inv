@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import api from '../api/axios';
 import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Trash2, RotateCcw, Camera, X } from 'lucide-react';
 
@@ -154,30 +154,46 @@ const Scan = ({ user }) => {
     setCameraError(null);
 
     try {
-      const html5Qrcode = new Html5Qrcode('camera-reader');
-      await html5Qrcode.start(
-        { facingMode: 'environment' }, // Use back camera
+      // Get container dimensions
+      const container = cameraContainerRef.current;
+      const rect = container.getBoundingClientRect();
+      const width = rect.width || 400;
+      const height = rect.height || 225;
+
+      const html5QrcodeScanner = new Html5QrcodeScanner(
+        'camera-reader',
         {
           fps: 10,
-          qrbox: { width: 250, height: 100 }
+          qrbox: { width: 250, height: 100 },
+          aspectRatio: 1.777, // 16:9
+          videoConstraints: {
+            facingMode: 'environment',
+            width: { ideal: width },
+            height: { ideal: height }
+          }
         },
+        false // don't use experimental features
+      );
+
+      html5QrcodeScanner.render(
         (decodedText) => {
           // Success callback - process the scanned ISBN
           if (decodedText && decodedText.length >= 8) {
             setIsbn(decodedText);
             // Stop camera after successful scan
-            html5Qrcode.stop().then(() => {
+            html5QrcodeScanner.clear().then(() => {
               setCameraScanner(null);
               setIsCameraActive(false);
             }).catch(() => {});
           }
         },
-        () => {
+        (errorMessage) => {
           // Error callback - ignore, continuous scanning
+          // console.log('Scan error:', errorMessage);
         }
       );
 
-      setCameraScanner(html5Qrcode);
+      setCameraScanner(html5QrcodeScanner);
       setIsCameraActive(true);
     } catch (err) {
       console.error('Camera start error:', err);
@@ -188,7 +204,7 @@ const Scan = ({ user }) => {
 
   const stopCameraScanner = () => {
     if (cameraScanner) {
-      cameraScanner.stop().catch(() => {});
+      cameraScanner.clear().catch(() => {});
       setCameraScanner(null);
       setIsCameraActive(false);
     }
