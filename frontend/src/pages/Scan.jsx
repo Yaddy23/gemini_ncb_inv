@@ -365,20 +365,18 @@ const Scan = ({ user }) => {
                       {/* Scan Area Overlay - visible when camera is active */}
                       {isCameraActive && (
                         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-                          {/* Dimmed overlay outside scan area */}
-                          <div className="absolute inset-0 bg-black/50" />
-                          {/* Clear scan area window */}
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-20 bg-transparent border-2 border-primary/80 rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
+                          {/* Scan frame with corner markers - no dark overlay */}
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-20 border-2 border-primary/80 rounded-lg">
                             {/* Corner markers */}
-                            <div className="absolute -top-2 -left-2 w-4 h-4 border-t-2 border-l-2 border-primary" />
-                            <div className="absolute -top-2 -right-2 w-4 h-4 border-t-2 border-r-2 border-primary" />
-                            <div className="absolute -bottom-2 -left-2 w-4 h-4 border-b-2 border-l-2 border-primary" />
-                            <div className="absolute -bottom-2 -right-2 w-4 h-4 border-b-2 border-r-2 border-primary" />
-                            {/* Center line hint */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-px bg-primary/50" />
+                            <div className="absolute -top-2 -left-2 w-6 h-6 border-t-2 border-l-2 border-primary" />
+                            <div className="absolute -top-2 -right-2 w-6 h-6 border-t-2 border-r-2 border-primary" />
+                            <div className="absolute -bottom-2 -left-2 w-6 h-6 border-b-2 border-l-2 border-primary" />
+                            <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b-2 border-r-2 border-primary" />
+                            {/* Center crosshair */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 border border-primary/30 rounded" />
                           </div>
                           {/* Instruction text */}
-                          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center text-white text-sm font-medium">
+                          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center text-white/90 text-sm font-medium bg-black/30 px-3 py-1 rounded">
                             Align ISBN barcode within frame
                           </div>
                         </div>
