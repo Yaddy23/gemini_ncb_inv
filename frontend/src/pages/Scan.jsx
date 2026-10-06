@@ -353,8 +353,12 @@ const Scan = ({ user }) => {
                     <div
                       ref={cameraContainerRef}
                       id="camera-reader"
-                      className="w-full bg-gray-900 rounded-lg overflow-hidden relative"
-                      style={{ aspectRatio: '16/9', maxHeight: '500px' }}
+                      className="w-full rounded-lg overflow-hidden relative"
+                      style={{
+                        aspectRatio: '16/9',
+                        maxHeight: '500px',
+                        backgroundColor: '#000' // fallback while video loads
+                      }}
                     >
                       {!isCameraActive && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-4">
