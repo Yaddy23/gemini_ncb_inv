@@ -16,6 +16,7 @@ const Scan = ({ user }) => {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [lastScannedIsbn, setLastScannedIsbn] = useState(null); // Cooldown tracker
   const cameraContainerRef = useRef(null);
   const isbnInputRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -49,16 +50,20 @@ const Scan = ({ user }) => {
   useEffect(() => {
     if (!mode || !isbn || isbn.length < 8) return; // Need mode and valid ISBN
 
+    const delay = scanMethod === 'camera' ? 0 : 100; // No debounce for camera, 100ms for manual
     const timer = setTimeout(() => {
       processScan(isbn);
-    }, 300); // Small delay to allow scanner to finish typing
+    }, delay);
 
     return () => clearTimeout(timer);
-  }, [isbn, mode]);
+  }, [isbn, mode, scanMethod]);
 
   const processScan = async (code) => {
     setLoading(true);
     setError(null);
+
+    // Clear ISBN immediately so camera can scan next barcode
+    setIsbn('');
 
     try {
       // First lookup the book
@@ -96,9 +101,6 @@ const Scan = ({ user }) => {
 
       // Success message
       setSuccess(`${mode === 'inbound' ? 'Added' : 'Removed'} 1 unit to "${book.TITLE}" (Stock: ${updatedBook.QTY})`);
-
-      // Clear ISBN for next scan
-      setIsbn('');
 
       // Re-focus input for next scan
       setTimeout(() => {
@@ -190,10 +192,17 @@ const Scan = ({ user }) => {
         },
         (decodedText) => {
           if (decodedText && decodedText.length >= 8) {
+            // Prevent re-scanning same ISBN within 2 seconds (cooldown)
+            if (decodedText === lastScannedIsbn) return;
+
+            setLastScannedIsbn(decodedText);
+            // Clear cooldown after 2 seconds
+            setTimeout(() => setLastScannedIsbn(null), 2000);
+
             setIsbn(decodedText);
             playBeep();
-            // Camera stays active for continuous scanning
-            // Just clear ISBN after processing so next scan works
+            // Immediately clear ISBN so camera can detect next barcode
+            // processScan will handle the API calls and clear ISBN again when done
           }
         },
         (errorMessage) => {
