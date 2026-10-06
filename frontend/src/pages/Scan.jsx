@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import api from '../api/axios';
-import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Trash2, RotateCcw, Camera, X } from 'lucide-react';
+import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Trash2, RotateCcw, Camera, X, Volume2, VolumeX } from 'lucide-react';
 
 const Scan = ({ user }) => {
   const [mode, setMode] = useState(null); // 'inbound' | 'outbound' | null
@@ -15,8 +15,10 @@ const Scan = ({ user }) => {
   const [cameraScanner, setCameraScanner] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const cameraContainerRef = useRef(null);
   const isbnInputRef = useRef(null);
+  const audioContextRef = useRef(null);
 
   // Auto-focus the ISBN input on mount and when mode changes
   useEffect(() => {
@@ -189,6 +191,7 @@ const Scan = ({ user }) => {
         (decodedText) => {
           if (decodedText && decodedText.length >= 8) {
             setIsbn(decodedText);
+            playBeep();
             // Camera stays active for continuous scanning
             // Just clear ISBN after processing so next scan works
           }
@@ -220,6 +223,37 @@ const Scan = ({ user }) => {
       cameraScanner.stop().catch(() => {});
       setCameraScanner(null);
       setIsCameraActive(false);
+    }
+  };
+
+  // Beep sound using Web Audio API
+  const playBeep = () => {
+    if (!soundEnabled) return;
+
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const ctx = audioContextRef.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(800, ctx.currentTime); // 800 Hz beep
+      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.15);
+    } catch (err) {
+      console.warn('Beep sound failed:', err);
     }
   };
 
@@ -426,13 +460,27 @@ const Scan = ({ user }) => {
                           <CheckCircle className="w-4 h-4" />
                           <span>Camera active - Point at ISBN barcode</span>
                         </span>
-                        <button
-                          onClick={() => handleScanMethodChange('manual')}
-                          className="flex items-center space-x-1 px-3 py-1 text-gray-600 hover:text-gray-800"
-                        >
-                          <X className="w-4 h-4" />
-                          <span>Stop Camera</span>
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => setSoundEnabled(!soundEnabled)}
+                            className="flex items-center space-x-1 px-3 py-1 text-gray-600 hover:text-gray-800 transition-colors"
+                            title={soundEnabled ? 'Disable beep sound' : 'Enable beep sound'}
+                          >
+                            {soundEnabled ? (
+                              <Volume2 className="w-4 h-4" />
+                            ) : (
+                              <VolumeX className="w-4 h-4" />
+                            )}
+                            <span className="text-xs hidden sm:inline">{soundEnabled ? 'Sound ON' : 'Sound OFF'}</span>
+                          </button>
+                          <button
+                            onClick={() => handleScanMethodChange('manual')}
+                            className="flex items-center space-x-1 px-3 py-1 text-gray-600 hover:text-gray-800"
+                          >
+                            <X className="w-4 h-4" />
+                            <span>Stop Camera</span>
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
