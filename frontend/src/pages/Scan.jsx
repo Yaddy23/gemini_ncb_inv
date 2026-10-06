@@ -367,7 +367,15 @@ const Scan = ({ user }) => {
                       </div>
                     )}
                     <div className="relative">
-                      {/* Camera feed container - managed by library, not React */}
+                      {/* Loading indicator - React-managed, OUTSIDE library container */}
+                      {!isCameraActive && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-4 rounded-lg bg-black" style={{ zIndex: 10 }}>
+                          <Loader className="w-8 h-8 animate-spin text-primary mb-2" />
+                          <p className="text-center">Starting camera...</p>
+                        </div>
+                      )}
+
+                      {/* Camera feed container - managed by library, NO React children */}
                       <div
                         ref={cameraContainerRef}
                         id="camera-reader"
@@ -377,14 +385,7 @@ const Scan = ({ user }) => {
                           maxHeight: '500px',
                           backgroundColor: '#000'
                         }}
-                      >
-                        {!isCameraActive && (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-4">
-                            <Loader className="w-8 h-8 animate-spin text-primary mb-2" />
-                            <p className="text-center">Starting camera...</p>
-                          </div>
-                        )}
-                      </div>
+                      />
 
                       {/* Overlay - managed by React, sibling to camera container */}
                       {isCameraActive && (
