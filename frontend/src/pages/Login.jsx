@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios';
 import { LogIn, User, Lock } from 'lucide-react';
 
 const Login = ({ onLogin }) => {
@@ -24,7 +24,7 @@ const Login = ({ onLogin }) => {
     setError('');
 
     try {
-      const response = await axios.post('/api/auth/login', formData);
+      const response = await api.post('/auth/login', formData);
       onLogin(response.data);
     } catch (error) {
       setError(error.response?.data?.message || 'Login failed');

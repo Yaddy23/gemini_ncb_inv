@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { Upload, CheckCircle, AlertTriangle, Loader, Trash, Edit, Loader as LoaderIcon } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -166,14 +166,9 @@ const ImportExport = ({ user }) => {
       formData.append('file', file);
       formData.append('mode', mode);
 
-      const config = {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      };
-
-      const response = await axios.post('/api/stock/bulk-import', formData, config);
+      const response = await api.post('/stock/bulk-import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       setImportSuccess('Import completed successfully!');
       setImportResults(response.data.results);
     } catch (err) {
@@ -186,13 +181,8 @@ const ImportExport = ({ user }) => {
   const handleExport = async (byCategory = false) => {
     setExporting(true);
     try {
-      const config = {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        responseType: 'blob' // Important for downloading files
-      };
-
-      const url = byCategory ? '/api/stock/export?byCategory=true' : '/api/stock/export';
-      const response = await axios.get(url, config);
+      const url = byCategory ? '/stock/export?byCategory=true' : '/stock/export';
+      const response = await api.get(url, { responseType: 'blob' });
 
       // Create a blob from the response data
       const blobUrl = window.URL.createObjectURL(new Blob([response.data]));

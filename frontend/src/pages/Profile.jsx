@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { User, CheckCircle, AlertTriangle, Loader, Edit, Lock } from 'lucide-react';
 
 const Profile = ({ user, onLogin }) => {
@@ -23,10 +23,7 @@ const Profile = ({ user, onLogin }) => {
     const loadProfile = async () => {
       try {
         setLoading(true);
-        const config = {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        };
-        const response = await axios.get('/api/auth/me', config);
+        const response = await api.get('/auth/me');
         setProfileData({
           username: response.data.username,
           email: response.data.email,
@@ -62,10 +59,7 @@ const Profile = ({ user, onLogin }) => {
     setSuccess(null);
 
     try {
-      const config = {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      };
-      const response = await axios.put('/api/auth/profile', profileData, config);
+      const response = await api.put('/auth/profile', profileData);
       setEditMode(false);
       setSuccess('Profile updated successfully!');
 
@@ -92,13 +86,10 @@ const Profile = ({ user, onLogin }) => {
     setSuccess(null);
 
     try {
-      const config = {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      };
-      await axios.put('/api/auth/change-password', {
+      await api.put('/auth/change-password', {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
-      }, config);
+      });
 
       setPasswordData({
         currentPassword: '',

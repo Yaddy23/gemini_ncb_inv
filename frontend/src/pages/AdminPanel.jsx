@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { NavLink } from 'react-router-dom';
 
 const AdminPanel = ({ user }) => {
@@ -32,9 +32,7 @@ const AdminPanel = ({ user }) => {
   const fetchUsers = async (page = 1, search = '') => {
     setLoading(true);
     try {
-      const response = await axios.get(`/api/auth/users?page=${page}&limit=${usersPerPage}&search=${search}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await api.get(`/auth/users?page=${page}&limit=${usersPerPage}&search=${search}`);
       setUsers(response.data.users);
       setTotalPages(response.data.pages);
       setTotalUsers(response.data.total);
@@ -60,9 +58,7 @@ const AdminPanel = ({ user }) => {
         endDate: filters.endDate
       }).toString();
 
-      const response = await axios.get(`/api/user-logs?${queryParams}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await api.get(`/user-logs?${queryParams}`);
       setUserLogs(response.data.logs);
       setFilteredLogs(response.data.logs); // For export functionality
       setTotalPages(response.data.pages);
@@ -80,12 +76,8 @@ const AdminPanel = ({ user }) => {
   const fetchFilterOptions = async () => {
     try {
       const [actionsRes, usersRes] = await Promise.all([
-        axios.get(`/api/user-logs/actions`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        }),
-        axios.get(`/api/user-logs/users`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        })
+        api.get(`/user-logs/actions`),
+        api.get(`/user-logs/users`)
       ]);
       setLogActions(actionsRes.data.actions);
       setLogUsers(usersRes.data.users);
@@ -99,9 +91,7 @@ const AdminPanel = ({ user }) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       setLoading(true);
       try {
-        await axios.delete(`/api/auth/users/${userId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        await api.delete(`/auth/users/${userId}`);
         setSuccess('User deleted successfully');
         fetchUsers(currentPage, filters.search);
       } catch (err) {
@@ -117,10 +107,8 @@ const AdminPanel = ({ user }) => {
   const handleToggleStatus = async (userId, isActive) => {
     setLoading(true);
     try {
-      await axios.put(`/api/auth/users/${userId}`, {
+      await api.put(`/auth/users/${userId}`, {
         isActive: !isActive
-      }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setSuccess('User status updated successfully');
       fetchUsers(currentPage, filters.search);
@@ -137,10 +125,8 @@ const AdminPanel = ({ user }) => {
     const newRole = role === 'Admin' ? 'Staff' : 'Admin';
     setLoading(true);
     try {
-      await axios.put(`/api/auth/users/${userId}`, {
+      await api.put(`/auth/users/${userId}`, {
         role: newRole
-      }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setSuccess('User role updated successfully');
       fetchUsers(currentPage, filters.search);
@@ -183,10 +169,7 @@ const AdminPanel = ({ user }) => {
         endDate: filters.endDate
       }).toString();
 
-      const response = await axios.get(`/api/user-logs/export?${queryParams}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        responseType: 'blob'
-      });
+      const response = await api.get(`/user-logs/export?${queryParams}`, { responseType: 'blob' });
 
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));

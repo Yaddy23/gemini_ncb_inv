@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { ShoppingBag, Search, Plus, Barcode, Trash, Edit, Loader, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const Books = ({ user }) => {
@@ -70,10 +70,7 @@ const Books = ({ user }) => {
       } else {
         setLoading(true);
       }
-      const config = {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      };
-      const response = await axios.get(`/api/books?page=${page}&limit=${limit}&search=${debouncedSearch}`, config);
+      const response = await api.get(`/books?page=${page}&limit=${limit}&search=${debouncedSearch}`);
 
       setBooks(response.data.books);
       setTotalPages(response.data.pages);
@@ -119,10 +116,7 @@ const Books = ({ user }) => {
   const handleDeleteBook = async (isbn) => {
     if (deleteMode) {
       try {
-        const config = {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        };
-        await axios.delete(`/api/books/${isbn}`, config);
+        await api.delete(`/books/${isbn}`);
         setDeleteMode(false);
         // Refresh books list
         const response = await axios.get(`/api/books?page=${page}&limit=${limit}&search=${debouncedSearch}`, config);
@@ -334,20 +328,17 @@ const Books = ({ user }) => {
                 e.preventDefault();
                 try {
                   setLoading(true);
-                  const config = {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                  };
                   let response;
 
                   if (selectedBook.action === 'create') {
-                    response = await axios.post('/api/books', formData, config);
+                    response = await api.post('/books', formData);
                   } else if (selectedBook.action === 'edit') {
-                    response = await axios.put(`/api/books/${selectedBook.book.ISBN}`, formData, config);
+                    response = await api.put(`/books/${selectedBook.book.ISBN}`, formData);
                   }
 
                   setSelectedBook(null);
                   // Refresh books list
-                  const booksResponse = await axios.get(`/api/books?page=${page}&limit=${limit}&search=${debouncedSearch}`, config);
+                  const booksResponse = await api.get(`/books?page=${page}&limit=${limit}&search=${debouncedSearch}`);
                   setBooks(booksResponse.data.books);
                   setTotalPages(booksResponse.data.pages);
                   setTotalBooks(booksResponse.data.total);

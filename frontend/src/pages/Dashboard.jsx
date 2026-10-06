@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { ScanBarcode, ShoppingBag, Plus, Users, Loader, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const Dashboard = ({ user }) => {
@@ -15,10 +15,7 @@ const Dashboard = ({ user }) => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const config = {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        };
-        const response = await axios.get('/api/books/stats', config);
+        const response = await api.get('/books/stats');
 
         setStats({
           totalBooks: response.data.totalBooks,

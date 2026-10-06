@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from './api/axios';
 
 // Components
 import Login from './pages/Login';
@@ -23,10 +23,7 @@ function App() {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const config = {
-            headers: { Authorization: `Bearer ${token}` }
-          };
-          const response = await axios.get('/api/auth/me', config);
+          const response = await api.get('/auth/me');
           setUser(response.data);
         }
       } catch (error) {
@@ -47,12 +44,7 @@ function App() {
 
   const logout = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await axios.post('/api/auth/logout', {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      }
+      await api.post('/auth/logout');
     } catch (error) {
       console.error('Logout API call failed:', error);
     } finally {

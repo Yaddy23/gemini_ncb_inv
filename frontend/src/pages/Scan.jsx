@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Plus, Minus, Trash2, RotateCcw } from 'lucide-react';
 
 const Scan = ({ user }) => {
@@ -35,12 +35,8 @@ const Scan = ({ user }) => {
     setError(null);
 
     try {
-      const config = {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      };
-
       // First lookup the book
-      const lookupResponse = await axios.get(`/api/books/lookup/${code}`, config);
+      const lookupResponse = await api.get(`/books/lookup/${code}`);
 
       if (!lookupResponse.data || !lookupResponse.data.ISBN) {
         throw new Error('Book not found in inventory');
@@ -49,10 +45,10 @@ const Scan = ({ user }) => {
       const book = lookupResponse.data;
 
       // Then process stock action (always qty = 1)
-      const stockResponse = await axios.patch(`/api/stock/${book.ISBN}/stock`, {
+      const stockResponse = await api.patch(`/stock/${book.ISBN}/stock`, {
         action: mode === 'inbound' ? 'INBOUND' : 'OUTBOUND',
         qtyChanged: 1
-      }, config);
+      });
 
       const updatedBook = stockResponse.data;
 
