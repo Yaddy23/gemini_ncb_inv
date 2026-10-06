@@ -189,10 +189,8 @@ const Scan = ({ user }) => {
         (decodedText) => {
           if (decodedText && decodedText.length >= 8) {
             setIsbn(decodedText);
-            html5Qrcode.stop().then(() => {
-              setCameraScanner(null);
-              setIsCameraActive(false);
-            }).catch(() => {});
+            // Camera stays active for continuous scanning
+            // Just clear ISBN after processing so next scan works
           }
         },
         (errorMessage) => {
