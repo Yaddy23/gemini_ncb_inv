@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
 import api from '../api/axios';
-import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Plus, Minus, Trash2, RotateCcw } from 'lucide-react';
+import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Trash2, RotateCcw, Camera, X } from 'lucide-react';
 
 const Scan = ({ user }) => {
   const [mode, setMode] = useState(null); // 'inbound' | 'outbound' | null
@@ -10,14 +11,37 @@ const Scan = ({ user }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [recentScans, setRecentScans] = useState([]);
+  const [scanMethod, setScanMethod] = useState('manual'); // 'manual' | 'camera'
+  const [cameraScanner, setCameraScanner] = useState(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const cameraContainerRef = useRef(null);
   const isbnInputRef = useRef(null);
 
   // Auto-focus the ISBN input on mount and when mode changes
   useEffect(() => {
-    if (isbnInputRef.current) {
+    if (isbnInputRef.current && scanMethod === 'manual') {
       isbnInputRef.current.focus();
     }
-  }, [mode]);
+  }, [mode, scanMethod]);
+
+  // Camera scanner cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (cameraScanner) {
+        cameraScanner.stop().catch(() => {});
+      }
+    };
+  }, []);
+
+  // Clean up camera when method changes or mode changes
+  useEffect(() => {
+    if (scanMethod !== 'camera' && cameraScanner) {
+      cameraScanner.stop().catch(() => {});
+      setCameraScanner(null);
+      setIsCameraActive(false);
+    }
+  }, [scanMethod, mode]);
 
   // Auto-lookup and process when ISBN changes (for scanner input)
   useEffect(() => {
@@ -116,11 +140,79 @@ const Scan = ({ user }) => {
     setError(null);
     setSuccess(null);
     setRecentScans([]);
+    setScanMethod('manual');
     setTimeout(() => {
       if (isbnInputRef.current) {
         isbnInputRef.current.focus();
       }
     }, 100);
+  };
+
+  const startCameraScanner = async () => {
+    if (!cameraContainerRef.current) return;
+
+    setCameraError(null);
+
+    try {
+      const html5Qrcode = new Html5Qrcode('camera-reader');
+      await html5Qrcode.start(
+        { facingMode: 'environment' }, // Use back camera
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 100 }
+        },
+        (decodedText) => {
+          // Success callback - process the scanned ISBN
+          if (decodedText && decodedText.length >= 8) {
+            setIsbn(decodedText);
+            // Stop camera after successful scan
+            html5Qrcode.stop().then(() => {
+              setCameraScanner(null);
+              setIsCameraActive(false);
+            }).catch(() => {});
+          }
+        },
+        () => {
+          // Error callback - ignore, continuous scanning
+        }
+      );
+
+      setCameraScanner(html5Qrcode);
+      setIsCameraActive(true);
+    } catch (err) {
+      console.error('Camera start error:', err);
+      setCameraError('Could not access camera. Please allow camera permissions and try again.');
+      setIsCameraActive(false);
+    }
+  };
+
+  const stopCameraScanner = () => {
+    if (cameraScanner) {
+      cameraScanner.stop().catch(() => {});
+      setCameraScanner(null);
+      setIsCameraActive(false);
+    }
+  };
+
+  const handleScanMethodChange = (method) => {
+    setScanMethod(method);
+    setIsbn('');
+    setError(null);
+    setSuccess(null);
+    setBookInfo(null);
+    setCameraError(null);
+
+    if (method === 'camera') {
+      // Delay to allow DOM to update
+      setTimeout(() => startCameraScanner(), 100);
+    } else {
+      stopCameraScanner();
+      setTimeout(() => {
+        if (isbnInputRef.current) {
+          isbnInputRef.current.focus();
+        }
+      }, 100);
+    }
   };
 
   return (
@@ -201,32 +293,118 @@ const Scan = ({ user }) => {
                 </button>
               </div>
 
-              {/* ISBN Input - Auto-focused */}
+              {/* Scan Method Selector */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Scan ISBN Barcode
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Scan Method
                 </label>
-                <div className="relative">
-                  <input
-                    ref={isbnInputRef}
-                    type="text"
-                    value={isbn}
-                    onChange={(e) => setIsbn(e.target.value)}
-                    placeholder={loading ? "Processing..." : "Scan barcode or type ISBN..."}
-                    className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50"
-                    autoComplete="off"
-                    spellCheck="false"
-                    disabled={loading}
-                  />
-                  <Barcode className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
-                  {loading && (
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                      <Loader className="w-5 h-5 text-primary animate-spin" />
-                    </div>
-                  )}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => handleScanMethodChange('manual')}
+                    className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                      scanMethod === 'manual'
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
+                    }`}
+                  >
+                    <span className="text-lg">⌨</span>
+                    <span className="font-medium">Text Input</span>
+                  </button>
+                  <button
+                    onClick={() => handleScanMethodChange('camera')}
+                    className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                      scanMethod === 'camera'
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
+                    }`}
+                  >
+                    <Camera className="w-5 h-5" />
+                    <span className="font-medium">Camera Scan</span>
+                  </button>
                 </div>
                 <p className="mt-2 text-xs text-gray-500 text-center">
-                  {mode === 'inbound' ? '📦 Scanning adds +1 to stock' : '📤 Scanning removes -1 from stock'} • Auto-focuses after each scan
+                  {scanMethod === 'camera'
+                    ? 'Point camera at ISBN barcode • Auto-stops after scan'
+                    : 'Type or scan with hardware scanner • Auto-focuses after each scan'}
+                </p>
+              </div>
+
+              {/* Scan Input - Manual or Camera */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {scanMethod === 'camera' ? 'Camera Scanner' : 'Scan ISBN Barcode'}
+                </label>
+
+                {scanMethod === 'camera' ? (
+                  // Camera Scanner View
+                  <div className="space-y-3">
+                    {cameraError && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex items-center space-x-2">
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                        <span>{cameraError}</span>
+                        <button
+                          onClick={startCameraScanner}
+                          className="ml-auto text-red-600 hover:underline text-sm"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    )}
+                    <div
+                      ref={cameraContainerRef}
+                      id="camera-reader"
+                      className="w-full aspect-video bg-gray-900 rounded-lg overflow-hidden relative"
+                      style={{ maxHeight: '400px' }}
+                    >
+                      {!isCameraActive && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-4">
+                          <Loader className="w-8 h-8 animate-spin text-primary mb-2" />
+                          <p className="text-center">Starting camera...</p>
+                        </div>
+                      )}
+                    </div>
+                    {isCameraActive && (
+                      <div className="flex items-center justify-between text-sm text-gray-500">
+                        <span className="flex items-center space-x-1 text-green-600">
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Camera active - Point at ISBN barcode</span>
+                        </span>
+                        <button
+                          onClick={() => handleScanMethodChange('manual')}
+                          className="flex items-center space-x-1 px-3 py-1 text-gray-600 hover:text-gray-800"
+                        >
+                          <X className="w-4 h-4" />
+                          <span>Stop Camera</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Manual Input View
+                  <div className="relative">
+                    <input
+                      ref={isbnInputRef}
+                      type="text"
+                      value={isbn}
+                      onChange={(e) => setIsbn(e.target.value)}
+                      placeholder={loading ? "Processing..." : "Scan barcode or type ISBN..."}
+                      className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50"
+                      autoComplete="off"
+                      spellCheck="false"
+                      disabled={loading}
+                    />
+                    <Barcode className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
+                    {loading && (
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                        <Loader className="w-5 h-5 text-primary animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                )}
+                <p className="mt-2 text-xs text-gray-500 text-center">
+                  {scanMethod === 'camera'
+                    ? 'Auto-stops after successful scan • Switch to text input if needed'
+                    : (mode === 'inbound' ? '📦 Scanning adds +1 to stock' : '📤 Scanning removes -1 from stock') + ' • Auto-focuses after each scan'}
                 </p>
               </div>
 
