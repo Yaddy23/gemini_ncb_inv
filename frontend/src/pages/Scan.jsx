@@ -16,7 +16,8 @@ const Scan = ({ user }) => {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [lastScannedIsbn, setLastScannedIsbn] = useState(null); // Cooldown tracker
+  const [lastScannedIsbn, setLastScannedIsbn] = useState(null); // Cooldown tracker (per-ISBN)
+  const [scanCooldown, setScanCooldown] = useState(false); // Global 2s cooldown after ANY scan
   const cameraContainerRef = useRef(null);
   const isbnInputRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -49,6 +50,7 @@ const Scan = ({ user }) => {
   // Auto-lookup and process when ISBN changes (for scanner input)
   useEffect(() => {
     if (!mode || !isbn || isbn.length < 8) return; // Need mode and valid ISBN
+    if (scanCooldown) return; // Global cooldown prevents any scan
 
     const delay = scanMethod === 'camera' ? 0 : 100; // No debounce for camera, 100ms for manual
     const timer = setTimeout(() => {
@@ -56,7 +58,7 @@ const Scan = ({ user }) => {
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [isbn, mode, scanMethod]);
+  }, [isbn, mode, scanMethod, scanCooldown]);
 
   const processScan = async (code) => {
     setLoading(true);
@@ -192,12 +194,19 @@ const Scan = ({ user }) => {
         },
         (decodedText) => {
           if (decodedText && decodedText.length >= 8) {
-            // Prevent re-scanning same ISBN within 2 seconds (cooldown)
+            // Global 2s cooldown - prevent ANY scan during cooldown
+            if (scanCooldown) return;
+
+            // Prevent re-scanning same ISBN within 2 seconds (per-ISBN cooldown)
             if (decodedText === lastScannedIsbn) return;
 
             setLastScannedIsbn(decodedText);
-            // Clear cooldown after 2 seconds
+            // Clear per-ISBN cooldown after 2 seconds
             setTimeout(() => setLastScannedIsbn(null), 2000);
+
+            // Set global scan cooldown for 2 seconds
+            setScanCooldown(true);
+            setTimeout(() => setScanCooldown(false), 2000);
 
             setIsbn(decodedText);
             playBeep();
@@ -467,8 +476,14 @@ const Scan = ({ user }) => {
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-gray-500">
                         <span className="flex items-center space-x-1 text-green-600">
                           <CheckCircle className="w-4 h-4" />
-                          <span>Camera active - Point at ISBN barcode</span>
+                          <span>{scanCooldown ? 'Cooldown (2s)...' : 'Camera active - Point at ISBN barcode'}</span>
                         </span>
+                        {scanCooldown && (
+                          <span className="flex items-center space-x-1 text-yellow-600">
+                            <Loader className="w-4 h-4 animate-spin" />
+                            <span>Wait...</span>
+                          </span>
+                        )}
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => setSoundEnabled(!soundEnabled)}
