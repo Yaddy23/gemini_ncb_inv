@@ -86,7 +86,10 @@ const DocumentForm = ({
         ? await fetch(`/api/drsi/dr/${initialData._id}/export?format=${format}`)
         : await fetch(`/api/drsi/si/${initialData._id}/export?format=${format}`);
 
-      if (!response.ok) throw new Error('Export failed');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `Export failed with status ${response.status}`);
+      }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
