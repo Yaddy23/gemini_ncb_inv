@@ -233,7 +233,8 @@ router.get('/si', async (req, res) => {
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(Number(limit))
-        .populate('createdBy', 'username'),
+        .populate('createdBy', 'username')
+        .populate('drRef', 'drNumber'),
       SalesInvoice.countDocuments(query)
     ]);
 
