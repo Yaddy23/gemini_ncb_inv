@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader, FileText, Download, Printer, X } from 'lucide-react';
 import LineItemsTable from './LineItemsTable';
-import { formatDate } from '../../utils/numberToWords';
+import { formatDate, formatDateInput } from '../../utils/numberToWords';
 
 const DocumentForm = ({
   documentType, // 'DR' or 'SI'
@@ -17,7 +17,7 @@ const DocumentForm = ({
 
   const [formData, setFormData] = useState({
     documentNumber: '',
-    date: formatDate(new Date()),
+    date: formatDateInput(new Date()),
     customerName: '',
     customerAddress: '',
     poNumber: '',
@@ -30,7 +30,7 @@ const DocumentForm = ({
     if (initialData) {
       setFormData({
         documentNumber: initialData.drNumber || initialData.siNumber || '',
-        date: initialData.date ? formatDate(initialData.date) : formatDate(new Date()),
+        date: initialData.date ? formatDateInput(initialData.date) : formatDateInput(new Date()),
         customerName: initialData.customerName || '',
         customerAddress: initialData.customerAddress || '',
         poNumber: initialData.poNumber || '',
