@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader, FileText, Download, Printer, X } from 'lucide-react';
+import { Loader, FileText, Download, Printer, X, AlertTriangle } from 'lucide-react';
 import LineItemsTable from './LineItemsTable';
 import { formatDate, formatDateInput } from '../../utils/numberToWords';
 
@@ -21,6 +21,7 @@ const DocumentForm = ({
     customerName: '',
     customerAddress: '',
     poNumber: '',
+    discountPercentage: 0,
     items: [{ isbn: '', title: '', qty: 1, unitPrice: 0, amount: 0 }]
   });
 
@@ -34,6 +35,7 @@ const DocumentForm = ({
         customerName: initialData.customerName || '',
         customerAddress: initialData.customerAddress || '',
         poNumber: initialData.poNumber || '',
+        discountPercentage: initialData.discountPercentage || 0,
         items: initialData.items?.length ? initialData.items : [{ isbn: '', title: '', qty: 1, unitPrice: 0, amount: 0 }]
       });
     }
@@ -74,6 +76,7 @@ const DocumentForm = ({
 
     if (!isDR) {
       payload.poNumber = formData.poNumber;
+      payload.discountPercentage = formData.discountPercentage;
     }
 
     onSubmit(payload, action);
@@ -181,17 +184,33 @@ const DocumentForm = ({
               />
             </div>
             {!isDR && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">P.O. Number</label>
-                <input
-                  type="text"
-                  value={formData.poNumber}
-                  onChange={(e) => setFormData(prev => ({ ...prev, poNumber: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Purchase Order #"
-                  disabled={loading}
-                />
-              </div>
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">P.O. Number</label>
+                  <input
+                    type="text"
+                    value={formData.poNumber}
+                    onChange={(e) => setFormData(prev => ({ ...prev, poNumber: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Purchase Order #"
+                    disabled={loading}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Discount %</label>
+                  <input
+                    type="number"
+                    value={formData.discountPercentage}
+                    onChange={(e) => setFormData(prev => ({ ...prev, discountPercentage: Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)) }))}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="0"
+                    disabled={loading}
+                  />
+                </div>
+              </>
             )}
           </div>
 
