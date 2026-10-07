@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import api from '../api/axios';
-import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Trash2, RotateCcw, Camera, X, Volume2, VolumeX } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Trash2, RotateCcw, Camera, X, Volume2, VolumeX, Upload, Download, FileText, PlusCircle, MinusCircle } from 'lucide-react';
 
 const Scan = ({ user }) => {
   const [mode, setMode] = useState(null); // 'inbound' | 'outbound' | null
@@ -18,6 +19,15 @@ const Scan = ({ user }) => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [lastScannedIsbn, setLastScannedIsbn] = useState(null); // Cooldown tracker (per-ISBN)
   const [scanCooldown, setScanCooldown] = useState(false); // Global 0.5s cooldown after ANY scan
+
+  // Import state
+  const [showImport, setShowImport] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importPreview, setImportPreview] = useState([]);
+  const [importError, setImportError] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState(null);
+
   const cameraContainerRef = useRef(null);
   const isbnInputRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -296,6 +306,209 @@ const Scan = ({ user }) => {
     }
   };
 
+  // Download Excel template for bulk import
+  const downloadTemplate = () => {
+    const workbook = XLSX.utils.book_new();
+    const templateData = [
+      { ISBN: '9781234567890', QTY: 1 },
+      { ISBN: '9781234567891', QTY: 2 },
+      { ISBN: '9781234567892', QTY: 1 },
+    ];
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    // Set column widths
+    worksheet['!cols'] = [{ wch: 20 }, { wch: 10 }];
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Stock Import');
+    XLSX.writeFile(workbook, `${mode === 'inbound' ? 'stock-in' : 'stock-out'}-template.xlsx`);
+  };
+
+  // Handle file selection for import
+  const handleImportFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      setImportFile(null);
+      setImportPreview([]);
+      setImportError(null);
+      return;
+    }
+
+    // Validate file type
+    const validTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'text/csv'
+    ];
+
+    if (!validTypes.includes(file.type)) {
+      setImportError('Invalid file type. Please upload an Excel (.xlsx, .xls) or CSV file.');
+      setImportFile(null);
+      return;
+    }
+
+    setImportFile(file);
+    setImportError(null);
+    previewImportFile(file);
+  };
+
+  // Preview the import file
+  const previewImportFile = (file) => {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const contents = e.target.result;
+        let data;
+
+        if (file.name.endsWith('.csv')) {
+          // Parse CSV
+          const lines = contents.split('\n').filter(line => line.trim());
+          const headers = lines[0].split(',').map(h => h.trim());
+          data = lines.slice(1).map(line => {
+            const values = line.split(',').map(v => v.trim());
+            const row = {};
+            headers.forEach((header, index) => {
+              row[header] = values[index] !== undefined ? values[index] : '';
+            });
+            return row;
+          });
+        } else {
+          // Parse Excel
+          const workbook = XLSX.read(contents, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          data = XLSX.utils.sheet_to_json(worksheet);
+        }
+
+        // Validate ISBN column exists
+        const hasISBN = data.some(row => row.ISBN !== undefined);
+        if (!hasISBN) {
+          setImportError('File must contain an ISBN column.');
+          setImportPreview([]);
+          return;
+        }
+
+        // Validate and prepare data
+        const validatedData = data.map((row, index) => {
+          const rowNum = index + 1;
+          const isbn = row.ISBN ? String(row.ISBN).trim() : '';
+          const qty = row.QTY !== undefined && row.QTY !== '' && !isNaN(Number(row.QTY))
+            ? Math.max(1, Number(row.QTY))
+            : 1;
+
+          if (!isbn) {
+            return null;
+          }
+
+          return {
+            row: rowNum,
+            isbn,
+            qty,
+            originalRow: row
+          };
+        }).filter(Boolean);
+
+        if (validatedData.length === 0) {
+          setImportError('No valid ISBNs found in the file.');
+          setImportPreview([]);
+          return;
+        }
+
+        setImportPreview(validatedData);
+      } catch (err) {
+        setImportError('Error parsing file. Please ensure it\'s a valid Excel or CSV file.');
+        console.error('File parsing error:', err);
+      }
+    };
+
+    reader.onerror = () => {
+      setImportError('Error reading file.');
+    };
+
+    if (file.name.endsWith('.csv')) {
+      reader.readAsText(file);
+    } else {
+      reader.readAsBinaryString(file);
+    }
+  };
+
+  // Process bulk import
+  const processBulkImport = async () => {
+    if (!importPreview.length || !mode) {
+      setImportError('No data to import or mode not selected.');
+      return;
+    }
+
+    setImporting(true);
+    setImportError(null);
+    setImportResults(null);
+
+    const results = {
+      succeeded: 0,
+      failed: 0,
+      errors: [],
+      details: []
+    };
+
+    try {
+      for (const item of importPreview) {
+        try {
+          const response = await api.patch(`/stock/${item.isbn}/stock`, {
+            action: mode === 'inbound' ? 'INBOUND' : 'OUTBOUND',
+            qtyChanged: item.qty
+          });
+
+          results.succeeded++;
+          results.details.push({
+            isbn: item.isbn,
+            title: response.data.TITLE,
+            action: mode === 'inbound' ? 'IN' : 'OUT',
+            qty: item.qty,
+            newStock: response.data.QTY,
+            timestamp: new Date().toLocaleTimeString()
+          });
+        } catch (err) {
+          results.failed++;
+          results.errors.push({
+            isbn: item.isbn,
+            message: err.response?.data?.message || err.message
+          });
+        }
+
+        // Small delay to avoid overwhelming the server
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Add to recent scans
+      if (results.details.length > 0) {
+        setRecentScans(prev => [
+          ...results.details.reverse(),
+          ...prev.slice(0, 20 - results.details.length)
+        ]);
+      }
+
+      setImportResults(results);
+
+      if (results.failed > 0) {
+        setImportError(`${results.failed} item(s) failed. Check details below.`);
+      } else {
+        setSuccess(`Successfully processed ${results.succeeded} item(s) via bulk import!`);
+      }
+    } catch (err) {
+      setImportError('Bulk import failed: ' + err.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Clear import state
+  const clearImport = () => {
+    setShowImport(false);
+    setImportFile(null);
+    setImportPreview([]);
+    setImportError(null);
+    setImporting(false);
+    setImportResults(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="w-full max-w-3xl space-y-6 mx-auto">
@@ -313,7 +526,7 @@ const Scan = ({ user }) => {
             <div className="space-y-4">
               <p className="text-center text-gray-600 text-lg">Select operation mode to begin scanning</p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button
                   onClick={() => setModeAndFocus('inbound')}
                   className="flex flex-col items-center justify-center p-6 bg-green-50 border-2 border-green-200 rounded-xl hover:bg-green-100 hover:border-green-400 transition-all"
@@ -330,6 +543,16 @@ const Scan = ({ user }) => {
                   <Trash2 className="w-12 h-12 text-red-600 mb-3" />
                   <span className="text-xl font-bold text-red-800">Ship Stock (OUT)</span>
                   <span className="text-sm text-red-600 mt-1">Scan books to remove -1 qty</span>
+                </button>
+
+                {/* Import Option */}
+                <button
+                  onClick={() => setShowImport(true)}
+                  className="flex flex-col items-center justify-center p-6 bg-blue-50 border-2 border-blue-200 rounded-xl hover:bg-blue-100 hover:border-blue-400 transition-all"
+                >
+                  <FileText className="w-12 h-12 text-blue-600 mb-3" />
+                  <span className="text-xl font-bold text-blue-800">Bulk Import</span>
+                  <span className="text-sm text-blue-600 mt-1">Upload Excel/CSV with multiple ISBNs</span>
                 </button>
               </div>
 
@@ -408,6 +631,183 @@ const Scan = ({ user }) => {
                     ? 'Point camera at ISBN barcode • Auto-stops after scan'
                     : 'Type or scan with hardware scanner • Auto-focuses after each scan'}
                 </p>
+              </div>
+
+              {/* Bulk Import Section */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Bulk Import
+                  </label>
+                  <button
+                    onClick={downloadTemplate}
+                    className="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                    title="Download Excel template"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download Template</span>
+                  </button>
+                </div>
+
+                {!showImport && !importFile ? (
+                  // Initial state - show upload button
+                  <div className="text-center py-6">
+                    <input
+                      type="file"
+                      id="import-file-input"
+                      accept=".xlsx,.xls,.csv"
+                      onChange={handleImportFileChange}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="import-file-input"
+                      className="flex flex-col items-center justify-center space-y-3 px-6 py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-blue-50 cursor-pointer transition-colors"
+                    >
+                      <Upload className="w-10 h-10 text-gray-400" />
+                      <span className="text-gray-600">Click to upload or drag and drop</span>
+                      <p className="text-xs text-gray-500">
+                        Excel (.xlsx, .xls) or CSV with ISBN column
+                      </p>
+                    </label>
+                  </div>
+                ) : (
+                  // File selected - show preview and actions
+                  <div className="space-y-4">
+                    {importError && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex items-center space-x-2">
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                        <span className="flex-1">{importError}</span>
+                        <button
+                          onClick={() => {
+                            setImportFile(null);
+                            setImportPreview([]);
+                            setImportError(null);
+                            setShowImport(false);
+                          }}
+                          className="flex-shrink-0 text-red-600 hover:underline text-sm"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    )}
+
+                    {importPreview.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-gray-700">
+                            {importPreview.length} ISBN(s) ready to process
+                          </p>
+                          <button
+                            onClick={() => {
+                              setImportFile(null);
+                              setImportPreview([]);
+                              setShowImport(false);
+                            }}
+                            className="text-sm text-gray-500 hover:text-gray-700"
+                          >
+                            Clear
+                          </button>
+                        </div>
+
+                        <div className="overflow-x-auto max-h-48">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50 sticky top-0">
+                              <tr>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ISBN</th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {importPreview.slice(0, 10).map((item, index) => (
+                                <tr key={index} className="hover:bg-gray-50">
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{item.row}</td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{item.isbn}</td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{item.qty}</td>
+                                </tr>
+                              ))}
+                              {importPreview.length > 10 && (
+                                <tr>
+                                  <td className="px-3 py-2 text-center text-gray-500" colSpan="3">
+                                    And {importPreview.length - 10} more...
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <button
+                          onClick={processBulkImport}
+                          disabled={importing}
+                          className={`w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-colors ${
+                            importing
+                              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                              : 'bg-primary text-white hover:bg-primary/90'
+                          }`}
+                        >
+                          {importing ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              <span>Processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-4 h-4" />
+                              <span>Process {mode === 'inbound' ? 'Stock In' : 'Stock Out'}</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+
+                    {importResults && (
+                      <div className="bg-gray-50 rounded-lg p-4 border-t border-gray-200 space-y-3">
+                        <h3 className="font-semibold text-gray-900 flex items-center space-x-2">
+                          <FileText className="w-5 h-5 text-primary" />
+                          Import Results
+                        </h3>
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                          <div className="bg-green-50 p-3 rounded-lg">
+                            <p className="text-2xl font-bold text-green-600">{importResults.succeeded}</p>
+                            <p className="text-xs text-green-700">Succeeded</p>
+                          </div>
+                          <div className="bg-red-50 p-3 rounded-lg">
+                            <p className="text-2xl font-bold text-red-600">{importResults.failed}</p>
+                            <p className="text-xs text-red-700">Failed</p>
+                          </div>
+                          <div className="bg-blue-50 p-3 rounded-lg">
+                            <p className="text-2xl font-bold text-blue-600">{importResults.details.length}</p>
+                            <p className="text-xs text-blue-700">Total</p>
+                          </div>
+                        </div>
+
+                        {importResults.errors.length > 0 && (
+                          <div className="border-t border-gray-200 pt-3">
+                            <h4 className="text-sm font-medium text-red-700 mb-2">Errors:</h4>
+                            <div className="max-h-32 overflow-y-auto space-y-1">
+                              {importResults.errors.slice(0, 5).map((err, index) => (
+                                <div key={index} className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                                  ISBN: {err.isbn} - {err.message}
+                                </div>
+                              ))}
+                              {importResults.errors.length > 5 && (
+                                <p className="text-xs text-gray-500">And {importResults.errors.length - 5} more errors...</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <button
+                          onClick={clearImport}
+                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Scan Input - Manual or Camera */}
