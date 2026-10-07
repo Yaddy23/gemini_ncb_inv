@@ -246,7 +246,7 @@ router.get('/si', async (req, res) => {
 // Create SI (draft)
 router.post('/si', async (req, res) => {
   try {
-    const { siNumber, drRef, date, customerName, customerAddress, poNumber, items } = req.body;
+    const { siNumber, drRef, date, customerName, customerAddress, poNumber, items, discountPercentage } = req.body;
 
     if (!siNumber || !customerName || !items?.length) {
       return res.status(400).json({ message: 'siNumber, customerName, and items are required' });
@@ -262,6 +262,7 @@ router.post('/si', async (req, res) => {
       customerName,
       customerAddress,
       poNumber,
+      discountPercentage: discountPercentage || 0,
       items: items.map(item => ({
         ...item,
         amount: item.qty * item.unitPrice
@@ -294,7 +295,7 @@ router.put('/si/:id', async (req, res) => {
     if (!si) return res.status(404).json({ message: 'Sales Invoice not found' });
     if (si.status !== 'draft') return res.status(400).json({ message: 'Cannot update issued SI' });
 
-    const { siNumber, date, customerName, customerAddress, poNumber, items } = req.body;
+    const { siNumber, date, customerName, customerAddress, poNumber, items, discountPercentage } = req.body;
 
     if (siNumber && siNumber !== si.siNumber) {
       const existing = await SalesInvoice.findOne({ siNumber });
@@ -306,6 +307,7 @@ router.put('/si/:id', async (req, res) => {
     if (customerName) si.customerName = customerName;
     if (customerAddress !== undefined) si.customerAddress = customerAddress;
     if (poNumber !== undefined) si.poNumber = poNumber;
+    if (discountPercentage !== undefined) si.discountPercentage = discountPercentage;
     if (items) {
       si.items = items.map(item => ({
         ...item,

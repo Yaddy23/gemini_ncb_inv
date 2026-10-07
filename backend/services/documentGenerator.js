@@ -51,7 +51,7 @@ function numberToWords(num) {
 
   if (num === 0) return 'Zero Pesos Only';
 
-  const pesos = Math.floor(num);
+  let pesos = Math.floor(num);
   const centavos = Math.round((num - pesos) * 100);
 
   let words = '';
@@ -85,38 +85,352 @@ function formatDate(date) {
 }
 
 async function generateExcel(templateSheetName, data) {
-  if (!TEMPLATE_PATH || !fs.existsSync(TEMPLATE_PATH)) {
-    throw new Error(`Template file not found at: ${TEMPLATE_PATH || 'unknown path'}`);
-  }
-
   const workbook = new ExcelJS.Workbook();
-  try {
-    await workbook.xlsx.readFile(TEMPLATE_PATH);
-  } catch (err) {
-    throw new Error(`Failed to read template file: ${err.message}`);
-  }
 
-  const sheet = workbook.getWorksheet(templateSheetName);
+  // Define styles to match template
+  const headerStyle = {
+    font: { bold: true, size: 10 },
+    alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
+    border: {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' }
+    },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E2F3' } }
+  };
 
-  if (!sheet) {
-    throw new Error(`Template sheet "${templateSheetName}" not found`);
-  }
+  const cellStyle = {
+    font: { size: 9 },
+    alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
+    border: {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' }
+    }
+  };
+
+  const leftAlignStyle = {
+    ...cellStyle,
+    alignment: { horizontal: 'left', vertical: 'middle', wrapText: true }
+  };
+
+  const rightAlignStyle = {
+    ...cellStyle,
+    alignment: { horizontal: 'right', vertical: 'middle' },
+    numFmt: '#,##0.00'
+  };
+
+  const boldRightStyle = {
+    ...rightAlignStyle,
+    font: { bold: true, size: 9 }
+  };
+
+  const titleStyle = {
+    font: { bold: true, size: 14 },
+    alignment: { horizontal: 'center' }
+  };
+
+  const subtitleStyle = {
+    font: { bold: true, size: 10 },
+    alignment: { horizontal: 'left' }
+  };
+
+  const normalStyle = {
+    font: { size: 10 },
+    alignment: { horizontal: 'left' }
+  };
 
   if (templateSheetName === 'DR1') {
-    fillDR1Template(sheet, data);
+    await createDR1Sheet(workbook, data, {
+      headerStyle, cellStyle, leftAlignStyle, rightAlignStyle, boldRightStyle,
+      titleStyle, subtitleStyle, normalStyle
+    });
   } else if (templateSheetName === 'INV1') {
-    fillINV1Template(sheet, data);
+    await createINV1Sheet(workbook, data, {
+      headerStyle, cellStyle, leftAlignStyle, rightAlignStyle, boldRightStyle,
+      titleStyle, subtitleStyle, normalStyle
+    });
+  } else {
+    throw new Error(`Unknown template sheet: ${templateSheetName}`);
   }
 
-  // Also fill the "Pesos Only" sheet (sheet '1') with amount in words
-  const wordsSheet = workbook.getWorksheet('1');
-  if (wordsSheet) {
-    const total = data.totalAmount || data.subtotal || 0;
-    wordsSheet.getCell('A7').value = numberToWords(total);
-  }
+  // Also create the "Pesos Only" sheet (sheet '1') with amount in words
+  const wordsSheet = workbook.addWorksheet('1');
+  const total = data.totalAmount || data.subtotal || 0;
+  wordsSheet.getCell('A7').value = numberToWords(total);
 
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
+}
+
+async function createDR1Sheet(workbook, data, styles) {
+  const sheet = workbook.addWorksheet('DR1');
+
+  // Set column widths to match template
+  sheet.columns = [
+    { width: 10 },  // A: CODE
+    { width: 8 },   // B: NO.
+    { width: 8 },   // C: QTY
+    { width: 8 },   // D: QTY (dup)
+    { width: 18 },  // E: ISBN/BARCODE
+    { width: 45 },  // F: TITLE/DESCRIPTION
+    { width: 14 },  // G: UNIT PRICE
+    { width: 16 }   // H: AMOUNT
+  ];
+
+  // Row 3: Company header (merged)
+  sheet.mergeCells('A3:H3');
+  sheet.getCell('A3').value = 'DELIVERY RECEIPT';
+  sheet.getCell('A3').style = styles.titleStyle;
+
+  // Row 5: Customer name (col E), Date (col H) - drNumber is just a DB reference
+  sheet.getCell('E5').value = data.customerName || '';
+  sheet.getCell('E5').style = styles.subtitleStyle;
+  sheet.getCell('H5').value = formatDate(data.date);
+  sheet.getCell('H5').style = styles.normalStyle;
+
+  // Row 6: Address (col E)
+  sheet.getCell('E6').value = data.customerAddress || '';
+  sheet.getCell('E6').style = styles.normalStyle;
+
+  // Row 7: Date (col H)
+  sheet.getCell('H7').value = formatDate(data.date);
+  sheet.getCell('H7').style = styles.normalStyle;
+
+  // Row 10: Headers
+  const headers = ['CODE', 'NO.', 'QTY.', 'QTY.', 'ISBN / BARCODE', 'TITLE / DESCRIPTION', 'UNIT PRICE', 'AMOUNT'];
+  headers.forEach((header, i) => {
+    const cell = sheet.getCell(10, i + 1);
+    cell.value = header;
+    cell.style = styles.headerStyle;
+  });
+
+  // Line items start at row 12
+  const startRow = 12;
+  const items = data.items || [];
+
+  items.forEach((item, index) => {
+    const row = startRow + index;
+    // Col A: CODE - blank
+    sheet.getCell(row, 1).value = '';
+    sheet.getCell(row, 1).style = styles.cellStyle;
+    // Col B: NO.
+    sheet.getCell(row, 2).value = index + 1;
+    sheet.getCell(row, 2).style = styles.cellStyle;
+    // Col C: QTY
+    sheet.getCell(row, 3).value = item.qty;
+    sheet.getCell(row, 3).style = styles.cellStyle;
+    // Col D: QTY (dup) - blank
+    sheet.getCell(row, 4).value = '';
+    sheet.getCell(row, 4).style = styles.cellStyle;
+    // Col E: ISBN/BARCODE
+    sheet.getCell(row, 5).value = item.isbn || '';
+    sheet.getCell(row, 5).style = styles.cellStyle;
+    // Col F: TITLE/DESCRIPTION
+    sheet.getCell(row, 6).value = formatDescription(item);
+    sheet.getCell(row, 6).style = styles.leftAlignStyle;
+    // Col G: UNIT PRICE
+    sheet.getCell(row, 7).value = item.unitPrice;
+    sheet.getCell(row, 7).style = styles.rightAlignStyle;
+    // Col H: AMOUNT
+    sheet.getCell(row, 8).value = item.amount;
+    sheet.getCell(row, 8).style = styles.rightAlignStyle;
+  });
+
+  // Add empty rows to fill template (up to row 50 for 39 items)
+  const emptyRows = 39 - items.length;
+  for (let i = 0; i < Math.max(0, emptyRows); i++) {
+    const row = startRow + items.length + i;
+    for (let col = 1; col <= 8; col++) {
+      sheet.getCell(row, col).style = styles.cellStyle;
+    }
+  }
+
+  // Totals
+  const totalRow = startRow + items.length + 1;
+  const subtotal = data.subtotal || items.reduce((sum, i) => sum + i.amount, 0);
+
+  // Subtotal row
+  sheet.mergeCells(totalRow, 1, totalRow, 7);
+  sheet.getCell(totalRow, 1).value = 'SUBTOTAL:';
+  sheet.getCell(totalRow, 1).style = { ...styles.boldRightStyle, alignment: { horizontal: 'right', vertical: 'middle' } };
+  sheet.getCell(totalRow, 8).value = subtotal;
+  sheet.getCell(totalRow, 8).style = styles.boldRightStyle;
+
+  // Total row
+  const totalRow2 = totalRow + 1;
+  sheet.mergeCells(totalRow2, 1, totalRow2, 7);
+  sheet.getCell(totalRow2, 1).value = 'TOTAL:';
+  sheet.getCell(totalRow2, 1).style = { ...styles.boldRightStyle, alignment: { horizontal: 'right', vertical: 'middle' } };
+  sheet.getCell(totalRow2, 8).value = subtotal;
+  sheet.getCell(totalRow2, 8).style = styles.boldRightStyle;
+
+  // Amount in words row
+  const wordsRow = totalRow2 + 2;
+  sheet.mergeCells(wordsRow, 1, wordsRow, 8);
+  sheet.getCell(wordsRow, 1).value = `Amount in Words: ${numberToWords(subtotal)}`;
+  sheet.getCell(wordsRow, 1).style = { font: { italic: true, size: 10 }, alignment: { horizontal: 'left' } };
+
+  // Signatures
+  const sigRow = wordsRow + 3;
+  ['Prepared By', 'Received By', 'Date'].forEach((label, i) => {
+    const col = i * 3 + 1;
+    sheet.mergeCells(sigRow, col, sigRow, col + 1);
+    sheet.getCell(sigRow, col).value = label;
+    sheet.getCell(sigRow, col).style = { font: { size: 10 }, alignment: { horizontal: 'center' }, border: { bottom: { style: 'thin' } } };
+  });
+}
+
+async function createINV1Sheet(workbook, data, styles) {
+  const sheet = workbook.addWorksheet('INV1');
+
+  // Set column widths to match template
+  sheet.columns = [
+    { width: 15 },  // A: BATCH/DR
+    { width: 8 },   // B: NO.
+    { width: 18 },  // C: ISBN/BARCODE
+    { width: 8 },   // D: (empty)
+    { width: 40 },  // E: TITLE/DESCRIPTION
+    { width: 10 },  // F: QTY
+    { width: 10 },  // G: QTY (dup)
+    { width: 14 },  // H: UNIT PRICE
+    { width: 16 }   // I: AMOUNT
+  ];
+
+  // Row 1: Title
+  sheet.mergeCells('A1:I1');
+  sheet.getCell('A1').value = 'SALES INVOICE';
+  sheet.getCell('A1').style = styles.titleStyle;
+
+  // Row 3-7: Header info
+  sheet.mergeCells('A3:I3');
+  sheet.getCell('A3').value = data.customerName || '';
+  sheet.getCell('A3').style = styles.subtitleStyle;
+
+  // Row 4: SI Number, Date, PO
+  sheet.getCell('A4').value = 'SI No.:';
+  sheet.getCell('A4').style = { ...styles.normalStyle, font: { bold: true, size: 9 } };
+  sheet.getCell('B4').value = data.siNumber || '';
+  sheet.getCell('B4').style = styles.normalStyle;
+
+  sheet.getCell('D4').value = 'Date:';
+  sheet.getCell('D4').style = { ...styles.normalStyle, font: { bold: true, size: 9 } };
+  sheet.getCell('E4').value = formatDate(data.date);
+  sheet.getCell('E4').style = styles.normalStyle;
+
+  sheet.getCell('G4').value = 'P.O. #:';
+  sheet.getCell('G4').style = { ...styles.normalStyle, font: { bold: true, size: 9 } };
+  sheet.getCell('H4').value = data.poNumber || '';
+  sheet.getCell('H4').style = styles.normalStyle;
+
+  // Row 5: Address
+  sheet.getCell('A5').value = 'Address:';
+  sheet.getCell('A5').style = { ...styles.normalStyle, font: { bold: true, size: 9 } };
+  sheet.mergeCells('B5:I5');
+  sheet.getCell('B5').value = data.customerAddress || '';
+  sheet.getCell('B5').style = styles.normalStyle;
+
+  // Row 7: Headers (row 7 to match template-ish)
+  const headers = ['BATCH / DR', 'NO.', 'ISBN/BARCODE', '', 'TITLE / DESCRIPTION', 'QTY.', 'QTY.', 'UNIT PRICE', 'AMOUNT'];
+  headers.forEach((header, i) => {
+    const cell = sheet.getCell(7, i + 1);
+    cell.value = header;
+    cell.style = styles.headerStyle;
+  });
+
+  // Line items start at row 8
+  const startRow = 8;
+  const items = data.items || [];
+
+  items.forEach((item, index) => {
+    const row = startRow + index;
+    // Col A: BATCH/DR - blank
+    sheet.getCell(row, 1).value = '';
+    sheet.getCell(row, 1).style = styles.cellStyle;
+    // Col B: NO.
+    sheet.getCell(row, 2).value = index + 1;
+    sheet.getCell(row, 2).style = styles.cellStyle;
+    // Col C: ISBN/BARCODE
+    sheet.getCell(row, 3).value = item.isbn || '';
+    sheet.getCell(row, 3).style = styles.cellStyle;
+    // Col D: empty
+    sheet.getCell(row, 4).value = '';
+    sheet.getCell(row, 4).style = styles.cellStyle;
+    // Col E: TITLE/DESCRIPTION
+    sheet.getCell(row, 5).value = formatDescription(item);
+    sheet.getCell(row, 5).style = styles.leftAlignStyle;
+    // Col F: QTY
+    sheet.getCell(row, 6).value = item.qty;
+    sheet.getCell(row, 6).style = styles.cellStyle;
+    // Col G: QTY (dup) - blank
+    sheet.getCell(row, 7).value = '';
+    sheet.getCell(row, 7).style = styles.cellStyle;
+    // Col H: UNIT PRICE
+    sheet.getCell(row, 8).value = item.unitPrice;
+    sheet.getCell(row, 8).style = styles.rightAlignStyle;
+    // Col I: AMOUNT
+    sheet.getCell(row, 9).value = item.amount;
+    sheet.getCell(row, 9).style = styles.rightAlignStyle;
+  });
+
+  // Add empty rows (up to 28 items)
+  const emptyRows = 28 - items.length;
+  for (let i = 0; i < Math.max(0, emptyRows); i++) {
+    const row = startRow + items.length + i;
+    for (let col = 1; col <= 9; col++) {
+      sheet.getCell(row, col).style = styles.cellStyle;
+    }
+  }
+
+  // Totals
+  const totalRow = startRow + items.length + 1;
+  const subtotal = data.subtotal || items.reduce((sum, i) => sum + i.amount, 0);
+  const discountPercentage = data.discountPercentage || 0;
+  const discountAmount = data.discountAmount || (subtotal * discountPercentage) / 100;
+  const total = data.totalAmount || (subtotal - discountAmount);
+
+  // Subtotal row
+  sheet.mergeCells(totalRow, 1, totalRow, 8);
+  sheet.getCell(totalRow, 1).value = 'SUBTOTAL:';
+  sheet.getCell(totalRow, 1).style = { ...styles.boldRightStyle, alignment: { horizontal: 'right', vertical: 'middle' } };
+  sheet.getCell(totalRow, 9).value = subtotal;
+  sheet.getCell(totalRow, 9).style = styles.boldRightStyle;
+
+  // Discount row (if discount > 0)
+  let currentRow = totalRow;
+  if (discountAmount > 0) {
+    currentRow++;
+    sheet.mergeCells(currentRow, 1, currentRow, 8);
+    sheet.getCell(currentRow, 1).value = `LESS: DISCOUNT (${discountPercentage}%):`;
+    sheet.getCell(currentRow, 1).style = { ...styles.boldRightStyle, alignment: { horizontal: 'right', vertical: 'middle' } };
+    sheet.getCell(currentRow, 9).value = discountAmount;
+    sheet.getCell(currentRow, 9).style = styles.boldRightStyle;
+  }
+
+  // Total row
+  const totalRow2 = currentRow + 1;
+  sheet.mergeCells(totalRow2, 1, totalRow2, 8);
+  sheet.getCell(totalRow2, 1).value = 'TOTAL:';
+  sheet.getCell(totalRow2, 1).style = { ...styles.boldRightStyle, alignment: { horizontal: 'right', vertical: 'middle' } };
+  sheet.getCell(totalRow2, 9).value = total;
+  sheet.getCell(totalRow2, 9).style = styles.boldRightStyle;
+
+  // Amount in words
+  const wordsRow = totalRow2 + 2;
+  sheet.mergeCells(wordsRow, 1, wordsRow, 9);
+  sheet.getCell(wordsRow, 1).value = `Amount in Words: ${numberToWords(total)}`;
+  sheet.getCell(wordsRow, 1).style = { font: { italic: true, size: 10 }, alignment: { horizontal: 'left' } };
+
+  // Signatures
+  const sigRow = wordsRow + 3;
+  ['Prepared By', 'Approved By', 'Received By'].forEach((label, i) => {
+    const col = i * 3 + 1;
+    sheet.mergeCells(sigRow, col, sigRow, col + 1);
+    sheet.getCell(sigRow, col).value = label;
+    sheet.getCell(sigRow, col).style = { font: { size: 10 }, alignment: { horizontal: 'center' }, border: { bottom: { style: 'thin' } } };
+  });
 }
 
 // Helper to format description: "Title / Edition / Bind / by Author"
@@ -128,93 +442,6 @@ function formatDescription(item) {
   if (item.bind) parts.push(item.bind);
   if (item.author) parts.push(`by ${item.author}`);
   return parts.join(' / ');
-}
-
-function fillDR1Template(sheet, data) {
-  // Header fields (based on template analysis)
-  // Row 5: Company name (col E=5), Code (col H=8)
-  sheet.getCell('E5').value = data.customerName || '';
-  sheet.getCell('H5').value = data.drNumber || '';
-
-  // Row 6: Address (col E=5)
-  sheet.getCell('E6').value = data.customerAddress || '';
-
-  // Line items start at row 12 (row 10 is header, row 11 empty)
-  const startRow = 12;
-  const items = data.items || [];
-
-  items.forEach((item, index) => {
-    const row = startRow + index;
-    // Col B=2: CODE - leave blank as per user request
-    sheet.getCell(`B${row}`).value = '';
-    // Col C=3: NO.
-    sheet.getCell(`C${row}`).value = index + 1;
-    // Col D=4: QTY
-    sheet.getCell(`D${row}`).value = item.qty;
-    // Col F=6: ISBN/BARCODE
-    sheet.getCell(`F${row}`).value = item.isbn || '';
-    // Col G=7: TITLE/DESCRIPTION - formatted
-    sheet.getCell(`G${row}`).value = formatDescription(item);
-    // Col H=8: UNIT PRICE
-    sheet.getCell(`H${row}`).value = item.unitPrice;
-    // Col I=9: AMOUNT (formula or value)
-    sheet.getCell(`I${row}`).value = item.amount;
-  });
-
-  // Totals - find the row after last item
-  const totalRow = startRow + items.length + 1;
-  const subtotal = data.subtotal || items.reduce((sum, i) => sum + i.amount, 0);
-  sheet.getCell(`I${totalRow}`).value = subtotal;
-  sheet.getCell(`I${totalRow + 1}`).value = subtotal; // Total (no VAT)
-}
-
-function fillINV1Template(sheet, data) {
-  // Header fields (based on template analysis)
-  // Row 14: Customer name (col H=8)
-  sheet.getCell('H14').value = data.customerName || '';
-
-  // Row 15: Company name (col E=5), Code (col H=8), ? (col K=11)
-  sheet.getCell('E15').value = data.customerName || ''; // Or company name if different
-  sheet.getCell('H15').value = data.siNumber || '';
-  sheet.getCell('K15').value = ''; // Unknown field
-
-  // Row 16: Address (col E=5)
-  sheet.getCell('E16').value = data.customerAddress || '';
-
-  // Row 17: Contact (col H=8), Date (col K=11)
-  sheet.getCell('H17').value = ''; // Contact person
-  sheet.getCell('K17').value = formatDate(data.date);
-
-  // Row 19: P.O.# (col E=5)
-  sheet.getCell('E19').value = data.poNumber || '';
-
-  // Line items start at row 23 (row 22 is header)
-  const startRow = 23;
-  const items = data.items || [];
-
-  items.forEach((item, index) => {
-    const row = startRow + index;
-    // Col B=2: BATCH/DR - leave blank as per user request
-    sheet.getCell(`B${row}`).value = '';
-    // Col C=3: NO.
-    sheet.getCell(`C${row}`).value = index + 1;
-    // Col E=5: ISBN/BARCODE
-    sheet.getCell(`E${row}`).value = item.isbn || '';
-    // Col F=6: TITLE/DESCRIPTION - formatted
-    sheet.getCell(`F${row}`).value = formatDescription(item);
-    // Col G=7: QTY
-    sheet.getCell(`G${row}`).value = item.qty;
-    // Col I=9: UNIT PRICE
-    sheet.getCell(`I${row}`).value = item.unitPrice;
-    // Col J=10: AMOUNT
-    sheet.getCell(`J${row}`).value = item.amount;
-  });
-
-  // Totals
-  const totalRow = startRow + items.length + 1;
-  const subtotal = data.subtotal || items.reduce((sum, i) => sum + i.amount, 0);
-  sheet.getCell(`J${totalRow}`).value = subtotal;
-  sheet.getCell(`J${totalRow + 1}`).value = subtotal;
 }
 
 async function generatePDF(templateSheetName, data) {
@@ -265,14 +492,16 @@ async function generatePDF(templateSheetName, data) {
 function generateHTML(templateSheetName, data) {
   const items = data.items || [];
   const subtotal = data.subtotal || items.reduce((sum, i) => sum + i.amount, 0);
-  const total = subtotal; // No VAT
+  const discountPercentage = data.discountPercentage || 0;
+  const discountAmount = data.discountAmount || (subtotal * discountPercentage) / 100;
+  const total = data.totalAmount || (subtotal - discountAmount);
   const amountWords = numberToWords(total);
   const dateStr = formatDate(data.date);
 
   if (templateSheetName === 'DR1') {
     return generateDR1HTML(data, items, subtotal, total, amountWords, dateStr);
   } else {
-    return generateINV1HTML(data, items, subtotal, total, amountWords, dateStr);
+    return generateINV1HTML(data, items, subtotal, discountPercentage, discountAmount, total, amountWords, dateStr);
   }
 }
 
@@ -370,7 +599,7 @@ function generateDR1HTML(data, items, subtotal, total, amountWords, dateStr) {
 </html>`;
 }
 
-function generateINV1HTML(data, items, subtotal, total, amountWords, dateStr) {
+function generateINV1HTML(data, items, subtotal, discountPercentage, discountAmount, total, amountWords, dateStr) {
   const rows = items.map((item, i) => `
     <tr>
       <td></td>
@@ -390,6 +619,14 @@ function generateINV1HTML(data, items, subtotal, total, amountWords, dateStr) {
       <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
     </tr>
   `).join('');
+
+  // Discount row HTML (if discount > 0)
+  const discountRow = discountAmount > 0 ? `
+      <tr style="font-weight: bold;">
+        <td colspan="8" style="text-align: right;">LESS: DISCOUNT (${discountPercentage}%):</td>
+        <td style="text-align: right;">${discountAmount.toFixed(2)}</td>
+      </tr>
+  ` : '';
 
   return `<!DOCTYPE html>
 <html>
@@ -445,6 +682,7 @@ function generateINV1HTML(data, items, subtotal, total, amountWords, dateStr) {
         <td colspan="8" style="text-align: right;">SUBTOTAL:</td>
         <td style="text-align: right;">${subtotal.toFixed(2)}</td>
       </tr>
+      ${discountRow}
       <tr style="font-weight: bold;">
         <td colspan="8" style="text-align: right;">TOTAL:</td>
         <td style="text-align: right;">${total.toFixed(2)}</td>

@@ -17,6 +17,8 @@ const salesInvoiceSchema = new mongoose.Schema({
   poNumber: { type: String, trim: true },
   items: { type: [lineItemSchema], default: [] },
   subtotal: { type: Number, default: 0 },
+  discountPercentage: { type: Number, default: 0, min: 0, max: 100 },
+  discountAmount: { type: Number, default: 0 },
   totalAmount: { type: Number, default: 0 },
   status: { type: String, enum: ['draft', 'issued'], default: 'draft' },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -27,7 +29,9 @@ const salesInvoiceSchema = new mongoose.Schema({
 salesInvoiceSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   this.subtotal = this.items.reduce((sum, item) => sum + item.amount, 0);
-  this.totalAmount = this.subtotal; // No VAT
+  // Calculate discount amount from percentage
+  this.discountAmount = (this.subtotal * (this.discountPercentage || 0)) / 100;
+  this.totalAmount = this.subtotal - this.discountAmount; // No VAT
   next();
 });
 
