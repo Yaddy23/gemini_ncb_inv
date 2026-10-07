@@ -173,6 +173,10 @@ async function fillINV1Sheet(workbook, data) {
   setCellValue(sheet, 'H4', data.poNumber || '');
   setCellValue(sheet, 'B5', data.customerAddress || '');
 
+  // Clear H14/I14 (template has unwanted data in these cells)
+  setCellValue(sheet, 'H14', '');
+  setCellValue(sheet, 'I14', '');
+
   // Fill line items (rows 23-50, 28 rows max)
   // Columns: B=NO., C=ISBN/BARCODE, D=(empty), E=TITLE, F=QTY., G=(dup), H=UNIT PRICE, I=AMOUNT
   const startRow = 23;
