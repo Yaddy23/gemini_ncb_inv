@@ -61,6 +61,15 @@ A full-stack web-based **Book Inventory Management System** designed for booksto
 - **IP tracking** and session management
 - **Admin dashboard** for monitoring
 
+### 9. User Management (Admin Panel)
+- **List users** with pagination, search, and role/status display
+- **Create new users** with username, email, password, and role (Admin/Staff)
+- **Toggle user status** (activate/deactivate)
+- **Change user roles** (Admin ↔ Staff)
+- **Delete users** (with self-protection)
+- **Activity logs** with filtering by action, user, date range
+- **Export logs** to Excel
+
 ---
 
 ## Tech Stack
@@ -169,7 +178,17 @@ gemini_ncb_inv/
 |--------|----------|-------------|--------|
 | POST | `/login` | User login, returns JWT | Public |
 | GET | `/me` | Get current user profile | Authenticated |
-| POST | `/register` | Create new user | Admin |
+| POST | `/register` | Create new user (Admin only) | Admin |
+| PUT | `/change-password` | Change password | Authenticated |
+| PUT | `/profile` | Update profile | Authenticated |
+| POST | `/logout` | Logout user | Authenticated |
+
+### Admin User Management (`/api/auth/users`)
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| GET | `/users` | List users with pagination/search | Admin |
+| PUT | `/users/:id` | Update user role/status | Admin |
+| DELETE | `/users/:id` | Delete user | Admin |
 
 ### Books (`/api/books`)
 | Method | Endpoint | Description | Access |
@@ -374,3 +393,18 @@ MIT License - Free for commercial use, modification, and distribution.
 
 *Generated: 2026-10-07*
 *Version: 1.0.0*
+
+---
+
+## Recent Updates
+
+### v1.1.0 (2026-10-07)
+- **Admin Panel**: Added "Create New User" functionality with modal form
+  - Fields: Username, Email, Password, Role (Admin/Staff)
+  - Uses existing POST `/api/auth/register` endpoint
+- **Excel Export Improvements**:
+  - DR1: H7 cell cleared (date removed), H5 keeps date
+  - INV1: H14/I14 cells cleared (template cleanup)
+  - Year field added to format description: "Title / Edition / Bind / Year / by Author"
+- **Sales Invoice List**: Fixed DR reference to show actual DR number (e.g., DR-20240101-001) instead of "Linked"
+- **Line Items**: Year field now captured from book lookup and included in exports
