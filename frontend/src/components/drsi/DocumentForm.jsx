@@ -86,8 +86,17 @@ const DocumentForm = ({
         ? await fetch(`/api/drsi/dr/${initialData._id}/export?format=${format}`)
         : await fetch(`/api/drsi/si/${initialData._id}/export?format=${format}`);
 
+      console.log('Export response:', response.status, response.statusText);
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        const text = await response.text();
+        console.log('Export error response body:', text);
+        let errorData = { message: text || 'Unknown error' };
+        try {
+          errorData = JSON.parse(text);
+        } catch (e) {
+          // Not JSON, use raw text
+        }
         throw new Error(errorData.message || `Export failed with status ${response.status}`);
       }
 
@@ -100,6 +109,7 @@ const DocumentForm = ({
       link.click();
       link.remove();
     } catch (err) {
+      console.error('Export error:', err);
       alert('Export failed: ' + err.message);
     }
   };
