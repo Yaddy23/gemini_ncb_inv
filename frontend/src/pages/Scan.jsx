@@ -809,6 +809,8 @@ const Scan = ({ user }) => {
                     )}
                   </div>
                 )}
+              </div>
+            )}
 
               {/* Scan Input - Manual or Camera */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">

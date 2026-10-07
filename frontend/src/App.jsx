@@ -88,7 +88,7 @@ function App() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h1 className="ml-4 font-semibold text-gray-900">BookInventory</h1>
+            <h1 className="ml-4 font-semibold text-gray-900">Book Inventory</h1>
           </header>
         )}
 
