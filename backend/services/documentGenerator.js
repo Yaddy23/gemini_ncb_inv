@@ -2,7 +2,7 @@ const ExcelJS = require('exceljs');
 const path = require('path');
 const fs = require('fs');
 
-const TEMPLATE_PATH = path.join(__dirname, '..', 'templates', 'DR_SI_TEMPLATE.xlsx');
+const TEMPLATE_PATH = path.join(__dirname, '..', 'DR_SI_TEMPLATE.xlsx');
 
 // Helper: Convert number to Philippine peso words
 function numberToWords(num) {
