@@ -2,7 +2,27 @@ const ExcelJS = require('exceljs');
 const path = require('path');
 const fs = require('fs');
 
-const TEMPLATE_PATH = path.join(__dirname, '..', 'DR_SI_TEMPLATE.xlsx');
+// Try multiple possible paths for the template file (handles different Render working directories)
+const possiblePaths = [
+  path.join(__dirname, '..', 'DR_SI_TEMPLATE.xlsx'),        // backend/DR_SI_TEMPLATE.xlsx (standard)
+  path.join(__dirname, '..', '..', 'backend', 'DR_SI_TEMPLATE.xlsx'), // if running from repo root
+  path.join(process.cwd(), 'backend', 'DR_SI_TEMPLATE.xlsx'), // if cwd is repo root
+  path.join(process.cwd(), 'DR_SI_TEMPLATE.xlsx'), // if cwd is backend
+];
+
+let TEMPLATE_PATH = null;
+for (const p of possiblePaths) {
+  if (fs.existsSync(p)) {
+    TEMPLATE_PATH = p;
+    console.log(`[documentGenerator] Found template at: ${TEMPLATE_PATH}`);
+    break;
+  }
+}
+
+if (!TEMPLATE_PATH) {
+  console.error('[documentGenerator] Template not found. Tried paths:', possiblePaths);
+  TEMPLATE_PATH = possiblePaths[0]; // fallback to first path, will error later with clear message
+}
 
 // Helper: Convert number to Philippine peso words
 function numberToWords(num) {
@@ -65,8 +85,17 @@ function formatDate(date) {
 }
 
 async function generateExcel(templateSheetName, data) {
+  if (!TEMPLATE_PATH || !fs.existsSync(TEMPLATE_PATH)) {
+    throw new Error(`Template file not found at: ${TEMPLATE_PATH || 'unknown path'}`);
+  }
+
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(TEMPLATE_PATH);
+  try {
+    await workbook.xlsx.readFile(TEMPLATE_PATH);
+  } catch (err) {
+    throw new Error(`Failed to read template file: ${err.message}`);
+  }
+
   const sheet = workbook.getWorksheet(templateSheetName);
 
   if (!sheet) {
@@ -200,9 +229,21 @@ async function generatePDF(templateSheetName, data) {
     throw new Error('PDF generation requires puppeteer. Install with: npm install puppeteer');
   }
 
+  // Use puppeteer launch args compatible with Render/serverless environments
   const browser = await puppeteer.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process',
+      '--disable-gpu'
+    ]
+  }).catch(err => {
+    throw new Error(`Failed to launch Chrome for PDF: ${err.message}. On Render, ensure Chrome is installed or use puppeteer-core with @sparticuz/chromium.`);
   });
 
   try {
