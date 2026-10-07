@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { NavLink } from 'react-router-dom';
+import { Plus, X } from 'lucide-react';
 
 const AdminPanel = ({ user }) => {
   const [users, setUsers] = useState([]);
@@ -18,6 +18,15 @@ const AdminPanel = ({ user }) => {
   const [usersPerPage, setUsersPerPage] = useState(10);
   const [logsPerPage, setLogsPerPage] = useState(50);
   const [activeTab, setActiveTab] = useState('users');
+
+  // Create user modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newUser, setNewUser] = useState({
+    username: '',
+    email: '',
+    password: '',
+    role: 'Staff'
+  });
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -138,6 +147,29 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Handle create new user
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    if (!newUser.username || !newUser.email || !newUser.password) {
+      setError('All fields are required');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await api.post('/auth/register', newUser);
+      setSuccess('User created successfully');
+      setShowCreateModal(false);
+      setNewUser({ username: '', email: '', password: '', role: 'Staff' });
+      fetchUsers(currentPage, filters.search);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create user');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle filters change
   const handleFiltersChange = (e) => {
     const { name, value } = e.target;
@@ -211,7 +243,8 @@ const AdminPanel = ({ user }) => {
   }
 
   return (
-    <div className="p-6">
+    <>
+      <div className="p-6">
       <div className="mb-4">
         <h1 className="text-2xl font-bold">Admin Panel</h1>
         <p className="text-gray-600">Manage users and view activity logs</p>
@@ -238,7 +271,7 @@ const AdminPanel = ({ user }) => {
       {/* User Management Tab */}
       {activeTab === 'users' && (
         <div>
-          <div className="mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <input
               type="text"
               placeholder="Search users..."
@@ -248,8 +281,15 @@ const AdminPanel = ({ user }) => {
                 setCurrentPage(1); // Reset to first page
                 fetchUsers(1, e.target.value);
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add New User</span>
+            </button>
           </div>
 
           <div className="overflow-x-auto">
@@ -486,6 +526,82 @@ const AdminPanel = ({ user }) => {
         </div>
       )}
     </div>
+
+    {/* Create User Modal */}
+    {showCreateModal && (
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50" onClick={() => setShowCreateModal(false)} />
+        <div className="relative mx-auto mt-10 w-full max-w-md bg-white rounded-xl shadow-xl">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900">Create New User</h2>
+            <button onClick={() => setShowCreateModal(false)} className="p-2 text-gray-500 hover:text-gray-700">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <form onSubmit={handleCreateUser} className="p-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Username <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={newUser.username}
+                onChange={(e) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Username"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+              <input
+                type="email"
+                value={newUser.email}
+                onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="user@example.com"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password <span className="text-red-500">*</span></label>
+              <input
+                type="password"
+                value={newUser.password}
+                onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Min 6 characters"
+                minLength="6"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+              <select
+                value={newUser.role}
+                onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="Staff">Staff</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </div>
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+              >
+                {loading ? 'Creating...' : 'Create User'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 
