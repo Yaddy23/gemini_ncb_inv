@@ -4,12 +4,14 @@ import { Menu, LogIn, LogOut, User, Plus, Barcode, ShoppingBag, Settings, Loader
 
 const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose }) => {
   const location = useLocation();
+  const prevLocationRef = React.useRef(location);
 
-  // Close mobile menu on navigation
+  // Close mobile menu on navigation (route change)
   React.useEffect(() => {
-    if (isMobile && isOpen) {
+    if (isMobile && isOpen && location !== prevLocationRef.current) {
       onClose();
     }
+    prevLocationRef.current = location;
   }, [location, isMobile, isOpen, onClose]);
 
   // Don't render if mobile and not open
