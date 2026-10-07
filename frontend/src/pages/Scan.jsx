@@ -17,7 +17,7 @@ const Scan = ({ user }) => {
   const [cameraError, setCameraError] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [lastScannedIsbn, setLastScannedIsbn] = useState(null); // Cooldown tracker (per-ISBN)
-  const [scanCooldown, setScanCooldown] = useState(false); // Global 2s cooldown after ANY scan
+  const [scanCooldown, setScanCooldown] = useState(false); // Global 1s cooldown after ANY scan
   const cameraContainerRef = useRef(null);
   const isbnInputRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -194,7 +194,7 @@ const Scan = ({ user }) => {
         },
         (decodedText) => {
           if (decodedText && decodedText.length >= 8) {
-            // Global 2s cooldown - prevent ANY scan during cooldown
+            // Global 1s cooldown - prevent ANY scan during cooldown
             if (scanCooldown) return;
 
             // Prevent re-scanning same ISBN within 2 seconds (per-ISBN cooldown)
@@ -202,11 +202,11 @@ const Scan = ({ user }) => {
 
             setLastScannedIsbn(decodedText);
             // Clear per-ISBN cooldown after 2 seconds
-            setTimeout(() => setLastScannedIsbn(null), 2000);
+            setTimeout(() => setLastScannedIsbn(null), 1000);
 
             // Set global scan cooldown for 2 seconds
             setScanCooldown(true);
-            setTimeout(() => setScanCooldown(false), 2000);
+            setTimeout(() => setScanCooldown(false), 1000);
 
             setIsbn(decodedText);
             playBeep();
@@ -476,7 +476,7 @@ const Scan = ({ user }) => {
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-gray-500">
                         <span className="flex items-center space-x-1 text-green-600">
                           <CheckCircle className="w-4 h-4" />
-                          <span>{scanCooldown ? 'Cooldown (2s)...' : 'Camera active - Point at ISBN barcode'}</span>
+                          <span>{scanCooldown ? 'Cooldown (1s)...' : 'Camera active - Point at ISBN barcode'}</span>
                         </span>
                         {scanCooldown && (
                           <span className="flex items-center space-x-1 text-yellow-600">
