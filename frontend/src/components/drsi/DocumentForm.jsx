@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader, FileText, Download, Printer, X, AlertTriangle } from 'lucide-react';
 import LineItemsTable from './LineItemsTable';
 import { formatDate, formatDateInput } from '../../utils/numberToWords';
+import api from '../../api/axios';
 
 const DocumentForm = ({
   documentType, // 'DR' or 'SI'
@@ -85,35 +86,24 @@ const DocumentForm = ({
   const handleExport = async (format) => {
     if (!initialData?._id) return alert('Save document first before exporting');
     try {
-      const response = isDR
-        ? await fetch(`/api/drsi/dr/${initialData._id}/export?format=${format}`)
-        : await fetch(`/api/drsi/si/${initialData._id}/export?format=${format}`);
+      const url = isDR
+        ? `/drsi/dr/${initialData._id}/export?format=${format}`
+        : `/drsi/si/${initialData._id}/export?format=${format}`;
 
-      console.log('Export response:', response.status, response.statusText);
+      const response = await api.get(url, { responseType: 'blob' });
 
-      if (!response.ok) {
-        const text = await response.text();
-        console.log('Export error response body:', text);
-        let errorData = { message: text || 'Unknown error' };
-        try {
-          errorData = JSON.parse(text);
-        } catch (e) {
-          // Not JSON, use raw text
-        }
-        throw new Error(errorData.message || `Export failed with status ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const blob = response.data;
+      const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = downloadUrl;
       link.download = `${formData.documentNumber}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (err) {
       console.error('Export error:', err);
-      alert('Export failed: ' + err.message);
+      const message = err.response?.data?.message || err.message || 'Export failed';
+      alert('Export failed: ' + message);
     }
   };
 
