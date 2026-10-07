@@ -526,7 +526,7 @@ const Scan = ({ user }) => {
             <div className="space-y-4">
               <p className="text-center text-gray-600 text-lg">Select operation mode to begin scanning</p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   onClick={() => setModeAndFocus('inbound')}
                   className="flex flex-col items-center justify-center p-6 bg-green-50 border-2 border-green-200 rounded-xl hover:bg-green-100 hover:border-green-400 transition-all"
@@ -543,16 +543,6 @@ const Scan = ({ user }) => {
                   <Trash2 className="w-12 h-12 text-red-600 mb-3" />
                   <span className="text-xl font-bold text-red-800">Ship Stock (OUT)</span>
                   <span className="text-sm text-red-600 mt-1">Scan books to remove -1 qty</span>
-                </button>
-
-                {/* Import Option */}
-                <button
-                  onClick={() => setShowImport(true)}
-                  className="flex flex-col items-center justify-center p-6 bg-blue-50 border-2 border-blue-200 rounded-xl hover:bg-blue-100 hover:border-blue-400 transition-all"
-                >
-                  <FileText className="w-12 h-12 text-blue-600 mb-3" />
-                  <span className="text-xl font-bold text-blue-800">Bulk Import</span>
-                  <span className="text-sm text-blue-600 mt-1">Upload Excel/CSV with multiple ISBNs</span>
                 </button>
               </div>
 
@@ -588,13 +578,23 @@ const Scan = ({ user }) => {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={clearMode}
-                  className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <RotateCcw className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm font-medium text-gray-700">Change Mode</span>
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setShowImport(true)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                    title="Bulk import from Excel/CSV"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span className="text-sm font-medium">Import</span>
+                  </button>
+                  <button
+                    onClick={clearMode}
+                    className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <RotateCcw className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">Change Mode</span>
+                  </button>
+                </div>
               </div>
 
               {/* Scan Method Selector */}
@@ -634,22 +634,23 @@ const Scan = ({ user }) => {
               </div>
 
               {/* Bulk Import Section */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Bulk Import
-                  </label>
-                  <button
-                    onClick={downloadTemplate}
-                    className="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
-                    title="Download Excel template"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Download Template</span>
-                  </button>
-                </div>
+              {showImport && (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Bulk Import
+                    </label>
+                    <button
+                      onClick={downloadTemplate}
+                      className="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                      title="Download Excel template"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Download Template</span>
+                    </button>
+                  </div>
 
-                {!showImport && !importFile ? (
+                  {!importFile ? (
                   // Initial state - show upload button
                   <div className="text-center py-6">
                     <input
@@ -808,7 +809,6 @@ const Scan = ({ user }) => {
                     )}
                   </div>
                 )}
-              </div>
 
               {/* Scan Input - Manual or Camera */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
