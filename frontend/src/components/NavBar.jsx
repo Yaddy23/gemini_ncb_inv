@@ -91,53 +91,51 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
                 {isMobile && <span className="ml-3">Book Catalog</span>}
               </Link>
             </li>
+            <li>
+              <Link
+                to="/import-export"
+                className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
+                onClick={isMobile ? onClose : undefined}
+              >
+                <Plus className="w-5 h-5 flex-shrink-0" />
+                {!isMobile && !collapsed && <span className="transition-opacity duration-200">Import/Export</span>}
+                {isMobile && <span className="ml-3">Import/Export</span>}
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/delivery-receipts"
+                className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
+                onClick={isMobile ? onClose : undefined}
+              >
+                <Receipt className="w-5 h-5 flex-shrink-0" />
+                {!isMobile && !collapsed && <span className="transition-opacity duration-200">Delivery Receipts</span>}
+                {isMobile && <span className="ml-3">Delivery Receipts</span>}
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/sales-invoices"
+                className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
+                onClick={isMobile ? onClose : undefined}
+              >
+                <FileText className="w-5 h-5 flex-shrink-0" />
+                {!isMobile && !collapsed && <span className="transition-opacity duration-200">Sales Invoices</span>}
+                {isMobile && <span className="ml-3">Sales Invoices</span>}
+              </Link>
+            </li>
             {user.role === 'Admin' && (
-              <>
-                <li>
-                  <Link
-                    to="/import-export"
-                    className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
-                    onClick={isMobile ? onClose : undefined}
-                  >
-                    <Plus className="w-5 h-5 flex-shrink-0" />
-                    {!isMobile && !collapsed && <span className="transition-opacity duration-200">Import/Export</span>}
-                    {isMobile && <span className="ml-3">Import/Export</span>}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/delivery-receipts"
-                    className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
-                    onClick={isMobile ? onClose : undefined}
-                  >
-                    <Receipt className="w-5 h-5 flex-shrink-0" />
-                    {!isMobile && !collapsed && <span className="transition-opacity duration-200">Delivery Receipts</span>}
-                    {isMobile && <span className="ml-3">Delivery Receipts</span>}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/sales-invoices"
-                    className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
-                    onClick={isMobile ? onClose : undefined}
-                  >
-                    <FileText className="w-5 h-5 flex-shrink-0" />
-                    {!isMobile && !collapsed && <span className="transition-opacity duration-200">Sales Invoices</span>}
-                    {isMobile && <span className="ml-3">Sales Invoices</span>}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/admin"
-                    className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
-                    onClick={isMobile ? onClose : undefined}
-                  >
-                    <Settings className="w-5 h-5 flex-shrink-0" />
-                    {!isMobile && !collapsed && <span className="transition-opacity duration-200">Admin Panel</span>}
-                    {isMobile && <span className="ml-3">Admin Panel</span>}
-                  </Link>
-                </li>
-              </>
+              <li>
+                <Link
+                  to="/admin"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
+                  onClick={isMobile ? onClose : undefined}
+                >
+                  <Settings className="w-5 h-5 flex-shrink-0" />
+                  {!isMobile && !collapsed && <span className="transition-opacity duration-200">Admin Panel</span>}
+                  {isMobile && <span className="ml-3">Admin Panel</span>}
+                </Link>
+              </li>
             )}
             <li>
               <Link

@@ -159,7 +159,7 @@ function App() {
             <Route
               path="/import-export"
               element={
-                <PrivateRoute isAuthenticated={!!user && user.role === 'Admin'}>
+                <PrivateRoute isAuthenticated={!!user}>
                   <ImportExport user={user} />
                 </PrivateRoute>
               }
@@ -183,7 +183,7 @@ function App() {
             <Route
               path="/delivery-receipts"
               element={
-                <PrivateRoute isAuthenticated={!!user && user.role === 'Admin'}>
+                <PrivateRoute isAuthenticated={!!user}>
                   <DeliveryReceipts user={user} />
                 </PrivateRoute>
               }
@@ -191,7 +191,7 @@ function App() {
             <Route
               path="/sales-invoices"
               element={
-                <PrivateRoute isAuthenticated={!!user && user.role === 'Admin'}>
+                <PrivateRoute isAuthenticated={!!user}>
                   <SalesInvoices user={user} />
                 </PrivateRoute>
               }
