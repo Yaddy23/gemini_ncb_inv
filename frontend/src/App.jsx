@@ -159,7 +159,7 @@ function App() {
             <Route
               path="/import-export"
               element={
-                <PrivateRoute isAuthenticated={!!user}>
+                <PrivateRoute isAuthenticated={!!user && user.role === 'Admin'}>
                   <ImportExport user={user} />
                 </PrivateRoute>
               }
