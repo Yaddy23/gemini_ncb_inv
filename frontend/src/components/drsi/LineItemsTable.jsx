@@ -8,12 +8,13 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
   const [lookupErrors, setLookupErrors] = useState({});
   const isbnInputRefs = useRef({});
 
-  // Helper to format description: "Title / Edition / Bind / by Author"
+  // Helper to format description: "Title / Edition / Bind / Year / by Author"
   const formatDescription = (book) => {
     const parts = [];
     if (book.TITLE) parts.push(book.TITLE);
     if (book.EDITION) parts.push(book.EDITION);
     if (book.BIND) parts.push(book.BIND);
+    if (book.YEAR) parts.push(book.YEAR);
     if (book.AUTHOR) parts.push(`by ${book.AUTHOR}`);
     return parts.join(' / ');
   };
@@ -40,6 +41,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
             rawTitle: book.TITLE,
             edition: book.EDITION,
             bind: book.BIND,
+            year: book.YEAR,
             author: book.AUTHOR,
             unitPrice: book.PRICE || 0,
             amount: (book.PRICE || 0) * (newItems[index].qty || 1)
@@ -61,6 +63,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
         rawTitle: '',
         edition: '',
         bind: '',
+        year: '',
         author: '',
         unitPrice: 0,
         amount: 0
@@ -100,6 +103,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
       rawTitle: '',
       edition: '',
       bind: '',
+      year: '',
       author: '',
       qty: 1,
       unitPrice: 0,
