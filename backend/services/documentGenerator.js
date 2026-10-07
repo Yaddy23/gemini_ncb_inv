@@ -137,6 +137,7 @@ async function fillDR1Sheet(workbook, data) {
   setCellValue(sheet, 'E5', data.customerName || '');
   setCellValue(sheet, 'H5', formatDate(data.date));
   setCellValue(sheet, 'E6', data.customerAddress || '');
+  setCellValue(sheet, 'H7', formatDate(data.date));
 
   // Fill line items (rows 12-50, 39 rows max)
   // Columns: B=NO., C=QTY., D=cps./cpy., E=ISBN, F=TITLE, G=UNIT PRICE, H=AMOUNT
@@ -208,13 +209,14 @@ async function fillPesosSheet(workbook, totalAmount) {
   }
 }
 
-// Helper to format description: "Title / Edition / Bind / by Author"
+// Helper to format description: "Title / Edition / Bind / Year / by Author"
 function formatDescription(item) {
   const parts = [];
   if (item.rawTitle) parts.push(item.rawTitle);
   else if (item.title) parts.push(item.title); // fallback to title if rawTitle not present
   if (item.edition) parts.push(item.edition);
   if (item.bind) parts.push(item.bind);
+  if (item.year) parts.push(item.year);
   if (item.author) parts.push(`by ${item.author}`);
   return parts.join(' / ');
 }
