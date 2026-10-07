@@ -105,8 +105,8 @@ function fillDR1Template(sheet, data) {
 
   items.forEach((item, index) => {
     const row = startRow + index;
-    // Col B=2: CODE (use ISBN prefix or auto)
-    sheet.getCell(`B${row}`).value = item.isbn?.substring(0, 8) || '';
+    // Col B=2: CODE - leave blank as per user request
+    sheet.getCell(`B${row}`).value = '';
     // Col C=3: NO.
     sheet.getCell(`C${row}`).value = index + 1;
     // Col D=4: QTY
@@ -154,8 +154,8 @@ function fillINV1Template(sheet, data) {
 
   items.forEach((item, index) => {
     const row = startRow + index;
-    // Col B=2: BATCH/DR
-    sheet.getCell(`B${row}`).value = data.drRef ? `DR-${data.drRef}` : '';
+    // Col B=2: BATCH/DR - leave blank as per user request
+    sheet.getCell(`B${row}`).value = '';
     // Col C=3: NO.
     sheet.getCell(`C${row}`).value = index + 1;
     // Col E=5: ISBN/BARCODE
@@ -227,7 +227,7 @@ function generateHTML(templateSheetName, data) {
 function generateDR1HTML(data, items, subtotal, total, amountWords, dateStr) {
   const rows = items.map((item, i) => `
     <tr>
-      <td>${item.isbn?.substring(0, 8) || ''}</td>
+      <td></td>
       <td style="text-align: center;">${i + 1}</td>
       <td style="text-align: center;">${item.qty}</td>
       <td></td>
@@ -321,7 +321,7 @@ function generateDR1HTML(data, items, subtotal, total, amountWords, dateStr) {
 function generateINV1HTML(data, items, subtotal, total, amountWords, dateStr) {
   const rows = items.map((item, i) => `
     <tr>
-      <td>${data.drRef ? `DR-${data.drRef}` : ''}</td>
+      <td></td>
       <td style="text-align: center;">${i + 1}</td>
       <td>${item.isbn || ''}</td>
       <td></td>
