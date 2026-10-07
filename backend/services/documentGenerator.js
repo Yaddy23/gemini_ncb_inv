@@ -90,6 +90,17 @@ async function generateExcel(templateSheetName, data) {
   return Buffer.from(buffer);
 }
 
+// Helper to format description: "Title / Edition / Bind / by Author"
+function formatDescription(item) {
+  const parts = [];
+  if (item.rawTitle) parts.push(item.rawTitle);
+  else if (item.title) parts.push(item.title); // fallback to title if rawTitle not present
+  if (item.edition) parts.push(item.edition);
+  if (item.bind) parts.push(item.bind);
+  if (item.author) parts.push(`by ${item.author}`);
+  return parts.join(' / ');
+}
+
 function fillDR1Template(sheet, data) {
   // Header fields (based on template analysis)
   // Row 5: Company name (col E=5), Code (col H=8)
@@ -113,8 +124,8 @@ function fillDR1Template(sheet, data) {
     sheet.getCell(`D${row}`).value = item.qty;
     // Col F=6: ISBN/BARCODE
     sheet.getCell(`F${row}`).value = item.isbn || '';
-    // Col G=7: TITLE/DESCRIPTION
-    sheet.getCell(`G${row}`).value = item.title || '';
+    // Col G=7: TITLE/DESCRIPTION - formatted
+    sheet.getCell(`G${row}`).value = formatDescription(item);
     // Col H=8: UNIT PRICE
     sheet.getCell(`H${row}`).value = item.unitPrice;
     // Col I=9: AMOUNT (formula or value)
@@ -160,8 +171,8 @@ function fillINV1Template(sheet, data) {
     sheet.getCell(`C${row}`).value = index + 1;
     // Col E=5: ISBN/BARCODE
     sheet.getCell(`E${row}`).value = item.isbn || '';
-    // Col F=6: TITLE/DESCRIPTION
-    sheet.getCell(`F${row}`).value = item.title || '';
+    // Col F=6: TITLE/DESCRIPTION - formatted
+    sheet.getCell(`F${row}`).value = formatDescription(item);
     // Col G=7: QTY
     sheet.getCell(`G${row}`).value = item.qty;
     // Col I=9: UNIT PRICE
@@ -232,7 +243,7 @@ function generateDR1HTML(data, items, subtotal, total, amountWords, dateStr) {
       <td style="text-align: center;">${item.qty}</td>
       <td></td>
       <td>${item.isbn || ''}</td>
-      <td>${item.title || ''}</td>
+      <td>${formatDescription(item)}</td>
       <td style="text-align: right;">${Number(item.unitPrice).toFixed(2)}</td>
       <td style="text-align: right;">${Number(item.amount).toFixed(2)}</td>
     </tr>
@@ -325,7 +336,7 @@ function generateINV1HTML(data, items, subtotal, total, amountWords, dateStr) {
       <td style="text-align: center;">${i + 1}</td>
       <td>${item.isbn || ''}</td>
       <td></td>
-      <td>${item.title || ''}</td>
+      <td>${formatDescription(item)}</td>
       <td style="text-align: center;">${item.qty}</td>
       <td></td>
       <td style="text-align: right;">${Number(item.unitPrice).toFixed(2)}</td>

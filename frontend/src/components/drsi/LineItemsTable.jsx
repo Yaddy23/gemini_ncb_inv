@@ -8,6 +8,16 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
   const [lookupErrors, setLookupErrors] = useState({});
   const isbnInputRefs = useRef({});
 
+  // Helper to format description: "Title / Edition / Bind / by Author"
+  const formatDescription = (book) => {
+    const parts = [];
+    if (book.TITLE) parts.push(book.TITLE);
+    if (book.EDITION) parts.push(book.EDITION);
+    if (book.BIND) parts.push(book.BIND);
+    if (book.AUTHOR) parts.push(`by ${book.AUTHOR}`);
+    return parts.join(' / ');
+  };
+
   const handleISBNChange = async (index, isbn) => {
     const cleanISBN = isbn.trim();
     const newItems = [...items];
@@ -22,9 +32,15 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
         const book = response.data;
 
         if (book && book.ISBN) {
+          const description = formatDescription(book);
           newItems[index] = {
             ...newItems[index],
-            title: book.TITLE,
+            title: description, // Store formatted description
+            // Keep raw fields for export
+            rawTitle: book.TITLE,
+            edition: book.EDITION,
+            bind: book.BIND,
+            author: book.AUTHOR,
             unitPrice: book.PRICE || 0,
             amount: (book.PRICE || 0) * (newItems[index].qty || 1)
           };
@@ -42,6 +58,10 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
       newItems[index] = {
         ...newItems[index],
         title: '',
+        rawTitle: '',
+        edition: '',
+        bind: '',
+        author: '',
         unitPrice: 0,
         amount: 0
       };
@@ -74,7 +94,17 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
 
   const addRow = () => {
     if (items.length >= maxRows) return;
-    const newItems = [...items, { isbn: '', title: '', qty: 1, unitPrice: 0, amount: 0 }];
+    const newItems = [...items, {
+      isbn: '',
+      title: '',
+      rawTitle: '',
+      edition: '',
+      bind: '',
+      author: '',
+      qty: 1,
+      unitPrice: 0,
+      amount: 0
+    }];
     onItemsChange(newItems);
   };
 
