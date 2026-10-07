@@ -11,6 +11,8 @@ import Scan from './pages/Scan';
 import ImportExport from './pages/ImportExport';
 import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
+import DeliveryReceipts from './pages/DeliveryReceipts';
+import SalesInvoices from './pages/SalesInvoices';
 import NavBar from './components/NavBar';
 import PrivateRoute from './components/PrivateRoute';
 
@@ -175,6 +177,22 @@ function App() {
               element={
                 <PrivateRoute isAuthenticated={!!user && user.role === 'Admin'}>
                   <AdminPanel user={user} />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/delivery-receipts"
+              element={
+                <PrivateRoute isAuthenticated={!!user && user.role === 'Admin'}>
+                  <DeliveryReceipts user={user} />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/sales-invoices"
+              element={
+                <PrivateRoute isAuthenticated={!!user && user.role === 'Admin'}>
+                  <SalesInvoices user={user} />
                 </PrivateRoute>
               }
             />
