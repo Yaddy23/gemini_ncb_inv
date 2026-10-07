@@ -137,7 +137,6 @@ async function fillDR1Sheet(workbook, data) {
   setCellValue(sheet, 'E5', data.customerName || '');
   setCellValue(sheet, 'H5', formatDate(data.date));
   setCellValue(sheet, 'E6', data.customerAddress || '');
-  setCellValue(sheet, 'H7', formatDate(data.date));
 
   // Fill line items (rows 12-50, 39 rows max)
   // Columns: B=NO., C=QTY., D=cps./cpy., E=ISBN, F=TITLE, G=UNIT PRICE, H=AMOUNT
