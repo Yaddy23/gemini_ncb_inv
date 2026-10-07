@@ -132,7 +132,6 @@ async function fillDR1Sheet(workbook, data) {
   if (!sheet) throw new Error('DR1 sheet not found in template');
 
   const items = data.items || [];
-  const subtotal = data.subtotal || items.reduce((sum, i) => sum + i.amount, 0);
 
   // Fill header info
   setCellValue(sheet, 'E5', data.customerName || '');
@@ -141,6 +140,7 @@ async function fillDR1Sheet(workbook, data) {
   setCellValue(sheet, 'H7', formatDate(data.date));
 
   // Fill line items (rows 12-50, 39 rows max)
+  // Columns: B=NO., C=QTY., D=cps./cpy., E=ISBN, F=TITLE, G=UNIT PRICE, H=AMOUNT
   const startRow = 12;
   items.forEach((item, index) => {
     const row = startRow + index;
@@ -148,46 +148,15 @@ async function fillDR1Sheet(workbook, data) {
 
     setCellValue(sheet, `B${row}`, index + 1);           // B: NO.
     setCellValue(sheet, `C${row}`, item.qty);            // C: QTY.
-    setCellValue(sheet, `D${row}`, '');                  // D: QTY. (dup)
+    // D: "cps." if qty > 1 else "cpy."
+    setCellValue(sheet, `D${row}`, item.qty > 1 ? 'cps.' : 'cpy.');
     setCellValue(sheet, `E${row}`, item.isbn || '');     // E: ISBN / BARCODE
     setCellValue(sheet, `F${row}`, formatDescription(item)); // F: TITLE / DESCRIPTION
     setCellValue(sheet, `G${row}`, item.unitPrice);      // G: UNIT PRICE
     setCellValue(sheet, `H${row}`, item.amount);         // H: AMOUNT
   });
 
-  // Add totals after the last item row
-  const totalRow = startRow + items.length;
-  if (totalRow <= 50) {
-    // SUBTOTAL row
-    sheet.mergeCells(totalRow, 1, totalRow, 7);
-    setCellValue(sheet, `A${totalRow}`, 'SUBTOTAL:');
-    setCellValue(sheet, `H${totalRow}`, subtotal);
-
-    // TOTAL row
-    const totalRow2 = totalRow + 1;
-    if (totalRow2 <= 50) {
-      sheet.mergeCells(totalRow2, 1, totalRow2, 7);
-      setCellValue(sheet, `A${totalRow2}`, 'TOTAL:');
-      setCellValue(sheet, `H${totalRow2}`, subtotal);
-
-      // Amount in Words row
-      const wordsRow = totalRow2 + 2;
-      if (wordsRow <= 50) {
-        sheet.mergeCells(wordsRow, 1, wordsRow, 8);
-        setCellValue(sheet, `A${wordsRow}`, `Amount in Words: ${numberToWords(subtotal)}`);
-      }
-    }
-  }
-
-  // Signatures (after words row)
-  const sigRow = totalRow + 5;
-  if (sigRow <= 50) {
-    ['Prepared By', 'Received By', 'Date'].forEach((label, i) => {
-      const col = i * 3 + 1;
-      sheet.mergeCells(sigRow, col, sigRow, col + 1);
-      setCellValue(sheet, sigRow, col, label);
-    });
-  }
+  // Template handles totals at row 662 automatically - no need to add totals rows
 }
 
 // Load template and fill INV1 sheet
@@ -196,10 +165,6 @@ async function fillINV1Sheet(workbook, data) {
   if (!sheet) throw new Error('INV1 sheet not found in template');
 
   const items = data.items || [];
-  const subtotal = data.subtotal || items.reduce((sum, i) => sum + i.amount, 0);
-  const discountPercentage = data.discountPercentage || 0;
-  const discountAmount = data.discountAmount || (subtotal * discountPercentage) / 100;
-  const total = data.totalAmount || (subtotal - discountAmount);
 
   // Fill header info (directly, not relying on DR1 cross-sheet formulas)
   setCellValue(sheet, 'A1', 'SALES INVOICE');
@@ -210,6 +175,7 @@ async function fillINV1Sheet(workbook, data) {
   setCellValue(sheet, 'B5', data.customerAddress || '');
 
   // Fill line items (rows 23-50, 28 rows max)
+  // Columns: B=NO., C=ISBN/BARCODE, D=(empty), E=TITLE, F=QTY., G=(dup), H=UNIT PRICE, I=AMOUNT
   const startRow = 23;
   items.forEach((item, index) => {
     const row = startRow + index;
@@ -225,47 +191,8 @@ async function fillINV1Sheet(workbook, data) {
     setCellValue(sheet, `I${row}`, item.amount);         // I: AMOUNT
   });
 
-  // Add totals after the last item row
-  let currentRow = startRow + items.length;
-  if (currentRow <= 50) {
-    // SUBTOTAL row
-    sheet.mergeCells(currentRow, 1, currentRow, 8);
-    setCellValue(sheet, `A${currentRow}`, 'SUBTOTAL:');
-    setCellValue(sheet, `I${currentRow}`, subtotal);
-
-    // Discount row (if discount > 0)
-    if (discountAmount > 0 && currentRow < 50) {
-      currentRow++;
-      sheet.mergeCells(currentRow, 1, currentRow, 8);
-      setCellValue(sheet, `A${currentRow}`, `LESS: DISCOUNT (${discountPercentage}%):`);
-      setCellValue(sheet, `I${currentRow}`, discountAmount);
-    }
-
-    // TOTAL row
-    if (currentRow < 50) {
-      currentRow++;
-      sheet.mergeCells(currentRow, 1, currentRow, 8);
-      setCellValue(sheet, `A${currentRow}`, 'TOTAL:');
-      setCellValue(sheet, `I${currentRow}`, total);
-
-      // Amount in Words row
-      const wordsRow = currentRow + 2;
-      if (wordsRow <= 50) {
-        sheet.mergeCells(wordsRow, 1, wordsRow, 9);
-        setCellValue(sheet, `A${wordsRow}`, `Amount in Words: ${numberToWords(total)}`);
-      }
-    }
-  }
-
-  // Signatures
-  const sigRow = currentRow + 5;
-  if (sigRow <= 50) {
-    ['Prepared By', 'Approved By', 'Received By'].forEach((label, i) => {
-      const col = i * 3 + 1;
-      sheet.mergeCells(sigRow, col, sigRow, col + 1);
-      setCellValue(sheet, sigRow, col, label);
-    });
-  }
+  // Template handles totals at row 675/677 automatically
+  // Discount is only for DB recording, not for Excel export
 }
 
 // Fill Pesos sheet (sheet "1")
