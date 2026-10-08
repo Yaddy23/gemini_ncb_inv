@@ -119,7 +119,7 @@ const Books = ({ user }) => {
         await api.delete(`/books/${isbn}`);
         setDeleteMode(false);
         // Refresh books list
-        const response = await axios.get(`/api/books?page=${page}&limit=${limit}&search=${debouncedSearch}`, config);
+        const response = await api.get(`/books?page=${page}&limit=${limit}&search=${debouncedSearch}`);
         setBooks(response.data.books);
         setTotalPages(response.data.pages);
         setTotalBooks(response.data.total);
