@@ -74,7 +74,7 @@ const updateStock = async (req, res) => {
   }
 };
 
-// @desc    Bulk import books
+// @desc    Bulk import books (optimized with bulk operations)
 // @route   POST /api/books/bulk-import
 // @access  Private/Admin
 const bulkImportBooks = async (req, res) => {
@@ -96,9 +96,7 @@ const bulkImportBooks = async (req, res) => {
     // Parse file based on extension
     let rows = [];
     if (file.originalname.endsWith('.csv')) {
-      // For CSV, we'd need a CSV parser - simplified here
       const csv = fs.readFileSync(file.path, 'utf8');
-      // Simple CSV parsing (in production use a proper CSV parser)
       const lines = csv.split('\n').filter(line => line.trim());
       const headers = lines[0].split(',').map(h => h.trim());
       rows = lines.slice(1).map(line => {
@@ -110,7 +108,6 @@ const bulkImportBooks = async (req, res) => {
         return row;
       });
     } else {
-      // For Excel files
       const workbook = XLSX.readFile(file.path);
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
@@ -122,32 +119,19 @@ const bulkImportBooks = async (req, res) => {
     const errors = [];
 
     rows.forEach((row, index) => {
-      const rowNum = index + 2; // +2 for 1-based indexing and header row
-      const {
-        ISBN, SUBJECT, TITLE, EDITION, YEAR, AUTHOR, BIND, QTY, PRICE, PUBLISHER
-      } = row;
+      const rowNum = index + 2;
+      const { ISBN, SUBJECT, TITLE, EDITION, YEAR, AUTHOR, BIND, QTY, PRICE, PUBLISHER } = row;
 
-      // Validate required fields - only ISBN, TITLE, PRICE required
       if (!ISBN || !TITLE || PRICE === undefined) {
-        errors.push({
-          row: rowNum,
-          message: 'Missing required fields: ISBN, TITLE, or PRICE',
-          data: row
-        });
+        errors.push({ row: rowNum, message: 'Missing required fields: ISBN, TITLE, or PRICE', data: row });
         return;
       }
 
-      // Validate numeric fields - PRICE is required, QTY is optional (defaults to 0)
       if (isNaN(Number(PRICE)) || Number(PRICE) < 0) {
-        errors.push({
-          row: rowNum,
-          message: 'PRICE must be a non-negative number',
-          data: row
-        });
+        errors.push({ row: rowNum, message: 'PRICE must be a non-negative number', data: row });
         return;
       }
 
-      // QTY is optional, default to 0 if not provided or invalid
       let qtyValue = 0;
       if (QTY !== undefined && QTY !== '' && !isNaN(Number(QTY))) {
         qtyValue = Number(QTY);
@@ -173,122 +157,83 @@ const bulkImportBooks = async (req, res) => {
       throw new Error('No valid rows found in the file');
     }
 
-    // Process based on mode
-    const results = {
-      succeeded: 0,
-      skipped: 0,
-      updated: 0,
-      merged: 0,
-      errors: []
-    };
+    // Fetch all existing books in ONE query
+    const isbns = validRows.map(r => r.ISBN);
+    const existingBooks = await Book.find({ ISBN: { $in: isbns } }).lean();
+    const existingMap = new Map(existingBooks.map(b => [b.ISBN, b]));
 
     // Prepare bulk operations
-    const bulkOps = [];
+    const bookBulkOps = [];
+    const transactionBulkOps = [];
+    const results = { succeeded: 0, skipped: 0, updated: 0, merged: 0, errors: [] };
 
     for (const rowData of validRows) {
       const { ISBN } = rowData;
+      const existing = existingMap.get(ISBN);
 
       try {
-        const existingBook = await Book.findOne({ ISBN });
-
-        if (mode === 'skip' && existingBook) {
+        if (mode === 'skip' && existing) {
           results.skipped++;
           continue;
         }
 
-        if (mode === 'update' && existingBook) {
-          // Update existing book
-          await Book.updateOne(
-            { ISBN },
-            {
+        if (existing) {
+          // Existing book - prepare update/merge
+          let bookUpdate;
+          let qtyChanged;
+          let previousQty = existing.QTY;
+          let newQty;
+
+          if (mode === 'update') {
+            bookUpdate = { $set: { ...rowData } };
+            qtyChanged = rowData.QTY - existing.QTY;
+            newQty = rowData.QTY;
+            results.updated++;
+          } else { // merge
+            bookUpdate = {
               $set: {
-                SUBJECT: rowData.SUBJECT,
-                TITLE: rowData.TITLE,
-                EDITION: rowData.EDITION,
-                YEAR: rowData.YEAR,
-                AUTHOR: rowData.AUTHOR,
-                BIND: rowData.BIND,
-                QTY: rowData.QTY,
-                PRICE: rowData.PRICE,
-                PUBLISHER: rowData.PUBLISHER
-              }
-            }
-          );
-
-          // Create stock transaction for update
-          await StockTransaction.create({
-            ISBN,
-            action: 'BULK_IMPORT',
-            qtyChanged: rowData.QTY - existingBook.QTY,
-            previousQty: existingBook.QTY,
-            newQty: rowData.QTY,
-            performedBy: req.user._id,
-          });
-
-          results.updated++;
-          continue;
-        }
-
-        if (mode === 'merge' && existingBook) {
-          // Merge/increment stock
-          await Book.updateOne(
-            { ISBN },
-            {
-              $set: {
-                SUBJECT: rowData.SUBJECT || existingBook.SUBJECT,
-                TITLE: rowData.TITLE || existingBook.TITLE,
-                EDITION: rowData.EDITION || existingBook.EDITION,
-                YEAR: rowData.YEAR || existingBook.YEAR,
-                AUTHOR: rowData.AUTHOR || existingBook.AUTHOR,
-                BIND: rowData.BIND || existingBook.BIND,
-                PRICE: rowData.PRICE || existingBook.PRICE,
-                PUBLISHER: rowData.PUBLISHER || existingBook.PUBLISHER
+                SUBJECT: rowData.SUBJECT || existing.SUBJECT,
+                TITLE: rowData.TITLE || existing.TITLE,
+                EDITION: rowData.EDITION || existing.EDITION,
+                YEAR: rowData.YEAR || existing.YEAR,
+                AUTHOR: rowData.AUTHOR || existing.AUTHOR,
+                BIND: rowData.BIND || existing.BIND,
+                PRICE: rowData.PRICE || existing.PRICE,
+                PUBLISHER: rowData.PUBLISHER || existing.PUBLISHER
               },
               $inc: { QTY: rowData.QTY }
-            }
-          );
+            };
+            qtyChanged = rowData.QTY;
+            newQty = existing.QTY + rowData.QTY;
+            results.merged++;
+          }
 
-          // Create stock transaction for merge
-          await StockTransaction.create({
-            ISBN,
-            action: 'BULK_IMPORT',
-            qtyChanged: rowData.QTY,
-            previousQty: existingBook.QTY,
-            newQty: existingBook.QTY + rowData.QTY,
-            performedBy: req.user._id,
+          bookBulkOps.push({ updateOne: { filter: { ISBN }, update: bookUpdate } });
+          transactionBulkOps.push({
+            insertOne: { document: { ISBN, action: 'BULK_IMPORT', qtyChanged, previousQty, newQty, performedBy: req.user._id } }
           });
-
-          results.merged++;
-          continue;
+        } else {
+          // New book
+          bookBulkOps.push({ insertOne: { document: rowData } });
+          transactionBulkOps.push({
+            insertOne: { document: { ISBN, action: 'BULK_IMPORT', qtyChanged: rowData.QTY, previousQty: 0, newQty: rowData.QTY, performedBy: req.user._id } }
+          });
+          results.succeeded++;
         }
-
-        // Create new book (for skip mode when not existing, or update/merge when not existing)
-        const newBook = await Book.create(rowData);
-
-        // Create stock transaction for new book
-        await StockTransaction.create({
-          ISBN: newBook.ISBN,
-          action: 'BULK_IMPORT',
-          qtyChanged: newBook.QTY,
-          previousQty: 0,
-          newQty: newBook.QTY,
-          performedBy: req.user._id,
-        });
-
-        results.succeeded++;
       } catch (error) {
-        results.errors.push({
-          row: validRows.indexOf(rowData) + 2,
-          message: error.message,
-          data: rowData
-        });
+        results.errors.push({ row: validRows.indexOf(rowData) + 2, message: error.message, data: rowData });
       }
     }
 
-    res.json({
-      message: 'Bulk import completed',
-      results
-    });
+    // Execute bulk operations in parallel
+    if (bookBulkOps.length > 0) {
+      await Book.bulkWrite(bookBulkOps, { ordered: false });
+    }
+    if (transactionBulkOps.length > 0) {
+      await StockTransaction.bulkWrite(transactionBulkOps, { ordered: false });
+    }
+
+    res.json({ message: 'Bulk import completed', results });
 
     // Log bulk import
     await logUserActivity(req.user._id, 'BULK_IMPORT', `Bulk imported books: ${results.succeeded} created, ${results.updated} updated, ${results.merged} merged, ${results.skipped} skipped, ${results.errors.length} errors`, req);
@@ -296,11 +241,8 @@ const bulkImportBooks = async (req, res) => {
   } catch (error) {
     res.status(400 || error.status || 500).json({ message: error.message });
   } finally {
-    // Clean up uploaded file
     if (file && file.path) {
-      fs.unlink(file.path, (err) => {
-        if (err) console.error('Failed to delete uploaded file:', err);
-      });
+      fs.unlink(file.path, (err) => { if (err) console.error('Failed to delete uploaded file:', err); });
     }
   }
 };
