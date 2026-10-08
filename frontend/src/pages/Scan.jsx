@@ -41,9 +41,17 @@ const Scan = ({ user }) => {
 
   // Camera scanner cleanup on unmount
   useEffect(() => {
+    let isMounted = true;
     return () => {
+      isMounted = false;
       if (cameraScanner) {
-        cameraScanner.stop().catch(() => {});
+        // Properly stop and wait for camera release
+        cameraScanner.stop().then(() => {
+          if (isMounted) {
+            setCameraScanner(null);
+            setIsCameraActive(false);
+          }
+        }).catch(() => {});
       }
     };
   }, []);
@@ -51,9 +59,13 @@ const Scan = ({ user }) => {
   // Clean up camera when method changes or mode changes
   useEffect(() => {
     if (scanMethod !== 'camera' && cameraScanner) {
-      cameraScanner.stop().catch(() => {});
-      setCameraScanner(null);
-      setIsCameraActive(false);
+      cameraScanner.stop().then(() => {
+        setCameraScanner(null);
+        setIsCameraActive(false);
+      }).catch(() => {
+        setCameraScanner(null);
+        setIsCameraActive(false);
+      });
     }
   }, [scanMethod, mode]);
 
@@ -169,6 +181,13 @@ const Scan = ({ user }) => {
 
     setCameraError(null);
 
+    // Stop any existing scanner first
+    if (cameraScanner) {
+      await stopCameraScanner();
+    }
+
+    let permissionStream = null;
+
     try {
       const container = cameraContainerRef.current;
 
@@ -186,7 +205,7 @@ const Scan = ({ user }) => {
       const html5Qrcode = new Html5Qrcode('camera-reader');
 
       // Explicitly request camera permission first
-      const stream = await navigator.mediaDevices.getUserMedia({
+      permissionStream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'environment',
           width: { ideal: width },
@@ -194,7 +213,8 @@ const Scan = ({ user }) => {
         }
       });
       // Stop the test stream - we just wanted to trigger permission
-      stream.getTracks().forEach(track => track.stop());
+      permissionStream.getTracks().forEach(track => track.stop());
+      permissionStream = null;
 
       await html5Qrcode.start(
         { facingMode: 'environment' },
@@ -220,8 +240,6 @@ const Scan = ({ user }) => {
 
             setIsbn(decodedText);
             playBeep();
-            // Immediately clear ISBN so camera can detect next barcode
-            // processScan will handle the API calls and clear ISBN again when done
           }
         },
         (errorMessage) => {
@@ -233,6 +251,10 @@ const Scan = ({ user }) => {
       setIsCameraActive(true);
     } catch (err) {
       console.error('Camera start error:', err);
+      // Ensure permission stream is cleaned up on error
+      if (permissionStream) {
+        permissionStream.getTracks().forEach(track => track.stop());
+      }
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setCameraError('Camera permission denied. Please allow camera access in browser settings.');
       } else if (err.name === 'NotFoundError') {
@@ -246,9 +268,13 @@ const Scan = ({ user }) => {
     }
   };
 
-  const stopCameraScanner = () => {
+  const stopCameraScanner = async () => {
     if (cameraScanner) {
-      cameraScanner.stop().catch(() => {});
+      try {
+        await cameraScanner.stop();
+      } catch (err) {
+        console.warn('Camera stop error:', err);
+      }
       setCameraScanner(null);
       setIsCameraActive(false);
     }
