@@ -31,6 +31,12 @@ const Scan = ({ user }) => {
   const cameraContainerRef = useRef(null);
   const isbnInputRef = useRef(null);
   const audioContextRef = useRef(null);
+  const cameraScannerRef = useRef(null); // Ref for live scanner instance
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    cameraScannerRef.current = cameraScanner;
+  }, [cameraScanner]);
 
   // Auto-focus the ISBN input on mount and when mode changes
   useEffect(() => {
@@ -39,18 +45,14 @@ const Scan = ({ user }) => {
     }
   }, [mode, scanMethod]);
 
-  // Camera scanner cleanup on unmount
+  // Camera scanner cleanup on unmount - uses ref for live instance
   useEffect(() => {
-    let isMounted = true;
     return () => {
-      isMounted = false;
-      if (cameraScanner) {
-        // Properly stop and wait for camera release
-        cameraScanner.stop().then(() => {
-          if (isMounted) {
-            setCameraScanner(null);
-            setIsCameraActive(false);
-          }
+      if (cameraScannerRef.current) {
+        cameraScannerRef.current.stop().catch(() => {});
+        // Also force-stop any active media streams
+        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+          stream.getTracks().forEach(track => track.stop());
         }).catch(() => {});
       }
     };
@@ -58,14 +60,10 @@ const Scan = ({ user }) => {
 
   // Clean up camera when method changes or mode changes
   useEffect(() => {
-    if (scanMethod !== 'camera' && cameraScanner) {
-      cameraScanner.stop().then(() => {
-        setCameraScanner(null);
-        setIsCameraActive(false);
-      }).catch(() => {
-        setCameraScanner(null);
-        setIsCameraActive(false);
-      });
+    if (scanMethod !== 'camera' && cameraScannerRef.current) {
+      cameraScannerRef.current.stop().catch(() => {});
+      setCameraScanner(null);
+      setIsCameraActive(false);
     }
   }, [scanMethod, mode]);
 
@@ -248,6 +246,7 @@ const Scan = ({ user }) => {
       );
 
       setCameraScanner(html5Qrcode);
+      cameraScannerRef.current = html5Qrcode;
       setIsCameraActive(true);
     } catch (err) {
       console.error('Camera start error:', err);
@@ -269,15 +268,20 @@ const Scan = ({ user }) => {
   };
 
   const stopCameraScanner = async () => {
-    if (cameraScanner) {
+    const scanner = cameraScannerRef.current;
+    if (scanner) {
       try {
-        await cameraScanner.stop();
+        await scanner.stop();
       } catch (err) {
         console.warn('Camera stop error:', err);
       }
-      setCameraScanner(null);
-      setIsCameraActive(false);
+      // Force stop all video tracks as fallback
+      navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+        stream.getTracks().forEach(track => track.stop());
+      }).catch(() => {});
     }
+    setCameraScanner(null);
+    setIsCameraActive(false);
   };
 
   // Beep sound using Web Audio API
