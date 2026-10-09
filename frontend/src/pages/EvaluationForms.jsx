@@ -181,7 +181,6 @@ const EvaluationForms = ({ user }) => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">DR Ref</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
@@ -195,9 +194,6 @@ const EvaluationForms = ({ user }) => {
                       <td className="px-4 py-3 text-sm text-gray-500">{ef.items?.length || 0} items</td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">{formatCurrency(ef.totalAmount)}</td>
                       <td className="px-4 py-3">{getStatusBadge(ef.status)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
-                        {ef.drRef ? ef.drRef.drNumber : '—'}
-                      </td>
                       <td className="px-4 py-3 text-sm text-gray-500">{formatDate(ef.createdAt)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center space-x-1 justify-end">

@@ -17,7 +17,6 @@ const evaluationFormSchema = new mongoose.Schema({
   subtotal: { type: Number, default: 0 },
   totalAmount: { type: Number, default: 0 },
   status: { type: String, enum: ['draft', 'issued'], default: 'draft' },
-  drRef: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryReceipt' }, // Reference to created DR
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

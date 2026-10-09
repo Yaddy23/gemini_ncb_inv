@@ -26,6 +26,28 @@ if (!TEMPLATE_PATH) {
   TEMPLATE_PATH = possiblePaths[0]; // fallback to first path, will error later with clear message
 }
 
+// EF Form template path
+const efTemplatePaths = [
+  path.join(__dirname, '..', 'EF_FORM.xlsx'),
+  path.join(__dirname, '..', '..', 'backend', 'EF_FORM.xlsx'),
+  path.join(process.cwd(), 'backend', 'EF_FORM.xlsx'),
+  path.join(process.cwd(), 'EF_FORM.xlsx'),
+];
+
+let EF_TEMPLATE_PATH = null;
+for (const p of efTemplatePaths) {
+  if (fs.existsSync(p)) {
+    EF_TEMPLATE_PATH = p;
+    console.log(`[documentGenerator] Found EF template at: ${EF_TEMPLATE_PATH}`);
+    break;
+  }
+}
+
+if (!EF_TEMPLATE_PATH) {
+  console.error('[documentGenerator] EF Template not found. Tried paths:', efTemplatePaths);
+  EF_TEMPLATE_PATH = efTemplatePaths[0];
+}
+
 // Helper: Convert number to Philippine peso words
 function numberToWords(num) {
   const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
@@ -105,6 +127,67 @@ async function generateExcel(templateSheetName, data) {
 
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
+}
+
+// Generate EF Excel using EF_FORM.xlsx template
+async function generateEFExcel(data) {
+  // Load the EF template workbook
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(EF_TEMPLATE_PATH);
+
+  // Fill EF sheet (DR1 sheet in EF template)
+  await fillEFSheet(workbook, data);
+
+  // Fill Pesos sheet with total amount
+  const total = data.totalAmount || data.subtotal || 0;
+  await fillPesosSheet(workbook, total);
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
+}
+
+// Fill EF sheet (DR1 sheet in EF template)
+async function fillEFSheet(workbook, data) {
+  const sheet = workbook.getWorksheet('DR1');
+  if (!sheet) throw new Error('DR1 sheet not found in EF template');
+
+  const items = data.items || [];
+
+  // Fill header info
+  // EF Number in G3 with font size 28, bold
+  const efNumberCell = setCellValue(sheet, 'G3', data.efNumber || '');
+  efNumberCell.font = { bold: true, size: 28, color: { argb: 'FF000000' }, name: 'Arial Narrow', family: 2 };
+  efNumberCell.alignment = { horizontal: 'center' };
+
+  // Customer name in E5
+  setCellValue(sheet, 'E5', data.customerName || '');
+
+  // Date in G5/H5 (use current date if not provided)
+  const dateValue = data.date ? formatDate(data.date) : formatDate(new Date());
+  setCellValue(sheet, 'G5', dateValue);
+  setCellValue(sheet, 'H5', dateValue);
+
+  // Customer address in E6
+  setCellValue(sheet, 'E6', data.customerAddress || '');
+
+  // Fill line items (rows 12-50, 39 rows max)
+  // Columns: B=NO., C=QTY., D=cps./cpy., E=ISBN, F=TITLE, G=UNIT PRICE, H=AMOUNT
+  const startRow = 12;
+  items.forEach((item, index) => {
+    const row = startRow + index;
+    if (row > 50) return; // Template has 39 rows (12-50)
+
+    setCellValue(sheet, `B${row}`, index + 1);           // B: NO.
+    setCellValue(sheet, `C${row}`, item.qty);            // C: QTY.
+    // D: "cps." if qty > 1 else "cpy."
+    setCellValue(sheet, `D${row}`, item.qty > 1 ? 'cps.' : 'cpy.');
+    setCellValue(sheet, `E${row}`, item.isbn || '');     // E: ISBN / BARCODE
+    setCellValue(sheet, `F${row}`, formatDescription(item)); // F: TITLE / DESCRIPTION
+    setCellValue(sheet, `G${row}`, item.unitPrice);      // G: UNIT PRICE
+    setCellValue(sheet, `H${row}`, item.amount);         // H: AMOUNT
+  });
+
+  // Template handles totals at row 662 automatically - no need to add totals rows
 }
 
 // Helper to clear cell formula and set value
@@ -491,4 +574,15 @@ async function generate(templateSheetName, data, format = 'pdf') {
   }
 }
 
-module.exports = { generate, numberToWords, formatDate };
+// Generate EF document (Excel only for now)
+async function generateEF(data, format = 'xlsx') {
+  if (format === 'xlsx') {
+    return generateEFExcel(data);
+  } else {
+    // For PDF, we could implement a PDF version later
+    // For now, fall back to Excel
+    return generateEFExcel(data);
+  }
+}
+
+module.exports = { generate, generateEF, numberToWords, formatDate };

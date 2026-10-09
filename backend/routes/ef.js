@@ -64,8 +64,7 @@ router.get('/', async (req, res) => {
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(Number(limit))
-        .populate('createdBy', 'username')
-        .populate('drRef', 'drNumber'),
+        .populate('createdBy', 'username'),
       EvaluationForm.countDocuments(query)
     ]);
 
@@ -125,7 +124,7 @@ router.post('/', async (req, res) => {
 // Get EF by ID
 router.get('/:id', async (req, res) => {
   try {
-    const ef = await EvaluationForm.findById(req.params.id).populate('createdBy', 'username').populate('drRef', 'drNumber');
+    const ef = await EvaluationForm.findById(req.params.id).populate('createdBy', 'username');
     if (!ef) return res.status(404).json({ message: 'Evaluation Form not found' });
     res.json(ef);
   } catch (err) {
@@ -212,9 +211,8 @@ router.post('/:id/issue', async (req, res) => {
     });
     await dr.save();
 
-    // Mark EF as issued and link to DR
+    // Mark EF as issued
     ef.status = 'issued';
-    ef.drRef = dr._id;
     await ef.save();
 
     res.json({ ef, dr });
@@ -230,8 +228,8 @@ router.get('/:id/export', async (req, res) => {
     const ef = await EvaluationForm.findById(req.params.id);
     if (!ef) return res.status(404).json({ message: 'Evaluation Form not found' });
 
-    // Use DR1 template for EF export
-    const buffer = await documentGenerator.generate('DR1', ef.toObject(), format);
+    // Use EF template for EF export
+    const buffer = await documentGenerator.generateEF(ef.toObject(), format);
 
     const filename = `${ef.efNumber}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
