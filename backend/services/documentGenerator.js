@@ -154,21 +154,18 @@ async function fillEFSheet(workbook, data) {
   const items = data.items || [];
 
   // Fill header info
-  // EF Number in G3 with font size 28, bold
+  // EF Number in G3 with font size 28, bold (replaces the "E.F.#: 102" placeholder)
   const efNumberCell = setCellValue(sheet, 'G3', data.efNumber || '');
   efNumberCell.font = { bold: true, size: 28, color: { argb: 'FF000000' }, name: 'Arial Narrow', family: 2 };
   efNumberCell.alignment = { horizontal: 'center' };
 
-  // Customer name in E5
-  setCellValue(sheet, 'E5', data.customerName || '');
-
-  // Date in G5/H5 (use current date if not provided)
+  // Date in G5/H5 (overwrite TODAY() formula with actual EF date)
   const dateValue = data.date ? formatDate(data.date) : formatDate(new Date());
   setCellValue(sheet, 'G5', dateValue);
   setCellValue(sheet, 'H5', dateValue);
 
-  // Customer address in E6
-  setCellValue(sheet, 'E6', data.customerAddress || '');
+  // NOTE: Keep template's header content in E5/E6 (company name/address)
+  // Do NOT overwrite E5 ("Manila Central University") and E6 ("Metro Manila")
 
   // Fill line items (rows 12-50, 39 rows max)
   // Columns: B=NO., C=QTY., D=cps./cpy., E=ISBN, F=TITLE, G=UNIT PRICE, H=AMOUNT
