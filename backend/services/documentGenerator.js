@@ -161,8 +161,10 @@ async function fillEFSheet(workbook, data) {
 
   // Date in G5/H5 (overwrite TODAY() formula with actual EF date)
   const dateValue = data.date ? formatDate(data.date) : formatDate(new Date());
-  setCellValue(sheet, 'G5', dateValue);
-  setCellValue(sheet, 'H5', dateValue);
+  const g5Cell = setCellValue(sheet, 'G5', dateValue);
+  g5Cell.numFmt = 'mm/dd/yyyy';
+  const h5Cell = setCellValue(sheet, 'H5', dateValue);
+  h5Cell.numFmt = 'mm/dd/yyyy';
 
   // NOTE: Keep template's header content in E5/E6 (company name/address)
   // Do NOT overwrite E5 ("Manila Central University") and E6 ("Metro Manila")
@@ -225,7 +227,8 @@ async function fillDR1Sheet(workbook, data) {
 
   // Fill header info
   setCellValue(sheet, 'E5', data.customerName || '');
-  setCellValue(sheet, 'H5', formatDate(data.date));
+  const h5Cell = setCellValue(sheet, 'H5', formatDate(data.date));
+  h5Cell.numFmt = 'mm/dd/yyyy';
   setCellValue(sheet, 'E6', data.customerAddress || '');
 
   // Fill line items (rows 12-659, 648 rows max)
@@ -269,7 +272,8 @@ async function fillINV1Sheet(workbook, data) {
   setCellValue(sheet, 'A1', 'SALES INVOICE');
   setCellValue(sheet, 'A3', data.customerName || '');
   setCellValue(sheet, 'B4', data.siNumber || '');
-  setCellValue(sheet, 'E4', formatDate(data.date));
+  const e4Cell = setCellValue(sheet, 'E4', formatDate(data.date));
+  e4Cell.numFmt = 'mm/dd/yyyy';
   setCellValue(sheet, 'H4', data.poNumber || '');
   setCellValue(sheet, 'B5', data.customerAddress || '');
 
