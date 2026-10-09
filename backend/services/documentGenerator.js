@@ -170,9 +170,11 @@ async function fillEFSheet(workbook, data) {
   // Fill line items (rows 12-50, 39 rows max)
   // Columns: B=NO., C=QTY., D=cps./cpy., E=ISBN, F=TITLE, G=UNIT PRICE, H=AMOUNT
   const startRow = 12;
+  const maxRow = 50;
+
   items.forEach((item, index) => {
     const row = startRow + index;
-    if (row > 50) return; // Template has 39 rows (12-50)
+    if (row > maxRow) return; // Template has 39 rows (12-50)
 
     setCellValue(sheet, `B${row}`, index + 1);           // B: NO.
     setCellValue(sheet, `C${row}`, item.qty);            // C: QTY.
@@ -183,6 +185,14 @@ async function fillEFSheet(workbook, data) {
     setCellValue(sheet, `G${row}`, item.unitPrice);      // G: UNIT PRICE
     setCellValue(sheet, `H${row}`, item.amount);         // H: AMOUNT
   });
+
+  // Hide empty rows after the last item (where C-H have no values)
+  // The template has row numbers in B12:B50, but we only show rows with actual items
+  const lastItemRow = startRow + items.length - 1;
+  for (let row = lastItemRow + 1; row <= maxRow; row++) {
+    const rowObj = sheet.getRow(row);
+    rowObj.hidden = true;
+  }
 
   // Template handles totals at row 662 automatically - no need to add totals rows
 }
@@ -221,9 +231,11 @@ async function fillDR1Sheet(workbook, data) {
   // Fill line items (rows 12-50, 39 rows max)
   // Columns: B=NO., C=QTY., D=cps./cpy., E=ISBN, F=TITLE, G=UNIT PRICE, H=AMOUNT
   const startRow = 12;
+  const maxRow = 50;
+
   items.forEach((item, index) => {
     const row = startRow + index;
-    if (row > 50) return; // Template has 39 rows (12-50)
+    if (row > maxRow) return; // Template has 39 rows (12-50)
 
     setCellValue(sheet, `B${row}`, index + 1);           // B: NO.
     setCellValue(sheet, `C${row}`, item.qty);            // C: QTY.
@@ -234,6 +246,14 @@ async function fillDR1Sheet(workbook, data) {
     setCellValue(sheet, `G${row}`, item.unitPrice);      // G: UNIT PRICE
     setCellValue(sheet, `H${row}`, item.amount);         // H: AMOUNT
   });
+
+  // Hide empty rows after the last item (where C-H have no values)
+  // The template has row numbers in B12:B50, but we only show rows with actual items
+  const lastItemRow = startRow + items.length - 1;
+  for (let row = lastItemRow + 1; row <= maxRow; row++) {
+    const rowObj = sheet.getRow(row);
+    rowObj.hidden = true;
+  }
 
   // Template handles totals at row 662 automatically - no need to add totals rows
 }
