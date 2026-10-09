@@ -290,8 +290,9 @@ async function fillINV1Sheet(workbook, data) {
     setCellValue(sheet, 'H14', meName);
   }
 
-  const e4Cell = setCellValue(sheet, 'E4', formatDate(data.date));
-  e4Cell.numFmt = 'mm/dd/yyyy';
+  // Date in H15 (as per user requirement)
+  const h15Cell = setCellValue(sheet, 'H15', formatDate(data.date));
+  h15Cell.numFmt = 'mm/dd/yyyy';
 
   // Customer Name in E15
   setCellValue(sheet, 'E15', data.customerName || '');
