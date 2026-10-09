@@ -349,6 +349,13 @@ const AdminPanel = ({ user }) => {
     }
   }, [currentPage, filters]);
 
+  // Refetch executives when page, search, or filter changes
+  useEffect(() => {
+    if (executives.length > 0 || execSearch !== undefined || execIsActiveFilter !== undefined) {
+      fetchExecutives(execCurrentPage, execSearch, execIsActiveFilter);
+    }
+  }, [execCurrentPage, execSearch, execIsActiveFilter]);
+
   if (!user || user.role !== 'Admin') {
     return <div className="p-6">Access denied. Admin privileges required.</div>;
   }

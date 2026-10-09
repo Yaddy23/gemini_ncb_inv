@@ -9,7 +9,7 @@
 
 We present a **production-ready, full-stack Book Inventory Management System** designed to digitize and streamline inventory operations for bookstores, publishers, and educational institutions. Built with modern technologies (React 18, Node.js, MongoDB), the system delivers enterprise-grade features at a fraction of the cost of legacy solutions.
 
-**Key Value Proposition:** Replace manual spreadsheets and disconnected tools with a unified platform that handles inventory tracking, barcode scanning, professional document generation (Delivery Receipts & Sales Invoices), and complete audit trails — all deployable on free cloud tiers.
+**Key Value Proposition:** Replace manual spreadsheets and disconnected tools with a unified platform that handles inventory tracking, barcode scanning, professional document generation (Evaluation Forms, Delivery Receipts & Sales Invoices), and complete audit trails — all deployable on free cloud tiers.
 
 ---
 
@@ -19,7 +19,7 @@ We present a **production-ready, full-stack Book Inventory Management System** d
 |---------------------|-----------------|
 | Manual inventory tracking in Excel | Errors, stockouts, overstocking |
 | No barcode scanning integration | Slow receiving/shipping, human error |
-| Disconnected DR/SI creation | Duplicate data entry, formatting inconsistencies |
+| Disconnected EF/DR/SI creation | Duplicate data entry, formatting inconsistencies |
 | No audit trail for stock changes | Compliance risk, theft undetectable |
 | Expensive ERP systems (₱28,000–112,000/mo) | Prohibitive for small–mid businesses |
 | Vendor lock-in with proprietary formats | Data migration nightmares |
@@ -36,19 +36,22 @@ A **complete, deployable system** that addresses every pain point:
 |--------|-------------|----------------|
 | **Smart Inventory** | Full CRUD with rich metadata (ISBN, Title, Author, Edition, Year, Bind, Subject, Publisher, Price, QTY) | Single source of truth |
 | **Dual-Mode Barcode Scanning** | USB hardware scanners + phone camera (html5-qrcode) | Zero hardware cost option; works on tablets |
-| **DR & SI Workflow** | Draft → Issue → Export (Excel/PDF) with auto-linking | Professional documents in seconds |
+| **EF, DR & SI Workflow** | Draft → Issue → Export (Excel/PDF) with auto-linking between EF→DR→SI | Professional documents in seconds |
 | **Bulk Import/Export** | Excel/CSV with 3 merge strategies (skip/update/merge) | Onboard 10,000+ SKUs in minutes |
 | **Audit Trail** | Complete transaction log with user attribution | Compliance-ready, theft deterrent |
 | **Role-Based Access** | Admin (full) vs Staff (operational) | Secure, scalable team management |
 | **Activity Logging** | Every action tracked with IP/session | Security & accountability |
+| **Marketing Executive Management** | Admin-only dropdown for "Requested By" in EF/DR/SI, appears in exports | Track who requested documents |
 
 ### Technical Excellence
 
 - **Zero licensing costs** — 100% open-source stack (MIT)
-- **Cloud-native deployment** — Render
+- **Cloud-native deployment** — Render + Vercel (free tiers available)
 - **Modern stack** — React 18, Vite, Tailwind, Express, MongoDB
 - **Mobile responsive** — Works on warehouse tablets
 - **Extensible architecture** — Add fields, roles, workflows easily
+- **Real-time validation** — Duplicate ISBN detection with user confirmation
+- **Auto-scan workflow** — Automatic row addition and focus for continuous barcode scanning
 
 ---
 
@@ -57,7 +60,7 @@ A **complete, deployable system** that addresses every pain point:
 | Segment | Size | Pain Point Fit |
 |---------|------|----------------|
 | Independent bookstores | 10,000+ (PH) | Affordable alternative to ₱28,000/mo POS |
-| Educational distributors | 500+ | Bulk import, DR/SI compliance |
+| Educational distributors | 500+ | Bulk import, EF/DR/SI compliance |
 | University bookstores | 4,000+ | Student worker friendly, audit trail |
 | Specialty publishers | 2,000+ | ISBN-centric, multi-format exports |
 | Library systems | 9,000+ | Barcode scanning, transaction history |
@@ -72,12 +75,14 @@ A **complete, deployable system** that addresses every pain point:
 |---------|------------|-------------|----------------|
 | Monthly Cost | ₱28,000–112,000 | ₱5,600–16,800 | **₱0 (self-hosted)** |
 | Barcode Camera Scan | ❌ | ❌ | ✅ |
-| DR/SI Templates | Custom $$$ | Basic | ✅ Professional |
+| EF/DR/SI Templates | Custom $$$ | Basic | ✅ Professional |
 | Bulk Import Strategies | Limited | Basic | ✅ 3 modes |
 | Full Audit Trail | ✅ | ❌ | ✅ |
 | Mobile/Tablet Ready | Partial | Partial | ✅ Native |
 | Source Code Access | ❌ | ❌ | ✅ Full |
 | Deployment Flexibility | Cloud only | Cloud only | ✅ Anywhere |
+| Marketing Executive Tracking | ❌ | ❌ | ✅ Admin-managed |
+| Duplicate Detection & Auto-scan | ❌ | ❌ | ✅ 3-layer protection |
 
 ---
 
@@ -87,7 +92,7 @@ A **complete, deployable system** that addresses every pain point:
 
 | Edition | Price | Includes |
 |---------|-------|----------|
-| **Complete Source Code License** | **₱250,000** | • Full source code (frontend + backend)<br>• Complete documentation (technical + user guide)<br>• DR_SI_NEW_TEMPLATE.xlsx (customizable Excel templates)<br>• Deployment configs (Render, Vercel, Docker)<br>• Database seed scripts & migration guides<br>• Unlimited users, SKUs, transactions<br>• Lifetime updates for v1.x branch<br>• MIT License — modify, resell, white-label freely<br>• Production deployment assistance<br>• Template customization (your branding/logo)<br>• Data migration assistance (up to 50K SKUs)<br>• 2-hour admin training session (remote)<br>• 30-day post-launch priority support |
+| **Complete Source Code License** | **₱250,000** | • Full source code (frontend + backend)<br>• Complete documentation (technical + user guide)<br>• DR_SI_NEW_TEMPLATE.xlsx & EF_FORM.xlsx (customizable Excel templates)<br>• Deployment configs (Render, Vercel, Docker)<br>• Database seed scripts & migration guides<br>• Unlimited users, SKUs, transactions<br>• Lifetime updates for v1.x branch<br>• MIT License — modify, resell, white-label freely<br>• Production deployment assistance<br>• Template customization (your branding/logo)<br>• Data migration assistance (up to 50K SKUs)<br>• 2-hour admin training session (remote)<br>• 30-day post-launch priority support |
 
 ---
 
@@ -97,7 +102,7 @@ A **complete, deployable system** that addresses every pain point:
 |-------|----------|--------------|
 | **Discovery & Config** | 1 week | Requirements, template customization |
 | **Data Migration** | 1–2 weeks | CSV/Excel import, validation |
-| **Deployment** | 1 day | Render |
+| **Deployment** | 1 day | Render + Vercel |
 | **Training** | 1 day | Admin + Staff workshops (remote) |
 | **Go-Live Support** | 2 weeks | Priority bug fixes, adjustments |
 
@@ -119,6 +124,8 @@ A **complete, deployable system** that addresses every pain point:
 | **Barcode Scanning** | html5-qrcode (camera) + keyboard wedge (hardware) |
 | **API** | RESTful, JSON, OpenAPI-ready |
 | **Testing** | Jest configured |
+| **Max Template Rows** | 648 with auto-hiding of empty rows |
+| **Date Format** | MM/DD/YYYY in all exports |
 
 ---
 
@@ -159,7 +166,7 @@ A **complete, deployable system** that addresses every pain point:
 
 **Prepared for:** New Century Books  
 **Date:** October 9, 2026  
-**Version:** 1.0  
+**Version:** 1.1.0  
 **Validity:** 60 days  
 
 ---
