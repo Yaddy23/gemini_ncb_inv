@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader, FileText, Download, Printer, X, AlertTriangle } from 'lucide-react';
+import { Loader, FileText, Download, Printer, X, AlertTriangle, Trash2, CheckCircle } from 'lucide-react';
 import LineItemsTable from './LineItemsTable';
 import { formatDate, formatDateInput } from '../../utils/numberToWords';
 import api from '../../api/axios';
@@ -27,6 +27,7 @@ const DocumentForm = ({
   });
 
   const [errors, setErrors] = useState({});
+  const [duplicateDialog, setDuplicateDialog] = useState({ open: false, duplicates: [], action: null, payload: null });
 
   useEffect(() => {
     if (initialData) {
@@ -41,6 +42,36 @@ const DocumentForm = ({
       });
     }
   }, [initialData]);
+
+  // Helper function to check for duplicate ISBNs
+  const checkDuplicateISBNs = (items) => {
+    const isbnCounts = {};
+    const duplicates = [];
+
+    items.forEach((item, index) => {
+      const isbn = item.isbn?.trim();
+      if (isbn) {
+        if (isbnCounts[isbn] === undefined) {
+          isbnCounts[isbn] = { count: 1, indices: [index] };
+        } else {
+          isbnCounts[isbn].count++;
+          isbnCounts[isbn].indices.push(index);
+        }
+      }
+    });
+
+    for (const [isbn, data] of Object.entries(isbnCounts)) {
+      if (data.count > 1) {
+        duplicates.push({
+          isbn,
+          count: data.count,
+          indices: data.indices
+        });
+      }
+    }
+
+    return duplicates;
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -61,25 +92,48 @@ const DocumentForm = ({
   const handleSubmit = (action) => {
     if (!validateForm()) return;
 
-    const payload = {
-      ...(isDR ? { drNumber: formData.documentNumber } : { siNumber: formData.documentNumber }),
-      date: formData.date,
-      customerName: formData.customerName,
-      customerAddress: formData.customerAddress,
-      items: formData.items.filter(item => item.isbn.trim()).map(item => ({
-        isbn: item.isbn,
-        title: item.title,
-        qty: item.qty,
-        unitPrice: item.unitPrice,
-        amount: item.amount
-      }))
-    };
+    // Filter items with ISBN
+    const validItems = formData.items.filter(item => item.isbn.trim());
 
+    // Check for duplicate ISBNs
+    const duplicates = checkDuplicateISBNs(validItems);
+    if (duplicates.length > 0) {
+      // Show confirmation dialog
+      setDuplicateDialog({
+        open: true,
+        duplicates: duplicates.map(d => ({
+          isbn: d.isbn,
+          count: d.count,
+          lineNumbers: d.indices.map(i => i + 1)
+        })),
+        action,
+        payload: {
+          ...(isDR ? { drNumber: formData.documentNumber } : { siNumber: formData.documentNumber }),
+          date: formData.date,
+          customerName: formData.customerName,
+          customerAddress: formData.customerAddress,
+          items: validItems.map(item => ({
+            isbn: item.isbn,
+            title: item.title,
+            qty: item.qty,
+            unitPrice: item.unitPrice,
+            amount: item.amount
+          }))
+        }
+      });
+      return;
+    }
+
+    // No duplicates, proceed with submit
+    submitForm(action, { ...(isDR ? { drNumber: formData.documentNumber } : { siNumber: formData.documentNumber }), date: formData.date, customerName: formData.customerName, customerAddress: formData.customerAddress, items: validItems.map(item => ({ isbn: item.isbn, title: item.title, qty: item.qty, unitPrice: item.unitPrice, amount: item.amount })) });
+  };
+
+  const submitForm = (action, payload, allowDuplicates = false) => {
     if (!isDR) {
       payload.poNumber = formData.poNumber;
       payload.discountPercentage = formData.discountPercentage;
     }
-
+    payload.allowDuplicates = allowDuplicates;
     onSubmit(payload, action);
   };
 
@@ -105,6 +159,88 @@ const DocumentForm = ({
       const message = err.response?.data?.message || err.message || 'Export failed';
       alert('Export failed: ' + message);
     }
+  };
+
+  // Handle duplicate ISBN dialog actions
+  const handleDuplicateConfirm = (removeDuplicates) => {
+    if (!duplicateDialog.payload || !duplicateDialog.action) return;
+
+    if (removeDuplicates) {
+      // Remove duplicate ISBNs - keep only first occurrence
+      const seenISBNs = new Set();
+      const uniqueItems = duplicateDialog.payload.items.filter(item => {
+        const isbn = item.isbn.trim();
+        if (seenISBNs.has(isbn)) {
+          return false;
+        }
+        seenISBNs.add(isbn);
+        return true;
+      });
+
+      submitForm(duplicateDialog.action, { ...duplicateDialog.payload, items: uniqueItems }, false);
+    } else {
+      // Proceed with duplicates
+      submitForm(duplicateDialog.action, duplicateDialog.payload, true);
+    }
+
+    setDuplicateDialog({ open: false, duplicates: [], action: null, payload: null });
+  };
+
+  // Render duplicate ISBN confirmation dialog
+  const DuplicateDialog = () => {
+    if (!duplicateDialog.open) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto" onClick={() => setDuplicateDialog({ open: false, duplicates: [], action: null, payload: null })}>
+        <div className="fixed inset-0 bg-black/50" />
+        <div className="relative mx-auto mt-20 w-full max-w-md bg-white rounded-xl shadow-xl p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-yellow-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Duplicate ISBNs Detected</h3>
+          </div>
+
+          <p className="text-gray-600 mb-4">The following ISBNs appear multiple times in your line items:</p>
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 max-h-48 overflow-y-auto">
+            {duplicateDialog.duplicates.map((dup, index) => (
+              <div key={index} className="mb-3 last:mb-0">
+                <p className="font-medium text-gray-900">ISBN: {dup.isbn}</p>
+                <p className="text-sm text-gray-600">
+                  Appears {dup.count} time{dup.count > 1 ? 's' : ''} (line{dup.count > 1 ? 's' : ''}: {dup.lineNumbers.join(', ')})
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-sm text-gray-600 mb-6">How would you like to proceed?</p>
+
+          <div className="flex space-x-3 justify-end">
+            <button
+              onClick={() => setDuplicateDialog({ open: false, duplicates: [], action: null, payload: null })}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDuplicateConfirm(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Trash2 className="w-4 h-4 inline mr-1" />
+              Remove Duplicates
+            </button>
+            <button
+              onClick={() => handleDuplicateConfirm(false)}
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+            >
+              <CheckCircle className="w-4 h-4 inline mr-1" />
+              Proceed Anyway
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -269,6 +405,8 @@ const DocumentForm = ({
           </div>
         </div>
       </div>
+      {/* Duplicate ISBN Dialog */}
+      <DuplicateDialog />
     </div>
   );
 };

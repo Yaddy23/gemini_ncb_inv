@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Loader, CheckCircle, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Plus, Trash2, Loader, CheckCircle, AlertTriangle, Copy, AlertCircle } from 'lucide-react';
 import { drsiApi } from '../../api/drsi';
 import { formatCurrency } from '../../utils/numberToWords';
 
@@ -7,6 +7,27 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
   const [lookupLoading, setLookupLoading] = useState({});
   const [lookupErrors, setLookupErrors] = useState({});
   const isbnInputRefs = useRef({});
+
+  // Find duplicate ISBNs in real-time
+  const duplicateISBNs = useMemo(() => {
+    const isbnMap = {};
+    items.forEach((item, index) => {
+      const isbn = item.isbn?.trim();
+      if (isbn) {
+        if (!isbnMap[isbn]) isbnMap[isbn] = [];
+        isbnMap[isbn].push(index);
+      }
+    });
+    const duplicates = {};
+    Object.entries(isbnMap).forEach(([isbn, indices]) => {
+      if (indices.length > 1) {
+        indices.forEach(idx => {
+          duplicates[idx] = { isbn, count: indices.length, indices };
+        });
+      }
+    });
+    return duplicates;
+  }, [items]);
 
   // Helper to format description: "Title / Edition / Bind / Year / by Author"
   const formatDescription = (book) => {
@@ -119,8 +140,40 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
 
   const subtotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
 
+// Get unique duplicate ISBNs for summary
+  const uniqueDuplicateISBNs = useMemo(() => {
+    const seen = new Set();
+    const unique = [];
+    Object.values(duplicateISBNs).forEach(dup => {
+      if (!seen.has(dup.isbn)) {
+        seen.add(dup.isbn);
+        unique.push(dup);
+      }
+    });
+    return unique;
+  }, [duplicateISBNs]);
+
   return (
     <div className="space-y-4">
+      {/* Duplicate ISBN Warning Banner */}
+      {uniqueDuplicateISBNs.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <div className="flex items-center space-x-2 text-yellow-800">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="font-medium">Duplicate ISBNs detected:</span>
+          </div>
+          <div className="mt-2 text-sm text-yellow-700">
+            {uniqueDuplicateISBNs.map((dup, idx) => (
+              <div key={idx} className="flex items-center space-x-2">
+                <span className="font-mono bg-yellow-100 px-2 py-0.5 rounded">{dup.isbn}</span>
+                <span>appears {dup.count} time{dup.count > 1 ? 's' : ''}</span>
+                <span className="text-yellow-600">(lines: {dup.indices.map(i => i + 1).join(', ')})</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <label className="font-medium text-gray-700">Line Items ({items.length}/{maxRows})</label>
         <button
@@ -149,7 +202,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {items.map((item, index) => (
-              <tr key={index} className="hover:bg-gray-50">
+              <tr key={index} className={`hover:bg-gray-50 ${duplicateISBNs[index] ? 'bg-yellow-50' : ''}`}>
                 <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
                 <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                   {item.isbn?.substring(0, 8) || ''}
@@ -171,7 +224,9 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
                       value={item.isbn || ''}
                       onChange={(e) => handleISBNChange(index, e.target.value)}
                       placeholder="Scan or type ISBN"
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary pr-8"
+                      className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-primary pr-12 ${
+                        duplicateISBNs[index] ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'
+                      }`}
                       autoComplete="off"
                     />
                     {lookupLoading[index] && (
@@ -184,7 +239,12 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
                         <AlertTriangle className="w-4 h-4 text-red-500" title={lookupErrors[index]} />
                       </div>
                     )}
-                    {item.title && !lookupLoading[index] && !lookupErrors[index] && (
+                    {duplicateISBNs[index] && !lookupLoading[index] && !lookupErrors[index] && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                        <AlertCircle className="w-4 h-4 text-yellow-500" title={`Duplicate ISBN (${duplicateISBNs[index].count} occurrences)`} />
+                      </div>
+                    )}
+                    {item.title && !lookupLoading[index] && !lookupErrors[index] && !duplicateISBNs[index] && (
                       <div className="absolute right-2 top-1/2 -translate-y-1/2">
                         <CheckCircle className="w-4 h-4 text-green-500" />
                       </div>

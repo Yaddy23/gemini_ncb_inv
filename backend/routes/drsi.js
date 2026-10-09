@@ -44,10 +44,40 @@ router.get('/dr', async (req, res) => {
   }
 });
 
+// Helper function to check for duplicate ISBNs
+const checkDuplicateISBNs = (items) => {
+  const isbnCounts = {};
+  const duplicates = [];
+
+  items.forEach((item, index) => {
+    const isbn = item.isbn?.trim();
+    if (isbn) {
+      if (isbnCounts[isbn] === undefined) {
+        isbnCounts[isbn] = { count: 1, indices: [index] };
+      } else {
+        isbnCounts[isbn].count++;
+        isbnCounts[isbn].indices.push(index);
+      }
+    }
+  });
+
+  for (const [isbn, data] of Object.entries(isbnCounts)) {
+    if (data.count > 1) {
+      duplicates.push({
+        isbn,
+        count: data.count,
+        indices: data.indices
+      });
+    }
+  }
+
+  return duplicates;
+};
+
 // Create DR (draft)
 router.post('/dr', async (req, res) => {
   try {
-    const { drNumber, date, customerName, customerAddress, items } = req.body;
+    const { drNumber, date, customerName, customerAddress, items, allowDuplicates } = req.body;
 
     if (!drNumber || !customerName || !items?.length) {
       return res.status(400).json({ message: 'drNumber, customerName, and items are required' });
@@ -56,6 +86,20 @@ router.post('/dr', async (req, res) => {
     const existing = await DeliveryReceipt.findOne({ drNumber });
     if (existing) {
       return res.status(400).json({ message: 'DR number already exists' });
+    }
+
+    // Check for duplicate ISBNs
+    const duplicates = checkDuplicateISBNs(items);
+    if (duplicates.length > 0 && !allowDuplicates) {
+      return res.status(409).json({
+        message: 'Duplicate ISBNs detected',
+        code: 'DUPLICATE_ISBNS',
+        duplicates: duplicates.map(d => ({
+          isbn: d.isbn,
+          count: d.count,
+          lineNumbers: d.indices.map(i => i + 1) // 1-based line numbers for user display
+        }))
+      });
     }
 
     const dr = new DeliveryReceipt({
@@ -95,7 +139,7 @@ router.put('/dr/:id', async (req, res) => {
     if (!dr) return res.status(404).json({ message: 'Delivery Receipt not found' });
     if (dr.status !== 'draft') return res.status(400).json({ message: 'Cannot update issued DR' });
 
-    const { drNumber, date, customerName, customerAddress, items } = req.body;
+    const { drNumber, date, customerName, customerAddress, items, allowDuplicates } = req.body;
 
     if (drNumber && drNumber !== dr.drNumber) {
       const existing = await DeliveryReceipt.findOne({ drNumber });
@@ -107,6 +151,20 @@ router.put('/dr/:id', async (req, res) => {
     if (customerName) dr.customerName = customerName;
     if (customerAddress !== undefined) dr.customerAddress = customerAddress;
     if (items) {
+      // Check for duplicate ISBNs
+      const duplicates = checkDuplicateISBNs(items);
+      if (duplicates.length > 0 && !allowDuplicates) {
+        return res.status(409).json({
+          message: 'Duplicate ISBNs detected',
+          code: 'DUPLICATE_ISBNS',
+          duplicates: duplicates.map(d => ({
+            isbn: d.isbn,
+            count: d.count,
+            lineNumbers: d.indices.map(i => i + 1)
+          }))
+        });
+      }
+
       dr.items = items.map(item => ({
         ...item,
         amount: item.qty * item.unitPrice
@@ -247,7 +305,7 @@ router.get('/si', async (req, res) => {
 // Create SI (draft)
 router.post('/si', async (req, res) => {
   try {
-    const { siNumber, drRef, date, customerName, customerAddress, poNumber, items, discountPercentage } = req.body;
+    const { siNumber, drRef, date, customerName, customerAddress, poNumber, items, discountPercentage, allowDuplicates } = req.body;
 
     if (!siNumber || !customerName || !items?.length) {
       return res.status(400).json({ message: 'siNumber, customerName, and items are required' });
@@ -255,6 +313,20 @@ router.post('/si', async (req, res) => {
 
     const existing = await SalesInvoice.findOne({ siNumber });
     if (existing) return res.status(400).json({ message: 'SI number already exists' });
+
+    // Check for duplicate ISBNs
+    const duplicates = checkDuplicateISBNs(items);
+    if (duplicates.length > 0 && !allowDuplicates) {
+      return res.status(409).json({
+        message: 'Duplicate ISBNs detected',
+        code: 'DUPLICATE_ISBNS',
+        duplicates: duplicates.map(d => ({
+          isbn: d.isbn,
+          count: d.count,
+          lineNumbers: d.indices.map(i => i + 1)
+        }))
+      });
+    }
 
     const si = new SalesInvoice({
       siNumber,
@@ -296,7 +368,7 @@ router.put('/si/:id', async (req, res) => {
     if (!si) return res.status(404).json({ message: 'Sales Invoice not found' });
     if (si.status !== 'draft') return res.status(400).json({ message: 'Cannot update issued SI' });
 
-    const { siNumber, date, customerName, customerAddress, poNumber, items, discountPercentage } = req.body;
+    const { siNumber, date, customerName, customerAddress, poNumber, items, discountPercentage, allowDuplicates } = req.body;
 
     if (siNumber && siNumber !== si.siNumber) {
       const existing = await SalesInvoice.findOne({ siNumber });
@@ -310,6 +382,20 @@ router.put('/si/:id', async (req, res) => {
     if (poNumber !== undefined) si.poNumber = poNumber;
     if (discountPercentage !== undefined) si.discountPercentage = discountPercentage;
     if (items) {
+      // Check for duplicate ISBNs
+      const duplicates = checkDuplicateISBNs(items);
+      if (duplicates.length > 0 && !allowDuplicates) {
+        return res.status(409).json({
+          message: 'Duplicate ISBNs detected',
+          code: 'DUPLICATE_ISBNS',
+          duplicates: duplicates.map(d => ({
+            isbn: d.isbn,
+            count: d.count,
+            lineNumbers: d.indices.map(i => i + 1)
+          }))
+        });
+      }
+
       si.items = items.map(item => ({
         ...item,
         amount: item.qty * item.unitPrice
