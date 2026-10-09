@@ -64,7 +64,8 @@ router.get('/', async (req, res) => {
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(Number(limit))
-        .populate('createdBy', 'username'),
+        .populate('createdBy', 'username')
+        .populate('marketingExecutive', 'name'),
       EvaluationForm.countDocuments(query)
     ]);
 
@@ -77,7 +78,7 @@ router.get('/', async (req, res) => {
 // Create EF (draft)
 router.post('/', async (req, res) => {
   try {
-    const { efNumber, date, customerName, customerAddress, items, allowDuplicates } = req.body;
+    const { efNumber, date, customerName, customerAddress, marketingExecutive, items, allowDuplicates } = req.body;
 
     if (!efNumber || !customerName || !items?.length) {
       return res.status(400).json({ message: 'efNumber, customerName, and items are required' });
@@ -107,6 +108,7 @@ router.post('/', async (req, res) => {
       date: date ? new Date(date) : new Date(),
       customerName,
       customerAddress,
+      marketingExecutive: marketingExecutive || null,
       items: items.map(item => ({
         ...item,
         amount: item.qty * item.unitPrice
@@ -115,6 +117,8 @@ router.post('/', async (req, res) => {
     });
 
     await ef.save();
+    // Populate marketingExecutive for response
+    await ef.populate('marketingExecutive', 'name');
     res.status(201).json(ef);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -124,7 +128,9 @@ router.post('/', async (req, res) => {
 // Get EF by ID
 router.get('/:id', async (req, res) => {
   try {
-    const ef = await EvaluationForm.findById(req.params.id).populate('createdBy', 'username');
+    const ef = await EvaluationForm.findById(req.params.id)
+      .populate('createdBy', 'username')
+      .populate('marketingExecutive', 'name');
     if (!ef) return res.status(404).json({ message: 'Evaluation Form not found' });
     res.json(ef);
   } catch (err) {
@@ -139,7 +145,7 @@ router.put('/:id', async (req, res) => {
     if (!ef) return res.status(404).json({ message: 'Evaluation Form not found' });
     if (ef.status !== 'draft') return res.status(400).json({ message: 'Cannot update issued EF' });
 
-    const { efNumber, date, customerName, customerAddress, items, allowDuplicates } = req.body;
+    const { efNumber, date, customerName, customerAddress, marketingExecutive, items, allowDuplicates } = req.body;
 
     if (efNumber && efNumber !== ef.efNumber) {
       const existing = await EvaluationForm.findOne({ efNumber });
@@ -150,6 +156,7 @@ router.put('/:id', async (req, res) => {
     if (date) ef.date = new Date(date);
     if (customerName) ef.customerName = customerName;
     if (customerAddress !== undefined) ef.customerAddress = customerAddress;
+    if (marketingExecutive !== undefined) ef.marketingExecutive = marketingExecutive || null;
     if (items) {
       // Check for duplicate ISBNs
       const duplicates = checkDuplicateISBNs(items);
@@ -172,6 +179,7 @@ router.put('/:id', async (req, res) => {
     }
 
     await ef.save();
+    await ef.populate('marketingExecutive', 'name');
     res.json(ef);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -206,6 +214,7 @@ router.post('/:id/issue', async (req, res) => {
       date: new Date(),
       customerName: ef.customerName,
       customerAddress: ef.customerAddress,
+      marketingExecutive: ef.marketingExecutive,
       items: ef.items.map(item => ({ ...item.toObject() })),
       createdBy: req.user._id
     });

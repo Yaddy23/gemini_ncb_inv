@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Loader, FileText, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, Loader, FileText, Edit, Trash2, Eye, User } from 'lucide-react';
 import { drsiApi } from '../api/drsi';
 import DocumentForm from '../components/drsi/DocumentForm';
 import { formatDate, formatCurrency } from '../utils/numberToWords';
@@ -177,6 +177,7 @@ const SalesInvoices = ({ user }) => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SI Number</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested By</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">P.O. #</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ref DR</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
@@ -192,6 +193,16 @@ const SalesInvoices = ({ user }) => {
                       <td className="px-4 py-3 font-mono text-sm font-medium text-gray-900">{si.siNumber}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{formatDate(si.date)}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{si.customerName}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 flex items-center space-x-1">
+                        {si.marketingExecutive ? (
+                          <>
+                            <User className="w-3 h-3 text-gray-400" />
+                            <span>{si.marketingExecutive.name || si.marketingExecutive}</span>
+                          </>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-500 font-mono">{si.poNumber || '-'}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">
                         {si.drRef?.drNumber || (si.drRef ? 'Linked' : '—')}

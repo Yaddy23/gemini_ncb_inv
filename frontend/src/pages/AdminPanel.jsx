@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Edit as EditIcon, Trash2, CheckCircle } from 'lucide-react';
 
 const AdminPanel = ({ user }) => {
   const [users, setUsers] = useState([]);
@@ -26,6 +26,21 @@ const AdminPanel = ({ user }) => {
     email: '',
     password: '',
     role: 'Staff'
+  });
+
+  // Marketing Executive states
+  const [executives, setExecutives] = useState([]);
+  const [execCurrentPage, setExecCurrentPage] = useState(1);
+  const [execTotalPages, setExecTotalPages] = useState(1);
+  const [execTotal, setExecTotal] = useState(0);
+  const [execSearch, setExecSearch] = useState('');
+  const [execIsActiveFilter, setExecIsActiveFilter] = useState('');
+  const [showExecCreateModal, setShowExecCreateModal] = useState(false);
+  const [showExecEditModal, setShowExecEditModal] = useState(false);
+  const [editingExecutive, setEditingExecutive] = useState(null);
+  const [newExecutive, setNewExecutive] = useState({
+    name: '',
+    isActive: true
   });
 
   // Filter states
@@ -221,11 +236,107 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Fetch marketing executives
+  const fetchExecutives = async (page = 1, search = '', isActive = '') => {
+    setLoading(true);
+    try {
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: '20',
+        search,
+        isActive
+      }).toString();
+
+      const response = await api.get(`/marketing-executives?${queryParams}`);
+      setExecutives(response.data.executives);
+      setExecTotalPages(response.data.pages);
+      setExecTotal(response.data.total);
+      setExecCurrentPage(page);
+    } catch (err) {
+      setError('Failed to fetch marketing executives');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle marketing executive creation
+  const handleCreateExecutive = async (e) => {
+    e.preventDefault();
+    if (!newExecutive.name.trim()) {
+      setError('Name is required');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await api.post('/marketing-executives', newExecutive);
+      setSuccess('Marketing Executive created successfully');
+      setShowExecCreateModal(false);
+      setNewExecutive({ name: '', isActive: true });
+      fetchExecutives(execCurrentPage, execSearch, execIsActiveFilter);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create marketing executive');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle marketing executive update
+  const handleUpdateExecutive = async (e) => {
+    e.preventDefault();
+    if (!editingExecutive) return;
+    if (!newExecutive.name.trim()) {
+      setError('Name is required');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await api.put(`/marketing-executives/${editingExecutive._id}`, newExecutive);
+      setSuccess('Marketing Executive updated successfully');
+      setShowExecEditModal(false);
+      setEditingExecutive(null);
+      setNewExecutive({ name: '', isActive: true });
+      fetchExecutives(execCurrentPage, execSearch, execIsActiveFilter);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update marketing executive');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle marketing executive deletion
+  const handleDeleteExecutive = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this marketing executive?')) return;
+    setLoading(true);
+    try {
+      await api.delete(`/marketing-executives/${id}`);
+      setSuccess('Marketing Executive deleted successfully');
+      fetchExecutives(execCurrentPage, execSearch, execIsActiveFilter);
+    } catch (err) {
+      setError('Failed to delete marketing executive');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle edit executive modal open
+  const handleEditExecutive = (executive) => {
+    setEditingExecutive(executive);
+    setNewExecutive({ name: executive.name, isActive: executive.isActive });
+    setShowExecEditModal(true);
+  };
+
   // Initialize data
   useEffect(() => {
     fetchUsers();
     fetchUserLogs();
     fetchFilterOptions();
+    fetchExecutives();
   }, []);
 
   // Refetch when page changes
@@ -263,8 +374,13 @@ const AdminPanel = ({ user }) => {
         </button>
         <button
           onClick={() => setActiveTab('logs')}
-          className={`${activeTab === 'logs' ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'} px-4 py-2 rounded`}>
+          className={`${activeTab === 'logs' ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'} px-4 py-2 mr-2 rounded`}>
           Activity Logs
+        </button>
+        <button
+          onClick={() => setActiveTab('executives')}
+          className={`${activeTab === 'executives' ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'} px-4 py-2 rounded`}>
+          Marketing Executives
         </button>
       </div>
 
@@ -525,6 +641,140 @@ const AdminPanel = ({ user }) => {
           )}
         </div>
       )}
+
+      {/* Marketing Executives Tab */}
+      {activeTab === 'executives' && (
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <input
+                  type="text"
+                  placeholder="Search marketing executives..."
+                  value={execSearch}
+                  onChange={(e) => {
+                    setExecSearch(e.target.value);
+                    setExecCurrentPage(1);
+                    fetchExecutives(1, e.target.value, execIsActiveFilter);
+                  }}
+                  className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={execIsActiveFilter}
+                  onChange={(e) => {
+                    setExecIsActiveFilter(e.target.value);
+                    setExecCurrentPage(1);
+                    fetchExecutives(1, execSearch, e.target.value);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All</option>
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowExecCreateModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add New Executive</span>
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {loading ? (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-4 text-center">
+                      Loading marketing executives...
+                    </td>
+                  </tr>
+                ) : executives.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                      No marketing executives found
+                    </td>
+                  </tr>
+                ) : (
+                  executives.map((exec) => (
+                    <tr key={exec._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {exec.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${exec.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {exec.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(exec.createdAt).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleEditExecutive(exec)}
+                          disabled={loading}
+                          className="px-3 py-1 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white rounded"
+                        >
+                          <EditIcon className="w-3 h-3 inline mr-1" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteExecutive(exec._id)}
+                          disabled={loading}
+                          className="ml-2 px-3 py-1 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded"
+                        >
+                          <Trash2 className="w-3 h-3 inline mr-1" />
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination for Executives */}
+          {execTotal > 0 && (
+            <div className="mt-4 flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                Showing {((execCurrentPage - 1) * 20) + 1}-{Math.min(execCurrentPage * 20, execTotal)} of {execTotal} executives
+              </div>
+              <div>
+                <button
+                  onClick={() => execCurrentPage > 1 && fetchExecutives(execCurrentPage - 1, execSearch, execIsActiveFilter)}
+                  disabled={loading || execCurrentPage === 1}
+                  className="px-3 py-1 mr-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => execCurrentPage < execTotalPages && fetchExecutives(execCurrentPage + 1, execSearch, execIsActiveFilter)}
+                  disabled={loading || execCurrentPage === execTotalPages}
+                  className="px-3 py-1 text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
 
     {/* Create User Modal */}
@@ -595,6 +845,114 @@ const AdminPanel = ({ user }) => {
                 className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
               >
                 {loading ? 'Creating...' : 'Create User'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+
+    {/* Create Marketing Executive Modal */}
+    {showExecCreateModal && (
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50" onClick={() => setShowExecCreateModal(false)} />
+        <div className="relative mx-auto mt-10 w-full max-w-md bg-white rounded-xl shadow-xl">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900">Create Marketing Executive</h2>
+            <button onClick={() => setShowExecCreateModal(false)} className="p-2 text-gray-500 hover:text-gray-700">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <form onSubmit={handleCreateExecutive} className="p-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={newExecutive.name}
+                onChange={(e) => setNewExecutive(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Marketing Executive Name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={newExecutive.isActive ? 'true' : 'false'}
+                onChange={(e) => setNewExecutive(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+              </select>
+            </div>
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowExecCreateModal(false)}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+              >
+                {loading ? 'Creating...' : 'Create Executive'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+
+    {/* Edit Marketing Executive Modal */}
+    {showExecEditModal && (
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50" onClick={() => { setShowExecEditModal(false); setEditingExecutive(null); setNewExecutive({ name: '', isActive: true }); }} />
+        <div className="relative mx-auto mt-10 w-full max-w-md bg-white rounded-xl shadow-xl">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900">Edit Marketing Executive</h2>
+            <button onClick={() => { setShowExecEditModal(false); setEditingExecutive(null); setNewExecutive({ name: '', isActive: true }); }} className="p-2 text-gray-500 hover:text-gray-700">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <form onSubmit={handleUpdateExecutive} className="p-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={newExecutive.name}
+                onChange={(e) => setNewExecutive(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Marketing Executive Name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={newExecutive.isActive ? 'true' : 'false'}
+                onChange={(e) => setNewExecutive(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+              </select>
+            </div>
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={() => { setShowExecEditModal(false); setEditingExecutive(null); setNewExecutive({ name: '', isActive: true }); }}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+              >
+                {loading ? 'Updating...' : 'Update Executive'}
               </button>
             </div>
           </form>

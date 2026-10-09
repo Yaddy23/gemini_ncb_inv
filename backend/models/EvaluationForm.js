@@ -13,6 +13,7 @@ const evaluationFormSchema = new mongoose.Schema({
   date: { type: Date, required: true, default: Date.now },
   customerName: { type: String, required: true, trim: true },
   customerAddress: { type: String, trim: true },
+  marketingExecutive: { type: mongoose.Schema.Types.ObjectId, ref: 'MarketingExecutive' },
   items: { type: [lineItemSchema], default: [] },
   subtotal: { type: Number, default: 0 },
   totalAmount: { type: Number, default: 0 },

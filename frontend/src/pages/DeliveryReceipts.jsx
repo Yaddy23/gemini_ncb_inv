@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Loader, FileText, Download, Printer, Edit, Trash2, Eye, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Plus, Search, Loader, FileText, Download, Printer, Edit, Trash2, Eye, AlertTriangle, CheckCircle, User } from 'lucide-react';
 import { drsiApi } from '../api/drsi';
 import DocumentForm from '../components/drsi/DocumentForm';
 import { formatDate, formatCurrency, numberToWords } from '../utils/numberToWords';
@@ -178,6 +178,7 @@ const DeliveryReceipts = ({ user }) => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">DR Number</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested By</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
@@ -192,6 +193,16 @@ const DeliveryReceipts = ({ user }) => {
                       <td className="px-4 py-3 font-mono text-sm font-medium text-gray-900">{dr.drNumber}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{formatDate(dr.date)}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{dr.customerName}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 flex items-center space-x-1">
+                        {dr.marketingExecutive ? (
+                          <>
+                            <User className="w-3 h-3 text-gray-400" />
+                            <span>{dr.marketingExecutive.name || dr.marketingExecutive}</span>
+                          </>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-500">{dr.items?.length || 0} items</td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">{formatCurrency(dr.totalAmount)}</td>
                       <td className="px-4 py-3">{getStatusBadge(dr.status)}</td>

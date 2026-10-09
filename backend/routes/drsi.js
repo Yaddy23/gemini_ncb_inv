@@ -35,7 +35,8 @@ router.get('/dr', async (req, res) => {
         .skip((page - 1) * limit)
         .limit(Number(limit))
         .populate('createdBy', 'username')
-        .populate('efRef', 'efNumber'),
+        .populate('efRef', 'efNumber')
+        .populate('marketingExecutive', 'name'),
       DeliveryReceipt.countDocuments(query)
     ]);
 
@@ -78,7 +79,7 @@ const checkDuplicateISBNs = (items) => {
 // Create DR (draft)
 router.post('/dr', async (req, res) => {
   try {
-    const { drNumber, date, customerName, customerAddress, items, allowDuplicates } = req.body;
+    const { drNumber, date, customerName, customerAddress, marketingExecutive, items, allowDuplicates } = req.body;
 
     if (!drNumber || !customerName || !items?.length) {
       return res.status(400).json({ message: 'drNumber, customerName, and items are required' });
@@ -108,6 +109,7 @@ router.post('/dr', async (req, res) => {
       date: date ? new Date(date) : new Date(),
       customerName,
       customerAddress,
+      marketingExecutive: marketingExecutive || null,
       items: items.map(item => ({
         ...item,
         amount: item.qty * item.unitPrice
@@ -116,6 +118,7 @@ router.post('/dr', async (req, res) => {
     });
 
     await dr.save();
+    await dr.populate('marketingExecutive', 'name');
     res.status(201).json(dr);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -127,7 +130,8 @@ router.get('/dr/:id', async (req, res) => {
   try {
     const dr = await DeliveryReceipt.findById(req.params.id)
       .populate('createdBy', 'username')
-      .populate('efRef', 'efNumber');
+      .populate('efRef', 'efNumber')
+      .populate('marketingExecutive', 'name');
     if (!dr) return res.status(404).json({ message: 'Delivery Receipt not found' });
     res.json(dr);
   } catch (err) {
@@ -142,7 +146,7 @@ router.put('/dr/:id', async (req, res) => {
     if (!dr) return res.status(404).json({ message: 'Delivery Receipt not found' });
     if (dr.status !== 'draft') return res.status(400).json({ message: 'Cannot update issued DR' });
 
-    const { drNumber, date, customerName, customerAddress, items, allowDuplicates } = req.body;
+    const { drNumber, date, customerName, customerAddress, marketingExecutive, items, allowDuplicates } = req.body;
 
     if (drNumber && drNumber !== dr.drNumber) {
       const existing = await DeliveryReceipt.findOne({ drNumber });
@@ -153,6 +157,7 @@ router.put('/dr/:id', async (req, res) => {
     if (date) dr.date = new Date(date);
     if (customerName) dr.customerName = customerName;
     if (customerAddress !== undefined) dr.customerAddress = customerAddress;
+    if (marketingExecutive !== undefined) dr.marketingExecutive = marketingExecutive || null;
     if (items) {
       // Check for duplicate ISBNs
       const duplicates = checkDuplicateISBNs(items);
@@ -175,6 +180,7 @@ router.put('/dr/:id', async (req, res) => {
     }
 
     await dr.save();
+    await dr.populate('marketingExecutive', 'name');
     res.json(dr);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -295,7 +301,8 @@ router.get('/si', async (req, res) => {
         .skip((page - 1) * limit)
         .limit(Number(limit))
         .populate('createdBy', 'username')
-        .populate('drRef', 'drNumber'),
+        .populate('drRef', 'drNumber')
+        .populate('marketingExecutive', 'name'),
       SalesInvoice.countDocuments(query)
     ]);
 
@@ -308,7 +315,7 @@ router.get('/si', async (req, res) => {
 // Create SI (draft)
 router.post('/si', async (req, res) => {
   try {
-    const { siNumber, drRef, date, customerName, customerAddress, poNumber, items, discountPercentage, allowDuplicates } = req.body;
+    const { siNumber, drRef, date, customerName, customerAddress, marketingExecutive, poNumber, items, discountPercentage, allowDuplicates } = req.body;
 
     if (!siNumber || !customerName || !items?.length) {
       return res.status(400).json({ message: 'siNumber, customerName, and items are required' });
@@ -337,6 +344,7 @@ router.post('/si', async (req, res) => {
       date: date ? new Date(date) : new Date(),
       customerName,
       customerAddress,
+      marketingExecutive: marketingExecutive || null,
       poNumber,
       discountPercentage: discountPercentage || 0,
       items: items.map(item => ({
@@ -347,6 +355,7 @@ router.post('/si', async (req, res) => {
     });
 
     await si.save();
+    await si.populate('marketingExecutive', 'name');
     res.status(201).json(si);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -356,7 +365,10 @@ router.post('/si', async (req, res) => {
 // Get SI by ID
 router.get('/si/:id', async (req, res) => {
   try {
-    const si = await SalesInvoice.findById(req.params.id).populate('createdBy', 'username').populate('drRef', 'drNumber');
+    const si = await SalesInvoice.findById(req.params.id)
+      .populate('createdBy', 'username')
+      .populate('drRef', 'drNumber')
+      .populate('marketingExecutive', 'name');
     if (!si) return res.status(404).json({ message: 'Sales Invoice not found' });
     res.json(si);
   } catch (err) {
@@ -371,7 +383,7 @@ router.put('/si/:id', async (req, res) => {
     if (!si) return res.status(404).json({ message: 'Sales Invoice not found' });
     if (si.status !== 'draft') return res.status(400).json({ message: 'Cannot update issued SI' });
 
-    const { siNumber, date, customerName, customerAddress, poNumber, items, discountPercentage, allowDuplicates } = req.body;
+    const { siNumber, date, customerName, customerAddress, marketingExecutive, poNumber, items, discountPercentage, allowDuplicates } = req.body;
 
     if (siNumber && siNumber !== si.siNumber) {
       const existing = await SalesInvoice.findOne({ siNumber });
@@ -382,6 +394,7 @@ router.put('/si/:id', async (req, res) => {
     if (date) si.date = new Date(date);
     if (customerName) si.customerName = customerName;
     if (customerAddress !== undefined) si.customerAddress = customerAddress;
+    if (marketingExecutive !== undefined) si.marketingExecutive = marketingExecutive || null;
     if (poNumber !== undefined) si.poNumber = poNumber;
     if (discountPercentage !== undefined) si.discountPercentage = discountPercentage;
     if (items) {
@@ -406,6 +419,7 @@ router.put('/si/:id', async (req, res) => {
     }
 
     await si.save();
+    await si.populate('marketingExecutive', 'name');
     res.json(si);
   } catch (err) {
     res.status(400).json({ message: err.message });

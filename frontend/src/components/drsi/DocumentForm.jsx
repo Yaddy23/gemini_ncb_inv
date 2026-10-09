@@ -22,6 +22,7 @@ const DocumentForm = ({
     date: formatDateInput(new Date()),
     customerName: '',
     customerAddress: '',
+    marketingExecutive: '',
     poNumber: '',
     discountPercentage: 0,
     items: [{ isbn: '', title: '', qty: 1, unitPrice: 0, amount: 0 }]
@@ -29,6 +30,24 @@ const DocumentForm = ({
 
   const [errors, setErrors] = useState({});
   const [duplicateDialog, setDuplicateDialog] = useState({ open: false, duplicates: [], action: null, payload: null });
+  const [marketingExecutives, setMarketingExecutives] = useState([]);
+  const [loadingExecutives, setLoadingExecutives] = useState(false);
+
+  // Fetch active marketing executives for dropdown
+  useEffect(() => {
+    const fetchExecutives = async () => {
+      setLoadingExecutives(true);
+      try {
+        const response = await api.get('/marketing-executives/active');
+        setMarketingExecutives(response.data);
+      } catch (err) {
+        console.error('Failed to fetch marketing executives:', err);
+      } finally {
+        setLoadingExecutives(false);
+      }
+    };
+    fetchExecutives();
+  }, []);
 
   useEffect(() => {
     if (initialData) {
@@ -37,6 +56,7 @@ const DocumentForm = ({
         date: initialData.date ? formatDateInput(initialData.date) : formatDateInput(new Date()),
         customerName: initialData.customerName || '',
         customerAddress: initialData.customerAddress || '',
+        marketingExecutive: initialData.marketingExecutive?._id || initialData.marketingExecutive || '',
         poNumber: initialData.poNumber || '',
         discountPercentage: initialData.discountPercentage || 0,
         items: initialData.items?.length ? initialData.items : [{ isbn: '', title: '', qty: 1, unitPrice: 0, amount: 0 }]
@@ -113,6 +133,7 @@ const DocumentForm = ({
           date: formData.date,
           customerName: formData.customerName,
           customerAddress: formData.customerAddress,
+          marketingExecutive: formData.marketingExecutive || null,
           items: validItems.map(item => ({
             isbn: item.isbn,
             title: item.title,
@@ -126,7 +147,7 @@ const DocumentForm = ({
     }
 
     // No duplicates, proceed with submit
-    submitForm(action, { ...(isDR ? { drNumber: formData.documentNumber } : isEF ? { efNumber: formData.documentNumber } : { siNumber: formData.documentNumber }), date: formData.date, customerName: formData.customerName, customerAddress: formData.customerAddress, items: validItems.map(item => ({ isbn: item.isbn, title: item.title, qty: item.qty, unitPrice: item.unitPrice, amount: item.amount })) });
+    submitForm(action, { ...(isDR ? { drNumber: formData.documentNumber } : isEF ? { efNumber: formData.documentNumber } : { siNumber: formData.documentNumber }), date: formData.date, customerName: formData.customerName, customerAddress: formData.customerAddress, marketingExecutive: formData.marketingExecutive || null, items: validItems.map(item => ({ isbn: item.isbn, title: item.title, qty: item.qty, unitPrice: item.unitPrice, amount: item.amount })) });
   };
 
   const submitForm = (action, payload, allowDuplicates = false) => {
@@ -292,6 +313,21 @@ const DocumentForm = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 disabled={loading}
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Requested By</label>
+              <select
+                value={formData.marketingExecutive}
+                onChange={(e) => setFormData(prev => ({ ...prev, marketingExecutive: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                disabled={loading || loadingExecutives}
+              >
+                <option value="">Select Marketing Executive</option>
+                {marketingExecutives.map(exec => (
+                  <option key={exec._id} value={exec._id}>{exec.name}</option>
+                ))}
+              </select>
+              {loadingExecutives && <p className="mt-1 text-sm text-gray-500">Loading executives...</p>}
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name <span className="text-red-500">*</span></label>

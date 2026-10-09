@@ -159,6 +159,12 @@ async function fillEFSheet(workbook, data) {
   efNumberCell.font = { bold: true, size: 28, color: { argb: 'FF000000' }, name: 'Arial Narrow', family: 2 };
   efNumberCell.alignment = { horizontal: 'center' };
 
+  // Marketing Executive in G4 (on top of date)
+  if (data.marketingExecutive) {
+    const meName = data.marketingExecutive.name || data.marketingExecutive;
+    setCellValue(sheet, 'G4', meName);
+  }
+
   // Date in G5/H5 (overwrite TODAY() formula with actual EF date)
   const dateValue = data.date ? formatDate(data.date) : formatDate(new Date());
   const g5Cell = setCellValue(sheet, 'G5', dateValue);
@@ -227,6 +233,13 @@ async function fillDR1Sheet(workbook, data) {
 
   // Fill header info
   setCellValue(sheet, 'E5', data.customerName || '');
+
+  // Marketing Executive in G4 (on top of date in H5)
+  if (data.marketingExecutive) {
+    const meName = data.marketingExecutive.name || data.marketingExecutive;
+    setCellValue(sheet, 'G4', meName);
+  }
+
   const h5Cell = setCellValue(sheet, 'H5', formatDate(data.date));
   h5Cell.numFmt = 'mm/dd/yyyy';
   setCellValue(sheet, 'E6', data.customerAddress || '');
@@ -269,16 +282,28 @@ async function fillINV1Sheet(workbook, data) {
   const items = data.items || [];
 
   // Fill header info (directly, not relying on DR1 cross-sheet formulas)
-  setCellValue(sheet, 'A1', 'SALES INVOICE');
-  setCellValue(sheet, 'A3', data.customerName || '');
-  setCellValue(sheet, 'B4', data.siNumber || '');
+  // NOTE: Per user requirements, do NOT write to A1 (SALES INVOICE) or B4 (SI Number)
+
+  // Marketing Executive in H14 (on top of date)
+  if (data.marketingExecutive) {
+    const meName = data.marketingExecutive.name || data.marketingExecutive;
+    setCellValue(sheet, 'H14', meName);
+  }
+
   const e4Cell = setCellValue(sheet, 'E4', formatDate(data.date));
   e4Cell.numFmt = 'mm/dd/yyyy';
-  setCellValue(sheet, 'H4', data.poNumber || '');
-  setCellValue(sheet, 'B5', data.customerAddress || '');
 
-  // Clear H14/I14 (template has unwanted data in these cells)
-  setCellValue(sheet, 'H14', '');
+  // Customer Name in E15
+  setCellValue(sheet, 'E15', data.customerName || '');
+  // Address in E17
+  setCellValue(sheet, 'E17', data.customerAddress || '');
+  // P.O.# in E19 with "P.O.#: " prefix
+  setCellValue(sheet, 'E19', data.poNumber ? `P.O.#: ${data.poNumber}` : '');
+
+  // Clear H14/I14 (template has unwanted data in these cells) - but don't clear H14 if marketing executive is set
+  if (!data.marketingExecutive) {
+    setCellValue(sheet, 'H14', '');
+  }
   setCellValue(sheet, 'I14', '');
 
   // Fill line items (rows 23-670, 648 rows max)
@@ -420,6 +445,11 @@ function generateDR1HTML(data, items, subtotal, total, amountWords, dateStr) {
     </tr>
   `).join('');
 
+  // Marketing Executive HTML (if present)
+  const marketingExecHtml = data.marketingExecutive
+    ? `<div class="marketing-exec">${data.marketingExecutive.name || data.marketingExecutive}</div>`
+    : '';
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -431,6 +461,7 @@ function generateDR1HTML(data, items, subtotal, total, amountWords, dateStr) {
     .company { font-size: 14px; font-weight: bold; }
     .address { font-size: 10px; }
     .dr-info { float: right; margin-top: -40px; }
+    .marketing-exec { margin-bottom: 10px; font-weight: bold; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #000; padding: 4px; font-size: 9px; }
     th { background: #f0f0f0; font-weight: bold; text-align: center; }
@@ -446,6 +477,7 @@ function generateDR1HTML(data, items, subtotal, total, amountWords, dateStr) {
     <div class="company">DELIVERY RECEIPT</div>
     <div class="company">${data.customerName || ''}</div>
     <div class="address">${data.customerAddress || ''}</div>
+    ${marketingExecHtml}
     <div class="dr-info">
       <strong>DR No.:</strong> ${data.drNumber || ''}<br>
       <strong>Date:</strong> ${dateStr}<br>
@@ -522,6 +554,11 @@ function generateINV1HTML(data, items, subtotal, discountPercentage, discountAmo
       </tr>
   ` : '';
 
+  // Marketing Executive HTML (if present)
+  const marketingExecHtml = data.marketingExecutive
+    ? `<div class="marketing-exec">${data.marketingExecutive.name || data.marketingExecutive}</div>`
+    : '';
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -533,6 +570,7 @@ function generateINV1HTML(data, items, subtotal, discountPercentage, discountAmo
     .title { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 10px; }
     .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; font-size: 9px; }
     .info-label { font-weight: bold; }
+    .marketing-exec { grid-column: span 4; margin-bottom: 10px; font-weight: bold; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
     th, td { border: 1px solid #000; padding: 3px; font-size: 8px; }
     th { background: #f0f0f0; font-weight: bold; text-align: center; }
@@ -544,14 +582,12 @@ function generateINV1HTML(data, items, subtotal, discountPercentage, discountAmo
 </head>
 <body>
   <div class="header">
-    <div class="title">SALES INVOICE</div>
+    ${marketingExecHtml}
     <div class="info-grid">
       <div><span class="info-label">Customer:</span> ${data.customerName || ''}</div>
-      <div><span class="info-label">SI No.:</span> ${data.siNumber || ''}</div>
       <div><span class="info-label">Date:</span> ${dateStr}</div>
-      <div><span class="info-label">P.O. #:</span> ${data.poNumber || ''}</div>
+      <div><span class="info-label">P.O. #:</span> ${data.poNumber ? `P.O.#: ${data.poNumber}` : ''}</div>
       <div style="grid-column: span 2;"><span class="info-label">Address:</span> ${data.customerAddress || ''}</div>
-      <div><span class="info-label">Contact:</span> </div>
     </div>
   </div>
 
