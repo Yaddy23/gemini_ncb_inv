@@ -181,6 +181,7 @@ const DeliveryReceipts = ({ user }) => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">EF Ref</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
@@ -194,6 +195,9 @@ const DeliveryReceipts = ({ user }) => {
                       <td className="px-4 py-3 text-sm text-gray-500">{dr.items?.length || 0} items</td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">{formatCurrency(dr.totalAmount)}</td>
                       <td className="px-4 py-3">{getStatusBadge(dr.status)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        {dr.efRef ? dr.efRef.efNumber : '—'}
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-500">{formatDate(dr.createdAt)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center space-x-1 justify-end">

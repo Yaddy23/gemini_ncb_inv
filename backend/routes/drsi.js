@@ -34,7 +34,8 @@ router.get('/dr', async (req, res) => {
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(Number(limit))
-        .populate('createdBy', 'username'),
+        .populate('createdBy', 'username')
+        .populate('efRef', 'efNumber'),
       DeliveryReceipt.countDocuments(query)
     ]);
 
@@ -124,7 +125,9 @@ router.post('/dr', async (req, res) => {
 // Get DR by ID
 router.get('/dr/:id', async (req, res) => {
   try {
-    const dr = await DeliveryReceipt.findById(req.params.id).populate('createdBy', 'username');
+    const dr = await DeliveryReceipt.findById(req.params.id)
+      .populate('createdBy', 'username')
+      .populate('efRef', 'efNumber');
     if (!dr) return res.status(404).json({ message: 'Delivery Receipt not found' });
     res.json(dr);
   } catch (err) {
