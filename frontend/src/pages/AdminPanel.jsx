@@ -243,11 +243,13 @@ const AdminPanel = ({ user }) => {
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: '20',
-        search,
-        isActive
-      }).toString();
+        search
+      });
+      if (isActive !== '') {
+        queryParams.append('isActive', isActive);
+      }
 
-      const response = await api.get(`/marketing-executives?${queryParams}`);
+      const response = await api.get(`/marketing-executives?${queryParams.toString()}`);
       setExecutives(response.data.executives);
       setExecTotalPages(response.data.pages);
       setExecTotal(response.data.total);
