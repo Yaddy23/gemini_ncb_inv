@@ -277,12 +277,14 @@ async function fillINV1Sheet(workbook, data) {
   setCellValue(sheet, 'H14', '');
   setCellValue(sheet, 'I14', '');
 
-  // Fill line items (rows 23-50, 28 rows max)
+  // Fill line items (rows 23-322, 300 rows max)
   // Columns: B=NO., C=ISBN/BARCODE, D=(empty), E=TITLE, F=QTY., G=(dup), H=UNIT PRICE, I=AMOUNT
   const startRow = 23;
+  const maxRow = 322; // 300 rows (23-322)
+
   items.forEach((item, index) => {
     const row = startRow + index;
-    if (row > 50) return; // Template has 28 rows (23-50)
+    if (row > maxRow) return; // Template has 300 rows (23-322)
 
     setCellValue(sheet, `B${row}`, index + 1);           // B: NO.
     setCellValue(sheet, `C${row}`, item.isbn || '');     // C: ISBN/BARCODE
@@ -293,6 +295,14 @@ async function fillINV1Sheet(workbook, data) {
     setCellValue(sheet, `H${row}`, item.unitPrice);      // H: UNIT PRICE
     setCellValue(sheet, `I${row}`, item.amount);         // I: AMOUNT
   });
+
+  // Hide empty rows after the last item (where C-I have no values)
+  // The template has row numbers in B23:B322, but we only show rows with actual items
+  const lastItemRow = startRow + items.length - 1;
+  for (let row = lastItemRow + 1; row <= maxRow; row++) {
+    const rowObj = sheet.getRow(row);
+    rowObj.hidden = true;
+  }
 
   // Template handles totals at row 675/677 automatically
   // Discount is only for DB recording, not for Excel export
