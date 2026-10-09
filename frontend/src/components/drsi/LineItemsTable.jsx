@@ -6,7 +6,16 @@ import { formatCurrency } from '../../utils/numberToWords';
 const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) => {
   const [lookupLoading, setLookupLoading] = useState({});
   const [lookupErrors, setLookupErrors] = useState({});
+  const [focusNextInput, setFocusNextInput] = useState(false);
   const isbnInputRefs = useRef({});
+
+  // Focus the next input when a new row is added after successful scan
+  useEffect(() => {
+    if (focusNextInput && isbnInputRefs.current[items.length - 1]) {
+      isbnInputRefs.current[items.length - 1].focus();
+      setFocusNextInput(false);
+    }
+  }, [focusNextInput, items.length]);
 
   // Find duplicate ISBNs in real-time
   const duplicateISBNs = useMemo(() => {
@@ -83,6 +92,8 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
               unitPrice: 0,
               amount: 0
             });
+            // Trigger focus on the new input after state updates
+            setFocusNextInput(true);
           }
         } else {
           setLookupErrors(prev => ({ ...prev, [index]: 'Book not found' }));
