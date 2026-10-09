@@ -68,6 +68,22 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
             amount: (book.PRICE || 0) * (newItems[index].qty || 1)
           };
           setLookupErrors(prev => ({ ...prev, [index]: null }));
+
+          // Auto-add new row after successful scan if this is the last row and we haven't reached maxRows
+          if (index === newItems.length - 1 && newItems.length < maxRows) {
+            newItems.push({
+              isbn: '',
+              title: '',
+              rawTitle: '',
+              edition: '',
+              bind: '',
+              year: '',
+              author: '',
+              qty: 1,
+              unitPrice: 0,
+              amount: 0
+            });
+          }
         } else {
           setLookupErrors(prev => ({ ...prev, [index]: 'Book not found' }));
         }
