@@ -167,14 +167,14 @@ async function fillEFSheet(workbook, data) {
   // NOTE: Keep template's header content in E5/E6 (company name/address)
   // Do NOT overwrite E5 ("Manila Central University") and E6 ("Metro Manila")
 
-  // Fill line items (rows 12-311, 300 rows max)
+  // Fill line items (rows 12-659, 648 rows max)
   // Columns: B=NO., C=QTY., D=cps./cpy., E=ISBN, F=TITLE, G=UNIT PRICE, H=AMOUNT
   const startRow = 12;
-  const maxRow = 311; // 300 rows (12-311)
+  const maxRow = 659; // 648 rows (12-659)
 
   items.forEach((item, index) => {
     const row = startRow + index;
-    if (row > maxRow) return; // Template has 300 rows (12-311)
+    if (row > maxRow) return; // Template has 648 rows (12-659)
 
     setCellValue(sheet, `B${row}`, index + 1);           // B: NO.
     setCellValue(sheet, `C${row}`, item.qty);            // C: QTY.
@@ -187,7 +187,7 @@ async function fillEFSheet(workbook, data) {
   });
 
   // Hide empty rows after the last item (where C-H have no values)
-  // The template has row numbers in B12:B311, but we only show rows with actual items
+  // The template has row numbers in B12:B659, but we only show rows with actual items
   const lastItemRow = startRow + items.length - 1;
   for (let row = lastItemRow + 1; row <= maxRow; row++) {
     const rowObj = sheet.getRow(row);
@@ -228,14 +228,14 @@ async function fillDR1Sheet(workbook, data) {
   setCellValue(sheet, 'H5', formatDate(data.date));
   setCellValue(sheet, 'E6', data.customerAddress || '');
 
-  // Fill line items (rows 12-311, 300 rows max)
+  // Fill line items (rows 12-659, 648 rows max)
   // Columns: B=NO., C=QTY., D=cps./cpy., E=ISBN, F=TITLE, G=UNIT PRICE, H=AMOUNT
   const startRow = 12;
-  const maxRow = 311; // 300 rows (12-311)
+  const maxRow = 659; // 648 rows (12-659)
 
   items.forEach((item, index) => {
     const row = startRow + index;
-    if (row > maxRow) return; // Template has 300 rows (12-311)
+    if (row > maxRow) return; // Template has 648 rows (12-659)
 
     setCellValue(sheet, `B${row}`, index + 1);           // B: NO.
     setCellValue(sheet, `C${row}`, item.qty);            // C: QTY.
@@ -248,7 +248,7 @@ async function fillDR1Sheet(workbook, data) {
   });
 
   // Hide empty rows after the last item (where C-H have no values)
-  // The template has row numbers in B12:B311, but we only show rows with actual items
+  // The template has row numbers in B12:B659, but we only show rows with actual items
   const lastItemRow = startRow + items.length - 1;
   for (let row = lastItemRow + 1; row <= maxRow; row++) {
     const rowObj = sheet.getRow(row);
@@ -277,14 +277,14 @@ async function fillINV1Sheet(workbook, data) {
   setCellValue(sheet, 'H14', '');
   setCellValue(sheet, 'I14', '');
 
-  // Fill line items (rows 23-322, 300 rows max)
+  // Fill line items (rows 23-670, 648 rows max)
   // Columns: B=NO., C=ISBN/BARCODE, D=(empty), E=TITLE, F=QTY., G=(dup), H=UNIT PRICE, I=AMOUNT
   const startRow = 23;
-  const maxRow = 322; // 300 rows (23-322)
+  const maxRow = 670; // 648 rows (23-670)
 
   items.forEach((item, index) => {
     const row = startRow + index;
-    if (row > maxRow) return; // Template has 300 rows (23-322)
+    if (row > maxRow) return; // Template has 648 rows (23-670)
 
     setCellValue(sheet, `B${row}`, index + 1);           // B: NO.
     setCellValue(sheet, `C${row}`, item.isbn || '');     // C: ISBN/BARCODE
@@ -297,7 +297,7 @@ async function fillINV1Sheet(workbook, data) {
   });
 
   // Hide empty rows after the last item (where C-I have no values)
-  // The template has row numbers in B23:B322, but we only show rows with actual items
+  // The template has row numbers in B23:B670, but we only show rows with actual items
   const lastItemRow = startRow + items.length - 1;
   for (let row = lastItemRow + 1; row <= maxRow; row++) {
     const rowObj = sheet.getRow(row);
