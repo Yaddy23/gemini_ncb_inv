@@ -17,6 +17,7 @@ const deliveryReceiptSchema = new mongoose.Schema({
   subtotal: { type: Number, default: 0 },
   totalAmount: { type: Number, default: 0 },
   status: { type: String, enum: ['draft', 'issued'], default: 'draft' },
+  efRef: { type: mongoose.Schema.Types.ObjectId, ref: 'EntryForm' }, // Reference to source EF
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

@@ -49,12 +49,14 @@ const bookRoutes = require('./routes/books');
 const stockRoutes = require('./routes/stock');
 const userLogRoutes = require('./routes/userLog');
 const drsiRoutes = require('./routes/drsi');
+const efRoutes = require('./routes/ef');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/user-logs', userLogRoutes);
 app.use('/api/drsi', drsiRoutes);
+app.use('/api/ef', efRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

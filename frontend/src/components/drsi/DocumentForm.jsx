@@ -5,7 +5,7 @@ import { formatDate, formatDateInput } from '../../utils/numberToWords';
 import api from '../../api/axios';
 
 const DocumentForm = ({
-  documentType, // 'DR' or 'SI'
+  documentType, // 'DR', 'SI', or 'EF'
   initialData,
   onSubmit,
   onClose,
@@ -13,8 +13,9 @@ const DocumentForm = ({
   exporting
 }) => {
   const isDR = documentType === 'DR';
-  const title = isDR ? 'Delivery Receipt' : 'Sales Invoice';
-  const numberLabel = isDR ? 'DR Number' : 'SI Number';
+  const isEF = documentType === 'EF';
+  const title = isDR ? 'Delivery Receipt' : isEF ? 'Entry Form' : 'Sales Invoice';
+  const numberLabel = isDR ? 'DR Number' : isEF ? 'EF Number' : 'SI Number';
 
   const [formData, setFormData] = useState({
     documentNumber: '',
@@ -32,7 +33,7 @@ const DocumentForm = ({
   useEffect(() => {
     if (initialData) {
       setFormData({
-        documentNumber: initialData.drNumber || initialData.siNumber || '',
+        documentNumber: initialData.drNumber || initialData.siNumber || initialData.efNumber || '',
         date: initialData.date ? formatDateInput(initialData.date) : formatDateInput(new Date()),
         customerName: initialData.customerName || '',
         customerAddress: initialData.customerAddress || '',
@@ -108,7 +109,7 @@ const DocumentForm = ({
         })),
         action,
         payload: {
-          ...(isDR ? { drNumber: formData.documentNumber } : { siNumber: formData.documentNumber }),
+          ...(isDR ? { drNumber: formData.documentNumber } : isEF ? { efNumber: formData.documentNumber } : { siNumber: formData.documentNumber }),
           date: formData.date,
           customerName: formData.customerName,
           customerAddress: formData.customerAddress,
@@ -125,11 +126,11 @@ const DocumentForm = ({
     }
 
     // No duplicates, proceed with submit
-    submitForm(action, { ...(isDR ? { drNumber: formData.documentNumber } : { siNumber: formData.documentNumber }), date: formData.date, customerName: formData.customerName, customerAddress: formData.customerAddress, items: validItems.map(item => ({ isbn: item.isbn, title: item.title, qty: item.qty, unitPrice: item.unitPrice, amount: item.amount })) });
+    submitForm(action, { ...(isDR ? { drNumber: formData.documentNumber } : isEF ? { efNumber: formData.documentNumber } : { siNumber: formData.documentNumber }), date: formData.date, customerName: formData.customerName, customerAddress: formData.customerAddress, items: validItems.map(item => ({ isbn: item.isbn, title: item.title, qty: item.qty, unitPrice: item.unitPrice, amount: item.amount })) });
   };
 
   const submitForm = (action, payload, allowDuplicates = false) => {
-    if (!isDR) {
+    if (!isDR && !isEF) {
       payload.poNumber = formData.poNumber;
       payload.discountPercentage = formData.discountPercentage;
     }
@@ -140,9 +141,14 @@ const DocumentForm = ({
   const handleExport = async (format) => {
     if (!initialData?._id) return alert('Save document first before exporting');
     try {
-      const url = isDR
-        ? `/drsi/dr/${initialData._id}/export?format=${format}`
-        : `/drsi/si/${initialData._id}/export?format=${format}`;
+      let url;
+      if (isDR) {
+        url = `/drsi/dr/${initialData._id}/export?format=${format}`;
+      } else if (isEF) {
+        url = `/ef/${initialData._id}/export?format=${format}`;
+      } else {
+        url = `/drsi/si/${initialData._id}/export?format=${format}`;
+      }
 
       const response = await api.get(url, { responseType: 'blob' });
 
@@ -272,7 +278,7 @@ const DocumentForm = ({
                 value={formData.documentNumber}
                 onChange={(e) => setFormData(prev => ({ ...prev, documentNumber: e.target.value }))}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errors.documentNumber ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder={isDR ? 'DR-20240101-001' : 'SI-20240101-001'}
+                placeholder={isDR ? 'DR-20240101-001' : isEF ? 'EF-20240101-001' : 'SI-20240101-001'}
                 disabled={loading}
               />
               {errors.documentNumber && <p className="mt-1 text-sm text-red-500">{errors.documentNumber}</p>}
@@ -309,7 +315,7 @@ const DocumentForm = ({
                 disabled={loading}
               />
             </div>
-            {!isDR && (
+            {!isDR && !isEF && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">P.O. Number</label>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, LogIn, LogOut, User, Plus, Barcode, ShoppingBag, Settings, Loader, LayoutDashboard, X, FileText, Receipt } from 'lucide-react';
+import { Menu, LogIn, LogOut, User, Plus, Barcode, ShoppingBag, Settings, Loader, LayoutDashboard, X, FileText, Receipt, FilePlus } from 'lucide-react';
 
 const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose }) => {
   const location = useLocation();
@@ -113,6 +113,17 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
                 <Receipt className="w-5 h-5 flex-shrink-0" />
                 {!isMobile && !collapsed && <span className="transition-opacity duration-200">Delivery Receipts</span>}
                 {isMobile && <span className="ml-3">Delivery Receipts</span>}
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/entry-forms"
+                className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
+                onClick={isMobile ? onClose : undefined}
+              >
+                <FilePlus className="w-5 h-5 flex-shrink-0" />
+                {!isMobile && !collapsed && <span className="transition-opacity duration-200">Entry Forms</span>}
+                {isMobile && <span className="ml-3">Entry Forms</span>}
               </Link>
             </li>
             <li>
