@@ -352,7 +352,7 @@ const DocumentForm = ({
             items={formData.items}
             onItemsChange={(items) => setFormData(prev => ({ ...prev, items }))}
             documentType={documentType}
-            maxRows={isDR ? 39 : 28}
+            maxRows={300}
           />
         </div>
 
