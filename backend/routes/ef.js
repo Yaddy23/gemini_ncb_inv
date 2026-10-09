@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const EntryForm = require('../models/EntryForm');
+const EvaluationForm = require('../models/EvaluationForm');
 const DeliveryReceipt = require('../models/DeliveryReceipt');
 const Book = require('../models/Book');
 const StockTransaction = require('../models/StockTransaction');
@@ -60,13 +60,13 @@ router.get('/', async (req, res) => {
     if (status) query.status = status;
 
     const [efs, total] = await Promise.all([
-      EntryForm.find(query)
+      EvaluationForm.find(query)
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(Number(limit))
         .populate('createdBy', 'username')
         .populate('drRef', 'drNumber'),
-      EntryForm.countDocuments(query)
+      EvaluationForm.countDocuments(query)
     ]);
 
     res.json({ efs, total, page: Number(page), pages: Math.ceil(total / limit) });
@@ -84,7 +84,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'efNumber, customerName, and items are required' });
     }
 
-    const existing = await EntryForm.findOne({ efNumber });
+    const existing = await EvaluationForm.findOne({ efNumber });
     if (existing) {
       return res.status(400).json({ message: 'EF number already exists' });
     }
@@ -103,7 +103,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const ef = new EntryForm({
+    const ef = new EvaluationForm({
       efNumber,
       date: date ? new Date(date) : new Date(),
       customerName,
@@ -125,8 +125,8 @@ router.post('/', async (req, res) => {
 // Get EF by ID
 router.get('/:id', async (req, res) => {
   try {
-    const ef = await EntryForm.findById(req.params.id).populate('createdBy', 'username').populate('drRef', 'drNumber');
-    if (!ef) return res.status(404).json({ message: 'Entry Form not found' });
+    const ef = await EvaluationForm.findById(req.params.id).populate('createdBy', 'username').populate('drRef', 'drNumber');
+    if (!ef) return res.status(404).json({ message: 'Evaluation Form not found' });
     res.json(ef);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -136,14 +136,14 @@ router.get('/:id', async (req, res) => {
 // Update EF (draft only)
 router.put('/:id', async (req, res) => {
   try {
-    const ef = await EntryForm.findById(req.params.id);
-    if (!ef) return res.status(404).json({ message: 'Entry Form not found' });
+    const ef = await EvaluationForm.findById(req.params.id);
+    if (!ef) return res.status(404).json({ message: 'Evaluation Form not found' });
     if (ef.status !== 'draft') return res.status(400).json({ message: 'Cannot update issued EF' });
 
     const { efNumber, date, customerName, customerAddress, items, allowDuplicates } = req.body;
 
     if (efNumber && efNumber !== ef.efNumber) {
-      const existing = await EntryForm.findOne({ efNumber });
+      const existing = await EvaluationForm.findOne({ efNumber });
       if (existing) return res.status(400).json({ message: 'EF number already exists' });
       ef.efNumber = efNumber;
     }
@@ -182,12 +182,12 @@ router.put('/:id', async (req, res) => {
 // Delete EF (draft only)
 router.delete('/:id', async (req, res) => {
   try {
-    const ef = await EntryForm.findById(req.params.id);
-    if (!ef) return res.status(404).json({ message: 'Entry Form not found' });
+    const ef = await EvaluationForm.findById(req.params.id);
+    if (!ef) return res.status(404).json({ message: 'Evaluation Form not found' });
     if (ef.status !== 'draft') return res.status(400).json({ message: 'Cannot delete issued EF' });
 
     await ef.deleteOne();
-    res.json({ message: 'Entry Form deleted' });
+    res.json({ message: 'Evaluation Form deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -196,8 +196,8 @@ router.delete('/:id', async (req, res) => {
 // Issue EF - create linked DR draft (does NOT decrement stock)
 router.post('/:id/issue', async (req, res) => {
   try {
-    const ef = await EntryForm.findById(req.params.id);
-    if (!ef) return res.status(404).json({ message: 'Entry Form not found' });
+    const ef = await EvaluationForm.findById(req.params.id);
+    if (!ef) return res.status(404).json({ message: 'Evaluation Form not found' });
     if (ef.status === 'issued') return res.status(400).json({ message: 'EF already issued' });
 
     // Create linked DR draft from EF data
@@ -227,8 +227,8 @@ router.post('/:id/issue', async (req, res) => {
 router.get('/:id/export', async (req, res) => {
   try {
     const { format = 'pdf' } = req.query;
-    const ef = await EntryForm.findById(req.params.id);
-    if (!ef) return res.status(404).json({ message: 'Entry Form not found' });
+    const ef = await EvaluationForm.findById(req.params.id);
+    if (!ef) return res.status(404).json({ message: 'Evaluation Form not found' });
 
     // Use DR1 template for EF export
     const buffer = await documentGenerator.generate('DR1', ef.toObject(), format);

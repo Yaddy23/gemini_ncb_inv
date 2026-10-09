@@ -1,7 +1,7 @@
 import api from './axios';
 
 export const efApi = {
-  // Entry Forms
+  // Evaluation Forms
   getEFs: (params = {}) => api.get('/ef', { params }),
   getEF: (id) => api.get(`/ef/${id}`),
   createEF: (data) => api.post('/ef', data),

@@ -13,7 +13,7 @@ import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
 import DeliveryReceipts from './pages/DeliveryReceipts';
 import SalesInvoices from './pages/SalesInvoices';
-import EntryForms from './pages/EntryForms';
+import EvaluationForms from './pages/EvaluationForms';
 import NavBar from './components/NavBar';
 import PrivateRoute from './components/PrivateRoute';
 
@@ -198,10 +198,10 @@ function App() {
               }
             />
             <Route
-              path="/entry-forms"
+              path="/evaluation-forms"
               element={
                 <PrivateRoute isAuthenticated={!!user}>
-                  <EntryForms user={user} />
+                  <EvaluationForms user={user} />
                 </PrivateRoute>
               }
             />

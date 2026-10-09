@@ -106,6 +106,17 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
             )}
             <li>
               <Link
+                to="/evaluation-forms"
+                className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
+                onClick={isMobile ? onClose : undefined}
+              >
+                <FilePlus className="w-5 h-5 flex-shrink-0" />
+                {!isMobile && !collapsed && <span className="transition-opacity duration-200">Evaluation Forms</span>}
+                {isMobile && <span className="ml-3">Evaluation Forms</span>}
+              </Link>
+            </li>
+            <li>
+              <Link
                 to="/delivery-receipts"
                 className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
                 onClick={isMobile ? onClose : undefined}
@@ -115,17 +126,7 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
                 {isMobile && <span className="ml-3">Delivery Receipts</span>}
               </Link>
             </li>
-            <li>
-              <Link
-                to="/entry-forms"
-                className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
-                onClick={isMobile ? onClose : undefined}
-              >
-                <FilePlus className="w-5 h-5 flex-shrink-0" />
-                {!isMobile && !collapsed && <span className="transition-opacity duration-200">Entry Forms</span>}
-                {isMobile && <span className="ml-3">Entry Forms</span>}
-              </Link>
-            </li>
+            
             <li>
               <Link
                 to="/sales-invoices"

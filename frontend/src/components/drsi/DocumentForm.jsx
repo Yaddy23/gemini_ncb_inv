@@ -14,7 +14,7 @@ const DocumentForm = ({
 }) => {
   const isDR = documentType === 'DR';
   const isEF = documentType === 'EF';
-  const title = isDR ? 'Delivery Receipt' : isEF ? 'Entry Form' : 'Sales Invoice';
+  const title = isDR ? 'Delivery Receipt' : isEF ? 'Evaluation Form' : 'Sales Invoice';
   const numberLabel = isDR ? 'DR Number' : isEF ? 'EF Number' : 'SI Number';
 
   const [formData, setFormData] = useState({

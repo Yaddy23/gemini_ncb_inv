@@ -8,7 +8,7 @@ const lineItemSchema = new mongoose.Schema({
   amount: { type: Number, required: true, min: 0 }
 }, { _id: false });
 
-const entryFormSchema = new mongoose.Schema({
+const evaluationFormSchema = new mongoose.Schema({
   efNumber: { type: String, required: true, unique: true, trim: true },
   date: { type: Date, required: true, default: Date.now },
   customerName: { type: String, required: true, trim: true },
@@ -23,11 +23,11 @@ const entryFormSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
-entryFormSchema.pre('save', function(next) {
+evaluationFormSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   this.subtotal = this.items.reduce((sum, item) => sum + item.amount, 0);
   this.totalAmount = this.subtotal; // No VAT
   next();
 });
 
-module.exports = mongoose.model('EntryForm', entryFormSchema);
+module.exports = mongoose.model('EvaluationForm', evaluationFormSchema);

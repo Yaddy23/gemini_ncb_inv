@@ -4,7 +4,7 @@ import { efApi } from '../api/ef';
 import DocumentForm from '../components/drsi/DocumentForm';
 import { formatDate, formatCurrency, numberToWords } from '../utils/numberToWords';
 
-const EntryForms = ({ user }) => {
+const EvaluationForms = ({ user }) => {
   const [efs, setEFs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -79,7 +79,7 @@ const EntryForms = ({ user }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this Entry Form?')) return;
+    if (!confirm('Delete this Evaluation Form?')) return;
     try {
       await efApi.deleteEF(id);
       fetchEFs();
@@ -121,9 +121,9 @@ const EntryForms = ({ user }) => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
             <FileText className="w-6 h-6 text-primary" />
-            <span>Entry Forms</span>
+            <span>Evaluation Forms</span>
           </h1>
-          <p className="mt-1 text-gray-600">Manage entry forms and generate delivery receipts</p>
+          <p className="mt-1 text-gray-600">Manage evaluation forms and generate delivery receipts</p>
         </div>
         <button onClick={handleNew} className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
           <Plus className="w-4 h-4" />
@@ -161,12 +161,12 @@ const EntryForms = ({ user }) => {
         {loading ? (
           <div className="p-8 text-center">
             <Loader className="w-8 h-8 animate-spin text-primary mx-auto mb-2" />
-            <p className="text-gray-500">Loading entry forms...</p>
+            <p className="text-gray-500">Loading evaluation forms...</p>
           </div>
         ) : efs.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             <FileText className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-            <p>No entry forms found</p>
+            <p>No evaluation forms found</p>
             <button onClick={handleNew} className="mt-4 text-primary hover:underline">Create your first EF</button>
           </div>
         ) : (
@@ -284,4 +284,4 @@ const EntryForms = ({ user }) => {
   );
 };
 
-export default EntryForms;
+export default EvaluationForms;
