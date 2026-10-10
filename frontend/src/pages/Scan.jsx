@@ -19,6 +19,8 @@ const Scan = ({ user }) => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [lastScannedIsbn, setLastScannedIsbn] = useState(null); // Cooldown tracker (per-ISBN)
   const [scanCooldown, setScanCooldown] = useState(false); // Global 0.5s cooldown after ANY scan
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [scanResult, setScanResult] = useState(null); // { type: 'success'|'error', book?, message? }
 
   // Import state
   const [showImport, setShowImport] = useState(false);
@@ -32,6 +34,7 @@ const Scan = ({ user }) => {
   const isbnInputRef = useRef(null);
   const audioContextRef = useRef(null);
   const cameraScannerRef = useRef(null); // Ref for live scanner instance
+  const fullscreenElementRef = useRef(null); // Ref for fullscreen element
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -62,10 +65,34 @@ const Scan = ({ user }) => {
   useEffect(() => {
     if (scanMethod !== 'camera' && cameraScannerRef.current) {
       cameraScannerRef.current.stop().catch(() => {});
+      // Exit fullscreen if active
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
       setCameraScanner(null);
       setIsCameraActive(false);
     }
   }, [scanMethod, mode]);
+
+  // Fullscreen handling for mobile camera
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isFull = document.fullscreenElement !== null;
+      setIsFullscreen(isFull);
+      if (!isFull && scanMethod === 'camera') {
+        // User exited fullscreen manually, stop camera
+        handleScanMethodChange('manual');
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [scanMethod]);
+
+  // Clear scan result when mode or scan method changes
+  useEffect(() => {
+    setScanResult(null);
+  }, [mode, scanMethod]);
 
   // Auto-lookup and process when ISBN changes (for scanner input)
   useEffect(() => {
@@ -83,6 +110,7 @@ const Scan = ({ user }) => {
   const processScan = async (code) => {
     setLoading(true);
     setError(null);
+    setScanResult(null); // Clear previous scan result
 
     // Clear ISBN immediately so camera can scan next barcode
     setIsbn('');
@@ -122,7 +150,15 @@ const Scan = ({ user }) => {
       setBookInfo(updatedBook);
 
       // Success message
-      setSuccess(`${mode === 'inbound' ? 'Added' : 'Removed'} 1 unit to "${book.TITLE}" (Stock: ${updatedBook.QTY})`);
+      const successMsg = `${mode === 'inbound' ? 'Added' : 'Removed'} 1 unit to "${book.TITLE}" (Stock: ${updatedBook.QTY})`;
+      setSuccess(successMsg);
+
+      // Set scan result for camera view display
+      setScanResult({
+        type: 'success',
+        book: updatedBook,
+        action: mode === 'inbound' ? 'IN' : 'OUT'
+      });
 
       // Re-focus input for next scan
       setTimeout(() => {
@@ -132,7 +168,15 @@ const Scan = ({ user }) => {
       }, 50);
     } catch (err) {
       const msg = err.response?.data?.message || err.message;
-      setError(`Failed to ${mode === 'inbound' ? 'receive' : 'ship'} stock: ${msg}`);
+      const errorMsg = `Failed to ${mode === 'inbound' ? 'receive' : 'ship'} stock: ${msg}`;
+      setError(errorMsg);
+
+      // Set scan result for camera view display
+      setScanResult({
+        type: 'error',
+        message: msg,
+        scannedIsbn: code
+      });
 
       // Still clear ISBN so user can scan next
       setIsbn('');
@@ -214,11 +258,16 @@ const Scan = ({ user }) => {
       permissionStream.getTracks().forEach(track => track.stop());
       permissionStream = null;
 
+      // Calculate qrbox based on container dimensions to match visual overlay
+      // Visual overlay: w-[70%] max-w-[280px] aspect-[2.5/1]
+      const qrboxWidth = Math.min(Math.floor(width * 0.7), 280);
+      const qrboxHeight = Math.floor(qrboxWidth / 2.5); // 2.5:1 aspect ratio
+
       await html5Qrcode.start(
         { facingMode: 'environment' },
         {
           fps: 10,
-          qrbox: { width: 250, height: 100 }
+          qrbox: { width: qrboxWidth, height: qrboxHeight }
         },
         (decodedText) => {
           if (decodedText && decodedText.length >= 8) {
@@ -248,6 +297,17 @@ const Scan = ({ user }) => {
       setCameraScanner(html5Qrcode);
       cameraScannerRef.current = html5Qrcode;
       setIsCameraActive(true);
+
+      // Request fullscreen on mobile/tablet for better scanning experience
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                       window.innerWidth <= 768;
+      if (isMobile && cameraContainerRef.current) {
+        try {
+          await cameraContainerRef.current.requestFullscreen({ navigationUI: 'hide' });
+        } catch (fsErr) {
+          console.warn('Fullscreen request failed:', fsErr);
+        }
+      }
     } catch (err) {
       console.error('Camera start error:', err);
       // Ensure permission stream is cleaned up on error
@@ -280,6 +340,16 @@ const Scan = ({ user }) => {
         stream.getTracks().forEach(track => track.stop());
       }).catch(() => {});
     }
+
+    // Exit fullscreen if active
+    if (document.fullscreenElement) {
+      try {
+        await document.exitFullscreen();
+      } catch (err) {
+        console.warn('Exit fullscreen failed:', err);
+      }
+    }
+
     setCameraScanner(null);
     setIsCameraActive(false);
   };
@@ -863,7 +933,7 @@ const Scan = ({ user }) => {
                         </button>
                       </div>
                     )}
-                    <div className="relative">
+                    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-black rounded-none' : ''}`}>
                       {/* Loading indicator - React-managed, OUTSIDE library container */}
                       {!isCameraActive && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-4 rounded-lg bg-black" style={{ zIndex: 10 }}>
@@ -876,18 +946,18 @@ const Scan = ({ user }) => {
                       <div
                         ref={cameraContainerRef}
                         id="camera-reader"
-                        className="w-full rounded-lg overflow-hidden"
+                        className={`w-full overflow-hidden ${isFullscreen ? 'h-screen rounded-none' : 'rounded-lg'}`}
                         style={{
-                          aspectRatio: '16/9',
-                          maxHeight: '500px',
+                          aspectRatio: isFullscreen ? undefined : '16/9',
+                          maxHeight: isFullscreen ? '100vh' : '500px',
                           backgroundColor: '#000'
                         }}
                       />
 
                       {/* Overlay - managed by React, sibling to camera container */}
-                      {isCameraActive && (
+                      {isCameraActive && !scanResult && (
                         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-                          {/* Scan frame - matches qrbox (250x100) proportion: 2.5:1 */}
+                          {/* Scan frame - matches qrbox proportion: 2.5:1 */}
                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] max-w-[280px] h-auto aspect-[2.5/1] border-2 border-primary/90 rounded-lg">
                             {/* Corner markers */}
                             <div className="absolute -top-2 -left-2 w-6 h-6 border-t-2 border-l-2 border-primary" />
@@ -903,8 +973,68 @@ const Scan = ({ user }) => {
                           </div>
                         </div>
                       )}
+
+                      {/* Scan Result Display - shows after scan in camera feed area */}
+                      {isCameraActive && scanResult && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-black/80" style={{ zIndex: 20 }}>
+                          {scanResult.type === 'success' ? (
+                            <div className="max-w-xs w-full">
+                              <div className="bg-green-500/20 border border-green-500 rounded-xl p-6 backdrop-blur-sm">
+                                <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
+                                <h3 className="text-lg font-bold text-green-300 mb-1">
+                                  {scanResult.action === 'IN' ? 'Stock Received' : 'Stock Shipped'}
+                                </h3>
+                                <p className="text-white font-medium text-xl mb-2 truncate">{scanResult.book.TITLE}</p>
+                                <p className="text-gray-300 text-sm mb-1">by {scanResult.book.AUTHOR || 'Unknown Author'}</p>
+                                <div className="flex flex-wrap justify-center gap-3 mt-3 text-sm">
+                                  <span className="bg-gray-800 px-3 py-1 rounded-full text-gray-200">ISBN: {scanResult.book.ISBN}</span>
+                                  <span className={`px-3 py-1 rounded-full text-white font-bold ${
+                                    scanResult.action === 'IN' ? 'bg-green-600' : 'bg-red-600'
+                                  }`}>
+                                    {scanResult.action === 'IN' ? '+1' : '-1'} Stock: {scanResult.book.QTY}
+                                  </span>
+                                  {scanResult.book.SUBJECT && (
+                                    <span className="bg-gray-800 px-3 py-1 rounded-full text-gray-300">{scanResult.book.SUBJECT}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => setScanResult(null)}
+                                className="mt-4 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                              >
+                                Scan Another
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="max-w-xs w-full">
+                              <div className="bg-red-500/20 border border-red-500 rounded-xl p-6 backdrop-blur-sm">
+                                <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+                                <h3 className="text-lg font-bold text-red-300 mb-1">Book Not Found</h3>
+                                <p className="text-white font-mono text-lg mb-2">{scanResult.scannedIsbn}</p>
+                                <p className="text-gray-300 text-sm mb-4">{scanResult.message}</p>
+                                <div className="flex flex-wrap justify-center gap-2">
+                                  <button
+                                    onClick={() => setScanResult(null)}
+                                    className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                                  >
+                                    Try Again
+                                  </button>
+                                  <button
+                                    onClick={() => handleScanMethodChange('manual')}
+                                    className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                                  >
+                                    Manual Entry
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    {isCameraActive && (
+
+                    {/* Camera controls - hidden in fullscreen, shown below on desktop */}
+                    {!isFullscreen && isCameraActive && (
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-gray-500">
                         <span className="flex items-center space-x-1 text-green-600">
                           <CheckCircle className="w-4 h-4" />
@@ -937,6 +1067,13 @@ const Scan = ({ user }) => {
                             <span>Stop Camera</span>
                           </button>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Fullscreen exit hint */}
+                    {isFullscreen && isCameraActive && (
+                      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm" style={{ zIndex: 60 }}>
+                        Tap "Scan Another" to continue or use browser gesture to exit fullscreen
                       </div>
                     )}
                   </div>
