@@ -54,6 +54,13 @@ const Scan = ({ user }) => {
 
   // Camera scanner cleanup on unmount - uses ref for live instance
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      // Exit fullscreen when page becomes hidden (mobile back, tab switch, app switch)
+      if (document.visibilityState === 'hidden' && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    };
+
     const handlePageHide = () => {
       // Exit fullscreen before page unloads (back button, tab close, etc.)
       if (document.fullscreenElement) {
@@ -61,11 +68,14 @@ const Scan = ({ user }) => {
       }
     };
 
-    // Listen for page hide (mobile back button, tab switch, etc.)
+    // Listen for visibility change (mobile back button, tab switch, app switch)
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Listen for page hide (mobile back button, tab close, etc.)
     window.addEventListener('pagehide', handlePageHide);
     window.addEventListener('beforeunload', handlePageHide);
 
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('beforeunload', handlePageHide);
 
@@ -1008,18 +1018,18 @@ const Scan = ({ user }) => {
                       {/* Scan frame overlay - only when no result and camera active */}
                       {isCameraActive && !scanResult && (
                         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-                          {/* Scan frame - matches qrbox proportion: 2.5:1 */}
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] max-w-[280px] h-auto aspect-[2.5/1] border-2 border-primary/90 rounded-lg">
-                            {/* Corner markers */}
-                            <div className="absolute -top-2 -left-2 w-6 h-6 border-t-2 border-l-2 border-primary" />
-                            <div className="absolute -top-2 -right-2 w-6 h-6 border-t-2 border-r-2 border-primary" />
-                            <div className="absolute -bottom-2 -left-2 w-6 h-6 border-b-2 border-l-2 border-primary" />
-                            <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b-2 border-r-2 border-primary" />
+                          {/* Scan frame - matches qrbox proportion: 2.5:1, white border for better visibility */}
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] max-w-[320px] h-auto aspect-[2.5/1] border-2 border-white/90 rounded-lg">
+                            {/* Corner markers - white */}
+                            <div className="absolute -top-2 -left-2 w-8 h-8 border-t-2 border-l-2 border-white" />
+                            <div className="absolute -top-2 -right-2 w-8 h-8 border-t-2 border-r-2 border-white" />
+                            <div className="absolute -bottom-2 -left-2 w-8 h-8 border-b-2 border-l-2 border-white" />
+                            <div className="absolute -bottom-2 -right-2 w-8 h-8 border-b-2 border-r-2 border-white" />
                             {/* Center line for barcode alignment */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-px bg-primary/50" />
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-px bg-white/50" />
                           </div>
                           {/* Instruction text */}
-                          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center text-white/90 text-sm font-medium bg-black/30 px-3 py-1 rounded">
+                          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-center text-white/90 text-sm font-medium bg-black/40 px-3 py-1 rounded">
                             Align ISBN barcode within frame
                           </div>
                         </div>
