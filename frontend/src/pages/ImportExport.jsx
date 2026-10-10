@@ -200,24 +200,24 @@ const ImportExport = ({ user }) => {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
-          <Upload className="w-5 h-5 text-primary" />
+    <div className="p-4 sm:p-6">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center space-x-3">
+          <Upload className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
           Import/Export Books
         </h1>
         <p className="mt-2 text-gray-600">Bulk import books from Excel/CSV files or export current inventory</p>
       </div>
 
       {/* Import Section */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Import Books</h2>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Import Books</h2>
 
-        <div className="space-y-4">
+        <div className="space-y-4 sm:space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Select File</label>
             <div className="flex flex-col space-y-2">
-              <label className="flex items-center space-x-3 px-4 py-2 border border-gray-300 rounded-md hover:border-gray-400 transition-colors">
+              <label className="flex items-center justify-center space-x-3 px-4 py-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-gray-50 transition-colors cursor-pointer touch-manipulation min-h-[56px]">
                 <input
                   type="file"
                   id="file-input"
@@ -225,15 +225,14 @@ const ImportExport = ({ user }) => {
                   onChange={handleFileChange}
                   className="hidden"
                 />
-                <span className="flex-1">
-                  Click to upload or drag and drop
+                <span className="flex flex-col items-center text-center">
+                  <Upload className="w-6 h-6 text-primary mb-1" />
+                  <span className="text-sm font-medium text-gray-700">Click to upload or drag and drop</span>
                 </span>
-                <Upload className="w-5 h-5 text-primary" />
               </label>
-              <p className="text-xs text-gray-500">
-                Supported formats: .xlsx, .xls, .csv<br />
-                Required columns: ISBN, TITLE, QTY, PRICE<br />
-                Optional columns: SUBJECT, EDITION, YEAR, AUTHOR, BIND, PUBLISHER
+              <p className="text-xs text-gray-500 text-center">
+                Supported: .xlsx, .xls, .csv | Required: ISBN, TITLE, QTY, PRICE<br />
+                Optional: SUBJECT, EDITION, YEAR, AUTHOR, BIND, PUBLISHER
               </p>
             </div>
           </div>
@@ -241,42 +240,48 @@ const ImportExport = ({ user }) => {
           {file && (
             <div className="border-t pt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Import Mode</label>
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2">
+              <div className="space-y-2 sm:space-y-3">
+                <label className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer touch-manipulation min-h-[44px]">
                   <input
                     type="radio"
                     name="mode"
                     value="skip"
                     checked={mode === 'skip'}
                     onChange={(e) => setMode(e.target.value)}
-                    className="form-radio h-4 w-4 text-primary"
+                    className="form-radio h-4 w-4 text-primary mt-0.5 flex-shrink-0"
                   />
-                  <span>Skip Duplicates</span>
-                  <p className="text-xs text-gray-500 ml-6">Skip rows where ISBN already exists</p>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">Skip Duplicates</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Skip rows where ISBN already exists</p>
+                  </div>
                 </label>
-                <label className="flex items-center space-x-2">
+                <label className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer touch-manipulation min-h-[44px]">
                   <input
                     type="radio"
                     name="mode"
                     value="update"
                     checked={mode === 'update'}
                     onChange={(e) => setMode(e.target.value)}
-                    className="form-radio h-4 w-4 text-primary"
+                    className="form-radio h-4 w-4 text-primary mt-0.5 flex-shrink-0"
                   />
-                  <span>Update Existing</span>
-                  <p className="text-xs text-gray-500 ml-6">Update book metadata and replace quantity</p>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">Update Existing</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Update book metadata and replace quantity</p>
+                  </div>
                 </label>
-                <label className="flex items-center space-x-2">
+                <label className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer touch-manipulation min-h-[44px]">
                   <input
                     type="radio"
                     name="mode"
                     value="merge"
                     checked={mode === 'merge'}
                     onChange={(e) => setMode(e.target.value)}
-                    className="form-radio h-4 w-4 text-primary"
+                    className="form-radio h-4 w-4 text-primary mt-0.5 flex-shrink-0"
                   />
-                  <span>Merge / Increment Stock</span>
-                  <p className="text-xs text-gray-500 ml-6">Update metadata and increase quantity by imported amount</p>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">Merge / Increment Stock</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Update metadata and increase quantity by imported amount</p>
+                  </div>
                 </label>
               </div>
             </div>
@@ -294,26 +299,26 @@ const ImportExport = ({ user }) => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ISBN</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ISBN</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {previewData.slice(0, 10).map((row, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.ISBN}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{row.TITLE}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{row.AUTHOR || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{row.QTY}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{row.PRICE.toFixed(2)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{row.ISBN}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate">{row.TITLE}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{row.AUTHOR || 'N/A'}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">{row.QTY}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">₱{row.PRICE.toFixed(2)}</td>
                     </tr>
                   ))}
                   {previewData.length > 10 && (
                     <tr>
-                      <td className="px-6 py-4 text-center text-gray-500" colSpan="5">
+                      <td className="px-4 py-3 text-center text-gray-500" colSpan="5">
                         And {previewData.length - 10} more row(s)...
                       </td>
                     </tr>
@@ -325,7 +330,7 @@ const ImportExport = ({ user }) => {
         )}
 
         {previewError && (
-          <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400">
+          <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
             <div className="flex">
               <div className="flex-shrink-0">
                 <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -341,9 +346,9 @@ const ImportExport = ({ user }) => {
           <button
             onClick={handleImport}
             disabled={!file || importing || previewData.length === 0}
-            className={`w-flex items-center justify-center px-6 py-3 ${
+            className={`w-full sm:w-auto flex items-center justify-center px-6 py-3 ${
               !file || previewData.length === 0 ? 'bg-gray-200 text-gray-500' : 'bg-primary text-white'
-            } hover:${!file || previewData.length === 0 ? 'bg-gray-300' : 'bg-primary/90'} rounded-lg transition-colors disabled:opacity-50`}
+            } hover:${!file || previewData.length === 0 ? 'bg-gray-300' : 'bg-primary/90'} rounded-lg transition-colors disabled:opacity-50 touch-manipulation min-h-[48px] min-w-[180px]`}
           >
             {importing ? (
               <>
@@ -362,10 +367,10 @@ const ImportExport = ({ user }) => {
 
       {/* Import Results */}
       {importResults && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Import Results</h2>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Import Results</h2>
           {importSuccess && (
-            <div className="mb-4 p-4 bg-green-50 border-l-4 border-green-400">
+            <div className="mb-4 p-4 bg-green-50 border-l-4 border-green-400 rounded-r-lg">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <CheckCircle className="w-5 h-5 text-green-600" />
@@ -376,76 +381,76 @@ const ImportExport = ({ user }) => {
               </div>
             </div>
           )}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-primary" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="flex items-center space-x-3 p-3 sm:p-4 bg-primary/5 rounded-lg">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-700">Successfully Imported</p>
-                <p className="text-2xl font-bold text-primary">{importResults.succeeded}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700">Successfully Imported</p>
+                <p className="text-xl sm:text-2xl font-bold text-primary">{importResults.succeeded}</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-primary" />
+            <div className="flex items-center space-x-3 p-3 sm:p-4 bg-primary/5 rounded-lg">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-700">Skipped (Duplicates)</p>
-                <p className="text-2xl font-bold text-primary">{importResults.skipped}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700">Skipped (Duplicates)</p>
+                <p className="text-xl sm:text-2xl font-bold text-primary">{importResults.skipped}</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <LoaderIcon className="w-5 h-5 text-primary" />
+            <div className="flex items-center space-x-3 p-3 sm:p-4 bg-primary/5 rounded-lg">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <LoaderIcon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-700">Updated</p>
-                <p className="text-2xl font-bold text-primary">{importResults.updated}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700">Updated</p>
+                <p className="text-xl sm:text-2xl font-bold text-primary">{importResults.updated}</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Upload className="w-5 h-5 text-primary" />
+            <div className="flex items-center space-x-3 p-3 sm:p-4 bg-primary/5 rounded-lg">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Upload className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-700">Merged</p>
-                <p className="text-2xl font-bold text-primary">{importResults.merged}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700">Merged</p>
+                <p className="text-xl sm:text-2xl font-bold text-primary">{importResults.merged}</p>
               </div>
             </div>
-            {importResults.errors && importResults.errors.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Errors ({importResults.errors.length})</h3>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Row</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ISBN</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {importResults.errors.map((error, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">{error.row}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">{error.message}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">{error.data.ISBN || 'N/A'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
           </div>
+          {importResults.errors && importResults.errors.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Errors ({importResults.errors.length})</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Row</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ISBN</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {importResults.errors.map((error, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-red-600">{error.row}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-red-600 max-w-md truncate">{error.message}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-red-600">{error.data.ISBN || 'N/A'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Import Error */}
       {importError && !importResults && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="bg-red-50 border-l-4 border-red-400 p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
             <div className="flex">
               <div className="flex-shrink-0">
                 <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -459,17 +464,17 @@ const ImportExport = ({ user }) => {
       )}
 
       {/* Export Section */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Export Inventory</h2>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Export Inventory</h2>
         <p className="text-gray-600 mb-4">
           Export your current book inventory to an Excel file. Includes all book details and current stock quantities.
         </p>
 
-        <div className="flex items-center space-x-3 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
           <button
             onClick={() => handleExport(false)}
             disabled={exporting}
-            className={`flex items-center justify-center px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50`}
+            className={`flex-1 flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 touch-manipulation min-h-[48px] min-w-[160px]`}
           >
             {exporting ? (
               <>
@@ -486,7 +491,7 @@ const ImportExport = ({ user }) => {
           <button
             onClick={() => handleExport(true)}
             disabled={exporting}
-            className={`flex items-center justify-center px-6 py-3 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors disabled:opacity-50`}
+            className={`flex-1 flex items-center justify-center px-4 py-3 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors disabled:opacity-50 touch-manipulation min-h-[48px] min-w-[160px]`}
           >
             {exporting ? (
               <>
