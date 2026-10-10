@@ -360,10 +360,10 @@ const Scan = ({ user }) => {
       oscillator.connect(gainNode);
       gainNode.connect(ctx.destination);
 
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(800, ctx.currentTime); // 800 Hz beep
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      oscillator.type = 'square'; // Square wave is louder/more piercing
+      oscillator.frequency.setValueAtTime(1000, ctx.currentTime); // Higher pitch = more noticeable
+      gainNode.gain.setValueAtTime(0.5, ctx.currentTime); // Louder (0.5 vs 0.3)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2); // Slightly longer
 
       oscillator.start(ctx.currentTime);
       oscillator.stop(ctx.currentTime + 0.15);
@@ -982,86 +982,35 @@ const Scan = ({ user }) => {
                         </div>
                       )}
 
-                      {/* Scan Result Display - BELOW camera feed, visible while continuing to scan */}
-                      {isCameraActive && scanResult && (
-                        <div className={`mt-3 w-full p-3 sm:p-4 ${isFullscreen ? 'bg-black/90' : 'bg-gray-50'} rounded-lg flex-shrink-0 animate-slide-up`} style={{ maxHeight: isFullscreen ? '180px' : '200px', overflow: 'auto' }}>
-                          {scanResult.type === 'success' ? (
-                            <div className="max-w-sm w-full mx-auto">
-                              <div className="bg-green-500/20 border border-green-500 rounded-xl p-4 sm:p-5 backdrop-blur-sm">
-                                <div className="flex items-center justify-center space-x-2 mb-2">
-                                  <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-green-400" />
-                                  <h3 className="text-sm sm:text-base font-bold text-green-300">
-                                    {scanResult.action === 'IN' ? 'Stock Received' : 'Stock Shipped'}
-                                  </h3>
-                                </div>
-                                <p className="text-white font-medium text-base sm:text-lg mb-1 truncate">{scanResult.book.TITLE}</p>
-                                <p className="text-gray-300 text-xs sm:text-sm mb-2">by {scanResult.book.AUTHOR || 'Unknown Author'}</p>
-                                <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-2 mt-2 text-xs sm:text-sm">
-                                  <span className="bg-gray-800 px-2.5 py-1 rounded-full text-gray-200">ISBN: {scanResult.book.ISBN}</span>
-                                  <span className={`px-2.5 py-1 rounded-full text-white font-bold text-xs ${
-                                    scanResult.action === 'IN' ? 'bg-green-600' : 'bg-red-600'
-                                  }`}>
-                                    {scanResult.action === 'IN' ? '+1' : '-1'} Stock: {scanResult.book.QTY}
-                                  </span>
-                                  {scanResult.book.SUBJECT && (
-                                    <span className="bg-gray-800 px-2.5 py-1 rounded-full text-gray-300">{scanResult.book.SUBJECT}</span>
-                                  )}
-                                </div>
-                              </div>
-                              <p className="mt-2 text-center text-xs sm:text-sm text-gray-400 sm:text-gray-500">
-                                Camera keeps scanning... result updates on next scan
-                              </p>
-                            </div>
-                          ) : (
-                            <div className="max-w-sm w-full mx-auto">
-                              <div className="bg-red-500/20 border border-red-500 rounded-xl p-4 sm:p-5 backdrop-blur-sm">
-                                <div className="flex items-center justify-center space-x-2 mb-2">
-                                  <AlertTriangle className="w-8 h-8 sm:w-10 sm:h-10 text-red-400" />
-                                  <h3 className="text-sm sm:text-base font-bold text-red-300">Book Not Found</h3>
-                                </div>
-                                <p className="text-white font-mono text-base sm:text-lg mb-1">{scanResult.scannedIsbn}</p>
-                                <p className="text-gray-300 text-xs sm:text-sm mb-3">{scanResult.message}</p>
-                                <div className="flex flex-col sm:flex-row justify-center gap-2">
-                                  <button
-                                    onClick={() => setScanResult(null)}
-                                    className="w-full sm:w-auto px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors touch-manipulation min-h-[44px] text-sm font-medium"
-                                  >
-                                    Dismiss
-                                  </button>
-                                  <button
-                                    onClick={() => handleScanMethodChange('manual')}
-                                    className="w-full sm:w-auto px-4 py-2.5 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors touch-manipulation min-h-[44px] text-sm font-medium"
-                                  >
-                                    Manual Entry
-                                  </button>
-                                </div>
-                              </div>
-                              <p className="mt-2 text-center text-xs sm:text-sm text-gray-400 sm:text-gray-500">
-                                Camera keeps scanning... result updates on next scan
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                                          </div>
 
-                    {/* Camera controls - hidden in fullscreen, shown below on desktop */}
-                    {!isFullscreen && isCameraActive && (
-                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm sm:text-base text-gray-500">
-                        <span className="flex items-center space-x-1 text-green-600 w-full sm:w-auto text-center sm:text-left">
-                          <CheckCircle className="w-4 h-4" />
+                    {/* Camera controls - shown in both fullscreen and normal mode */}
+                    {isCameraActive && (
+                      <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 text-sm sm:text-base ${
+                        isFullscreen ? 'text-white' : 'text-gray-500'
+                      }`}>
+                        <span className="flex items-center space-x-1 w-full sm:w-auto text-center sm:text-left">
+                          {isFullscreen ? (
+                            <CheckCircle className="w-4 h-4 text-green-400" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                          )}
                           <span>{scanCooldown ? 'Cooldown (0.5s)...' : 'Camera active - Point at ISBN barcode'}</span>
                         </span>
                         {scanCooldown && (
-                          <span className="flex items-center space-x-1 text-yellow-600 w-full sm:w-auto text-center sm:text-left">
+                          <span className="flex items-center space-x-1 w-full sm:w-auto text-center sm:text-left">
                             <Loader className="w-4 h-4 animate-spin" />
-                            <span>Wait...</span>
+                            <span>{isFullscreen ? 'Wait...' : 'Wait...'}</span>
                           </span>
                         )}
                         <div className="flex items-center space-x-2 w-full sm:w-auto justify-center sm:justify-end">
                           <button
                             onClick={() => setSoundEnabled(!soundEnabled)}
-                            className="flex items-center justify-center space-x-2 px-4 py-2.5 text-gray-600 hover:text-gray-800 transition-colors touch-manipulation min-h-[44px] min-w-[44px]"
+                            className={`flex items-center justify-center space-x-2 px-4 py-2.5 transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
+                              isFullscreen
+                                ? 'text-white hover:text-gray-300 bg-white/10 hover:bg-white/20'
+                                : 'text-gray-600 hover:text-gray-800'
+                            }`}
                             title={soundEnabled ? 'Disable beep sound' : 'Enable beep sound'}
                           >
                             {soundEnabled ? (
@@ -1073,19 +1022,16 @@ const Scan = ({ user }) => {
                           </button>
                           <button
                             onClick={() => handleScanMethodChange('manual')}
-                            className="flex items-center justify-center space-x-2 px-4 py-2.5 text-gray-600 hover:text-gray-800 touch-manipulation min-h-[44px]"
+                            className={`flex items-center justify-center space-x-2 px-4 py-2.5 touch-manipulation min-h-[44px] ${
+                              isFullscreen
+                                ? 'text-white hover:text-gray-300 bg-white/10 hover:bg-white/20'
+                                : 'text-gray-600 hover:text-gray-800'
+                            }`}
                           >
                             <X className="w-5 h-5" />
                             <span className="text-sm font-medium hidden sm:inline">Stop Camera</span>
                           </button>
                         </div>
-                      </div>
-                    )}
-
-                    {/* Fullscreen exit hint - only in fullscreen mode when no result */}
-                    {isFullscreen && isCameraActive && !scanResult && (
-                      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm sm:text-base bg-black/60 px-5 py-3 rounded-lg backdrop-blur-sm" style={{ zIndex: 60 }}>
-                        Camera active - keep scanning or use ✕ to exit
                       </div>
                     )}
                   </div>
