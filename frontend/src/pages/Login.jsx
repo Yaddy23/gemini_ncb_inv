@@ -34,43 +34,51 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-6 p-8 bg-white rounded-lg shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 sm:p-6">
+      <div className="w-full max-w-md space-y-6 p-6 sm:p-8 bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="text-center">
-          <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
             <LogIn className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-2xl font-bold text-primary">Welcome Back</h2>
-          <p className="text-gray-600">Sign in to continue to Book Inventory System</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Welcome Back</h2>
+          <p className="mt-2 text-gray-600">Sign in to continue to Book Inventory System</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[48px] text-base"
+                autoComplete="email"
+              />
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[48px] text-base"
+                autoComplete="current-password"
+              />
+            </div>
           </div>
 
           {error && (
-            <div className="px-4 py-2 bg-red-50 border border-red-200 rounded-md text-red-600">
+            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
               {error}
             </div>
           )}
@@ -78,7 +86,7 @@ const Login = ({ onLogin }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-content px-4 py-2 bg-primary text-white rounded-md disabled:opacity-50 transition-colors"
+            className="w-full flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg disabled:opacity-50 transition-colors touch-manipulation min-h-[48px] text-base font-medium"
           >
             {loading ? (
               <>
