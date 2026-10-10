@@ -248,7 +248,18 @@ const Scan = ({ user }) => {
           // Small delay to avoid overwhelming server
           await new Promise(resolve => setTimeout(resolve, 100));
         } catch (err) {
-          // If any item fails, stop flushing and keep remaining in queue
+          const msg = err.response?.data?.message || err.message;
+          // If book not found, remove this item from queue (don't retry)
+          if (msg.includes('not found') || msg.includes('404')) {
+            setScanQueue(prev => prev.filter(q => q.id !== item.id));
+            // Also remove from recent scans optimistic entry
+            setRecentScans(prev => prev.filter(s => !(s.isbn === item.isbn && s.pending)));
+            console.warn('Removed not-found ISBN from queue:', item.isbn);
+            // Continue with next item
+            await new Promise(resolve => setTimeout(resolve, 100));
+            continue;
+          }
+          // For other errors (network, server), stop flushing and keep remaining in queue
           console.warn('Queue flush failed for item:', item.isbn, err);
           break;
         }
@@ -353,10 +364,10 @@ const Scan = ({ user }) => {
             setScanCooldown(true);
             setTimeout(() => setScanCooldown(false), 500);
 
-            // Pause camera feed in fullscreen mode for visual feedback (0.5s)
+            // Pause camera feed in fullscreen mode for visual feedback (1s)
             if (isFullscreen) {
               setIsCameraPaused(true);
-              setTimeout(() => setIsCameraPaused(false), 500);
+              setTimeout(() => setIsCameraPaused(false), 1000);
             }
 
             setIsbn(decodedText);
