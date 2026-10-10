@@ -944,16 +944,19 @@ const Scan = ({ user }) => {
                         </button>
                       </div>
                     )}
+
+                    {/* Camera view container - always relative, becomes fixed fullscreen when isFullscreen */}
                     <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-black rounded-none flex flex-col' : ''}`}>
-                      {/* Close button in fullscreen - top right */}
-                      {/* Show on mobile when camera is active, or when isFullscreen is true */}
-                      {(isFullscreen || (isMobile && isCameraActive)) && isCameraActive && (
+                      {/* Close button (X) - ALWAYS visible when camera is active, top-right of camera area */}
+                      {isCameraActive && (
                         <button
                           onClick={() => handleScanMethodChange('manual')}
-                          className="absolute top-4 right-4 z-70 p-3 bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center shadow-lg"
+                          className={`absolute top-3 right-3 z-60 p-2.5 bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center shadow-lg ${
+                            isFullscreen ? 'top-4 right-4' : 'top-3 right-3'
+                          }`}
                           aria-label="Close camera"
                         >
-                          <X className="w-7 h-7" />
+                          <X className="w-6 h-6" />
                         </button>
                       )}
 
@@ -997,9 +1000,9 @@ const Scan = ({ user }) => {
                         </div>
                       )}
 
-                      {/* Scan Result Display - shows after scan in camera feed area */}
+                      {/* Scan Result Display - ALWAYS shows when there's a result, regardless of fullscreen state */}
                       {isCameraActive && scanResult && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6 text-center bg-black/90" style={{ zIndex: 25 }}>
+                        <div className={`absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6 text-center ${isFullscreen ? 'bg-black/90' : 'bg-black/85'}`} style={{ zIndex: 30 }}>
                           {scanResult.type === 'success' ? (
                             <div className="max-w-sm w-full">
                               <div className="bg-green-500/20 border border-green-500 rounded-xl p-5 sm:p-6 backdrop-blur-sm">
@@ -1056,8 +1059,8 @@ const Scan = ({ user }) => {
                       )}
                     </div>
 
-                    {/* Camera controls - hidden in fullscreen/mobile, shown below on desktop */}
-                    {!(isFullscreen || (isMobile && isCameraActive)) && isCameraActive && (
+                    {/* Camera controls - hidden in fullscreen, shown below on desktop */}
+                    {!isFullscreen && isCameraActive && (
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm sm:text-base text-gray-500">
                         <span className="flex items-center space-x-1 text-green-600 w-full sm:w-auto text-center sm:text-left">
                           <CheckCircle className="w-4 h-4" />
@@ -1093,8 +1096,8 @@ const Scan = ({ user }) => {
                       </div>
                     )}
 
-                    {/* Fullscreen exit hint */}
-                    {(isFullscreen || (isMobile && isCameraActive)) && isCameraActive && !scanResult && (
+                    {/* Fullscreen exit hint - only in fullscreen mode */}
+                    {isFullscreen && isCameraActive && !scanResult && (
                       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm sm:text-base bg-black/60 px-5 py-3 rounded-lg backdrop-blur-sm" style={{ zIndex: 60 }}>
                         Tap "Scan Another" to continue or use ✕ button to exit
                       </div>
