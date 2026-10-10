@@ -610,43 +610,43 @@ const Scan = ({ user }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="w-full max-w-3xl space-y-6 mx-auto">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-4">
+      <div className="w-full max-w-3xl space-y-5 sm:space-y-6 mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
-              <Barcode className="w-6 h-6 text-primary" />
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center space-x-2 sm:space-x-3">
+              <Barcode className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               <span>Barcode Stock Scanner</span>
             </h1>
           </div>
 
           {/* Mode Selection - Only shown when no mode selected */}
           {!mode && (
-            <div className="space-y-4">
-              <p className="text-center text-gray-600 text-lg">Select operation mode to begin scanning</p>
+            <div className="space-y-3 sm:space-y-4">
+              <p className="text-center text-gray-600 text-base sm:text-lg">Select operation mode to begin scanning</p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <button
                   onClick={() => setModeAndFocus('inbound')}
-                  className="flex flex-col items-center justify-center p-6 bg-green-50 border-2 border-green-200 rounded-xl hover:bg-green-100 hover:border-green-400 transition-all"
+                  className="flex flex-col items-center justify-center p-5 sm:p-6 bg-green-50 border-2 border-green-200 rounded-xl hover:bg-green-100 hover:border-green-400 transition-all min-h-[120px] sm:min-h-[140px] touch-manipulation"
                 >
-                  <ShoppingBag className="w-12 h-12 text-green-600 mb-3" />
-                  <span className="text-xl font-bold text-green-800">Receive Stock (IN)</span>
-                  <span className="text-sm text-green-600 mt-1">Scan books to add +1 qty</span>
+                  <ShoppingBag className="w-10 h-10 sm:w-12 sm:h-12 text-green-600 mb-2 sm:mb-3" />
+                  <span className="text-lg sm:text-xl font-bold text-green-800">Receive Stock (IN)</span>
+                  <span className="text-xs sm:text-sm text-green-600 mt-1">Scan books to add +1 qty</span>
                 </button>
 
                 <button
                   onClick={() => setModeAndFocus('outbound')}
-                  className="flex flex-col items-center justify-center p-6 bg-red-50 border-2 border-red-200 rounded-xl hover:bg-red-100 hover:border-red-400 transition-all"
+                  className="flex flex-col items-center justify-center p-5 sm:p-6 bg-red-50 border-2 border-red-200 rounded-xl hover:bg-red-100 hover:border-red-400 transition-all min-h-[120px] sm:min-h-[140px] touch-manipulation"
                 >
-                  <Trash2 className="w-12 h-12 text-red-600 mb-3" />
-                  <span className="text-xl font-bold text-red-800">Ship Stock (OUT)</span>
-                  <span className="text-sm text-red-600 mt-1">Scan books to remove -1 qty</span>
+                  <Trash2 className="w-10 h-10 sm:w-12 sm:h-12 text-red-600 mb-2 sm:mb-3" />
+                  <span className="text-lg sm:text-xl font-bold text-red-800">Ship Stock (OUT)</span>
+                  <span className="text-xs sm:text-sm text-red-600 mt-1">Scan books to remove -1 qty</span>
                 </button>
               </div>
 
-              <p className="text-center text-xs text-gray-500">
+              <p className="text-center text-xs sm:text-sm text-gray-500">
                 Hardware barcode scanners work automatically - just scan ISBN barcodes
               </p>
             </div>
@@ -654,79 +654,81 @@ const Scan = ({ user }) => {
 
           {/* Active Scanning Mode */}
           {mode && (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Mode Header */}
-              <div className={`flex items-center justify-between p-4 rounded-xl ${
+              <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 rounded-xl gap-3 ${
                 mode === 'inbound' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
               }`}>
-                <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                <div className="flex items-center space-x-3 w-full sm:w-auto">
+                  <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                     mode === 'inbound' ? 'bg-green-100' : 'bg-red-100'
                   }`}>
                     {mode === 'inbound' ? (
-                      <ShoppingBag className="w-5 h-5 text-green-600" />
+                      <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                     ) : (
-                      <Trash2 className="w-5 h-5 text-red-600" />
+                      <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
                     )}
                   </div>
-                  <div>
-                    <h2 className={`font-bold text-lg ${mode === 'inbound' ? 'text-green-800' : 'text-red-800'}`}>
+                  <div className="min-w-0">
+                    <h2 className={`font-bold text-base sm:text-lg ${mode === 'inbound' ? 'text-green-800' : 'text-red-800'}`}>
                       {mode === 'inbound' ? 'Receive Stock Mode' : 'Ship Stock Mode'}
                     </h2>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs sm:text-sm text-gray-600">
                       Scans will automatically {mode === 'inbound' ? 'add +1' : 'remove -1'} qty
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
                   <button
                     onClick={() => setShowImport(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                    className="flex-1 sm:flex-none flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors touch-manipulation min-h-[44px]"
                     title="Bulk import from Excel/CSV"
                   >
                     <FileText className="w-4 h-4" />
-                    <span className="text-sm font-medium">Import</span>
+                    <span className="text-sm font-medium hidden sm:inline">Import</span>
+                    <span className="sm:hidden">⬇</span>
                   </button>
                   <button
                     onClick={clearMode}
-                    className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 sm:flex-none flex items-center justify-center space-x-2 px-3 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors touch-manipulation min-h-[44px]"
                   >
                     <RotateCcw className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-700">Change Mode</span>
+                    <span className="text-sm font-medium text-gray-700 hidden sm:inline">Change Mode</span>
+                    <span className="sm:hidden">↺</span>
                   </button>
                 </div>
               </div>
 
               {/* Scan Method Selector */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   Scan Method
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   <button
                     onClick={() => handleScanMethodChange('manual')}
-                    className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                    className={`flex items-center justify-center space-x-2 px-3 py-3.5 rounded-lg border-2 transition-all touch-manipulation min-h-[48px] ${
                       scanMethod === 'manual'
                         ? 'border-primary bg-primary text-white'
                         : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
                     }`}
                   >
                     <span className="text-lg">⌨</span>
-                    <span className="font-medium">Text Input</span>
+                    <span className="font-medium text-sm sm:text-base">Text Input</span>
                   </button>
                   <button
                     onClick={() => handleScanMethodChange('camera')}
-                    className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                    className={`flex items-center justify-center space-x-2 px-3 py-3.5 rounded-lg border-2 transition-all touch-manipulation min-h-[48px] ${
                       scanMethod === 'camera'
                         ? 'border-primary bg-primary text-white'
                         : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
                     }`}
                   >
                     <Camera className="w-5 h-5" />
-                    <span className="font-medium">Camera Scan</span>
+                    <span className="font-medium text-sm sm:text-base">Camera Scan</span>
                   </button>
                 </div>
-                <p className="mt-2 text-xs text-gray-500 text-center">
+                <p className="mt-2 text-xs sm:text-sm text-gray-500 text-center">
                   {scanMethod === 'camera'
                     ? 'Point camera at ISBN barcode • Auto-stops after scan'
                     : 'Type or scan with hardware scanner • Auto-focuses after each scan'}
@@ -735,24 +737,25 @@ const Scan = ({ user }) => {
 
               {/* Bulk Import Section */}
               {showImport && (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <label className="block text-sm font-medium text-gray-700">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3 sm:mb-4">
+                    <label className="block text-sm sm:text-base font-medium text-gray-700">
                       Bulk Import
                     </label>
                     <button
                       onClick={downloadTemplate}
-                      className="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                      className="flex items-center justify-center space-x-1 px-3 py-2 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors touch-manipulation min-h-[44px]"
                       title="Download Excel template"
                     >
                       <Download className="w-4 h-4" />
-                      <span>Download Template</span>
+                      <span className="hidden sm:inline">Download Template</span>
+                      <span className="sm:hidden">⬇</span>
                     </button>
                   </div>
 
                   {!importFile ? (
                   // Initial state - show upload button
-                  <div className="text-center py-6">
+                  <div className="text-center py-6 sm:py-8">
                     <input
                       type="file"
                       id="import-file-input"
@@ -762,20 +765,20 @@ const Scan = ({ user }) => {
                     />
                     <label
                       htmlFor="import-file-input"
-                      className="flex flex-col items-center justify-center space-y-3 px-6 py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-blue-50 cursor-pointer transition-colors"
+                      className="flex flex-col items-center justify-center space-y-3 px-4 py-6 sm:px-6 sm:py-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-blue-50 cursor-pointer transition-colors touch-manipulation"
                     >
-                      <Upload className="w-10 h-10 text-gray-400" />
-                      <span className="text-gray-600">Click to upload or drag and drop</span>
-                      <p className="text-xs text-gray-500">
+                      <Upload className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" />
+                      <span className="text-base sm:text-lg text-gray-600">Click to upload or drag and drop</span>
+                      <p className="text-xs sm:text-sm text-gray-500">
                         Excel (.xlsx, .xls) or CSV with ISBN column
                       </p>
                     </label>
                   </div>
                 ) : (
                   // File selected - show preview and actions
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {importError && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex items-center space-x-2">
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex flex-col sm:flex-row items-start sm:items-center space-x-2 gap-2">
                         <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                         <span className="flex-1">{importError}</span>
                         <button
@@ -785,7 +788,7 @@ const Scan = ({ user }) => {
                             setImportError(null);
                             setShowImport(false);
                           }}
-                          className="flex-shrink-0 text-red-600 hover:underline text-sm"
+                          className="flex-shrink-0 px-3 py-1.5 text-red-600 hover:underline text-sm bg-red-50 rounded-lg touch-manipulation min-h-[44px]"
                         >
                           Dismiss
                         </button>
@@ -794,7 +797,7 @@ const Scan = ({ user }) => {
 
                     {importPreview.length > 0 && (
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                           <p className="text-sm font-medium text-gray-700">
                             {importPreview.length} ISBN(s) ready to process
                           </p>
@@ -804,7 +807,7 @@ const Scan = ({ user }) => {
                               setImportPreview([]);
                               setShowImport(false);
                             }}
-                            className="text-sm text-gray-500 hover:text-gray-700"
+                            className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 bg-gray-50 rounded-lg touch-manipulation min-h-[44px]"
                           >
                             Clear
                           </button>
@@ -841,7 +844,7 @@ const Scan = ({ user }) => {
                         <button
                           onClick={processBulkImport}
                           disabled={importing}
-                          className={`w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-colors ${
+                          className={`w-full flex items-center justify-center space-x-2 px-4 py-3.5 rounded-lg transition-colors touch-manipulation min-h-[48px] ${
                             importing
                               ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                               : 'bg-primary text-white hover:bg-primary/90'
@@ -850,12 +853,12 @@ const Scan = ({ user }) => {
                           {importing ? (
                             <>
                               <Loader className="w-4 h-4 animate-spin" />
-                              <span>Processing...</span>
+                              <span className="font-medium">Processing...</span>
                             </>
                           ) : (
                             <>
                               <CheckCircle className="w-4 h-4" />
-                              <span>Process {mode === 'inbound' ? 'Stock In' : 'Stock Out'}</span>
+                              <span className="font-medium">Process {mode === 'inbound' ? 'Stock In' : 'Stock Out'}</span>
                             </>
                           )}
                         </button>
@@ -863,23 +866,23 @@ const Scan = ({ user }) => {
                     )}
 
                     {importResults && (
-                      <div className="bg-gray-50 rounded-lg p-4 border-t border-gray-200 space-y-3">
+                      <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border-t border-gray-200 space-y-3">
                         <h3 className="font-semibold text-gray-900 flex items-center space-x-2">
-                          <FileText className="w-5 h-5 text-primary" />
-                          Import Results
+                          <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                          <span>Import Results</span>
                         </h3>
-                        <div className="grid grid-cols-3 gap-4 text-center">
+                        <div className="grid grid-cols-3 gap-3 sm:gap-4 text-center">
                           <div className="bg-green-50 p-3 rounded-lg">
-                            <p className="text-2xl font-bold text-green-600">{importResults.succeeded}</p>
-                            <p className="text-xs text-green-700">Succeeded</p>
+                            <p className="text-xl sm:text-2xl font-bold text-green-600">{importResults.succeeded}</p>
+                            <p className="text-xs sm:text-sm text-green-700">Succeeded</p>
                           </div>
                           <div className="bg-red-50 p-3 rounded-lg">
-                            <p className="text-2xl font-bold text-red-600">{importResults.failed}</p>
-                            <p className="text-xs text-red-700">Failed</p>
+                            <p className="text-xl sm:text-2xl font-bold text-red-600">{importResults.failed}</p>
+                            <p className="text-xs sm:text-sm text-red-700">Failed</p>
                           </div>
                           <div className="bg-blue-50 p-3 rounded-lg">
-                            <p className="text-2xl font-bold text-blue-600">{importResults.details.length}</p>
-                            <p className="text-xs text-blue-700">Total</p>
+                            <p className="text-xl sm:text-2xl font-bold text-blue-600">{importResults.details.length}</p>
+                            <p className="text-xs sm:text-sm text-blue-700">Total</p>
                           </div>
                         </div>
 
@@ -888,12 +891,12 @@ const Scan = ({ user }) => {
                             <h4 className="text-sm font-medium text-red-700 mb-2">Errors:</h4>
                             <div className="max-h-32 overflow-y-auto space-y-1">
                               {importResults.errors.slice(0, 5).map((err, index) => (
-                                <div key={index} className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                                <div key={index} className="text-xs sm:text-sm text-red-600 bg-red-50 p-2 rounded">
                                   ISBN: {err.isbn} - {err.message}
                                 </div>
                               ))}
                               {importResults.errors.length > 5 && (
-                                <p className="text-xs text-gray-500">And {importResults.errors.length - 5} more errors...</p>
+                                <p className="text-xs sm:text-sm text-gray-500">And {importResults.errors.length - 5} more errors...</p>
                               )}
                             </div>
                           </div>
@@ -901,7 +904,7 @@ const Scan = ({ user }) => {
 
                         <button
                           onClick={clearImport}
-                          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700"
+                          className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 touch-manipulation min-h-[44px]"
                         >
                           Done
                         </button>
@@ -927,13 +930,24 @@ const Scan = ({ user }) => {
                         <span className="flex-1">{cameraError}</span>
                         <button
                           onClick={startCameraScanner}
-                          className="flex-shrink-0 text-red-600 hover:underline text-sm"
+                          className="flex-shrink-0 px-3 py-1.5 text-red-600 hover:underline text-sm bg-red-50 rounded-lg touch-manipulation min-h-[44px]"
                         >
                           Retry
                         </button>
                       </div>
                     )}
-                    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-black rounded-none' : ''}`}>
+                    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-black rounded-none flex flex-col' : ''}`}>
+                      {/* Close button in fullscreen - top right */}
+                      {isFullscreen && isCameraActive && (
+                        <button
+                          onClick={() => handleScanMethodChange('manual')}
+                          className="absolute top-4 right-4 z-60 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                          aria-label="Close camera"
+                        >
+                          <X className="w-6 h-6" />
+                        </button>
+                      )}
+
                       {/* Loading indicator - React-managed, OUTSIDE library container */}
                       {!isCameraActive && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-4 rounded-lg bg-black" style={{ zIndex: 10 }}>
@@ -946,7 +960,7 @@ const Scan = ({ user }) => {
                       <div
                         ref={cameraContainerRef}
                         id="camera-reader"
-                        className={`w-full overflow-hidden ${isFullscreen ? 'h-screen rounded-none' : 'rounded-lg'}`}
+                        className={`w-full overflow-hidden ${isFullscreen ? 'flex-1 flex items-center justify-center rounded-none' : 'rounded-lg'}`}
                         style={{
                           aspectRatio: isFullscreen ? undefined : '16/9',
                           maxHeight: isFullscreen ? '100vh' : '500px',
@@ -976,52 +990,52 @@ const Scan = ({ user }) => {
 
                       {/* Scan Result Display - shows after scan in camera feed area */}
                       {isCameraActive && scanResult && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-black/80" style={{ zIndex: 20 }}>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6 text-center bg-black/85" style={{ zIndex: 20 }}>
                           {scanResult.type === 'success' ? (
-                            <div className="max-w-xs w-full">
-                              <div className="bg-green-500/20 border border-green-500 rounded-xl p-6 backdrop-blur-sm">
-                                <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
-                                <h3 className="text-lg font-bold text-green-300 mb-1">
+                            <div className="max-w-sm w-full">
+                              <div className="bg-green-500/20 border border-green-500 rounded-xl p-5 sm:p-6 backdrop-blur-sm">
+                                <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 text-green-400 mx-auto mb-3" />
+                                <h3 className="text-base sm:text-lg font-bold text-green-300 mb-2">
                                   {scanResult.action === 'IN' ? 'Stock Received' : 'Stock Shipped'}
                                 </h3>
-                                <p className="text-white font-medium text-xl mb-2 truncate">{scanResult.book.TITLE}</p>
-                                <p className="text-gray-300 text-sm mb-1">by {scanResult.book.AUTHOR || 'Unknown Author'}</p>
-                                <div className="flex flex-wrap justify-center gap-3 mt-3 text-sm">
-                                  <span className="bg-gray-800 px-3 py-1 rounded-full text-gray-200">ISBN: {scanResult.book.ISBN}</span>
-                                  <span className={`px-3 py-1 rounded-full text-white font-bold ${
+                                <p className="text-white font-medium text-lg sm:text-xl mb-2 truncate">{scanResult.book.TITLE}</p>
+                                <p className="text-gray-300 text-sm sm:text-base mb-2">by {scanResult.book.AUTHOR || 'Unknown Author'}</p>
+                                <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-2 mt-3 text-sm sm:text-base">
+                                  <span className="bg-gray-800 px-3 py-1.5 rounded-full text-gray-200">ISBN: {scanResult.book.ISBN}</span>
+                                  <span className={`px-3 py-1.5 rounded-full text-white font-bold ${
                                     scanResult.action === 'IN' ? 'bg-green-600' : 'bg-red-600'
                                   }`}>
                                     {scanResult.action === 'IN' ? '+1' : '-1'} Stock: {scanResult.book.QTY}
                                   </span>
                                   {scanResult.book.SUBJECT && (
-                                    <span className="bg-gray-800 px-3 py-1 rounded-full text-gray-300">{scanResult.book.SUBJECT}</span>
+                                    <span className="bg-gray-800 px-3 py-1.5 rounded-full text-gray-300">{scanResult.book.SUBJECT}</span>
                                   )}
                                 </div>
                               </div>
                               <button
                                 onClick={() => setScanResult(null)}
-                                className="mt-4 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                                className="mt-4 w-full sm:w-auto px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors touch-manipulation min-h-[48px] text-base font-medium"
                               >
                                 Scan Another
                               </button>
                             </div>
                           ) : (
-                            <div className="max-w-xs w-full">
-                              <div className="bg-red-500/20 border border-red-500 rounded-xl p-6 backdrop-blur-sm">
-                                <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-                                <h3 className="text-lg font-bold text-red-300 mb-1">Book Not Found</h3>
-                                <p className="text-white font-mono text-lg mb-2">{scanResult.scannedIsbn}</p>
-                                <p className="text-gray-300 text-sm mb-4">{scanResult.message}</p>
-                                <div className="flex flex-wrap justify-center gap-2">
+                            <div className="max-w-sm w-full">
+                              <div className="bg-red-500/20 border border-red-500 rounded-xl p-5 sm:p-6 backdrop-blur-sm">
+                                <AlertTriangle className="w-10 h-10 sm:w-12 sm:h-12 text-red-400 mx-auto mb-3" />
+                                <h3 className="text-base sm:text-lg font-bold text-red-300 mb-1">Book Not Found</h3>
+                                <p className="text-white font-mono text-lg sm:text-xl mb-2">{scanResult.scannedIsbn}</p>
+                                <p className="text-gray-300 text-sm sm:text-base mb-4">{scanResult.message}</p>
+                                <div className="flex flex-col sm:flex-row justify-center gap-2">
                                   <button
                                     onClick={() => setScanResult(null)}
-                                    className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                                    className="w-full sm:w-auto px-5 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors touch-manipulation min-h-[48px] text-base font-medium"
                                   >
                                     Try Again
                                   </button>
                                   <button
                                     onClick={() => handleScanMethodChange('manual')}
-                                    className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                                    className="w-full sm:w-auto px-5 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors touch-manipulation min-h-[48px] text-base font-medium"
                                   >
                                     Manual Entry
                                   </button>
@@ -1035,45 +1049,45 @@ const Scan = ({ user }) => {
 
                     {/* Camera controls - hidden in fullscreen, shown below on desktop */}
                     {!isFullscreen && isCameraActive && (
-                      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-gray-500">
-                        <span className="flex items-center space-x-1 text-green-600">
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm sm:text-base text-gray-500">
+                        <span className="flex items-center space-x-1 text-green-600 w-full sm:w-auto text-center sm:text-left">
                           <CheckCircle className="w-4 h-4" />
                           <span>{scanCooldown ? 'Cooldown (0.5s)...' : 'Camera active - Point at ISBN barcode'}</span>
                         </span>
                         {scanCooldown && (
-                          <span className="flex items-center space-x-1 text-yellow-600">
+                          <span className="flex items-center space-x-1 text-yellow-600 w-full sm:w-auto text-center sm:text-left">
                             <Loader className="w-4 h-4 animate-spin" />
                             <span>Wait...</span>
                           </span>
                         )}
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 w-full sm:w-auto justify-center sm:justify-end">
                           <button
                             onClick={() => setSoundEnabled(!soundEnabled)}
-                            className="flex items-center space-x-1 px-3 py-1 text-gray-600 hover:text-gray-800 transition-colors"
+                            className="flex items-center justify-center space-x-2 px-4 py-2.5 text-gray-600 hover:text-gray-800 transition-colors touch-manipulation min-h-[44px] min-w-[44px]"
                             title={soundEnabled ? 'Disable beep sound' : 'Enable beep sound'}
                           >
                             {soundEnabled ? (
-                              <Volume2 className="w-4 h-4" />
+                              <Volume2 className="w-5 h-5" />
                             ) : (
-                              <VolumeX className="w-4 h-4" />
+                              <VolumeX className="w-5 h-5" />
                             )}
-                            <span className="text-xs hidden sm:inline">{soundEnabled ? 'Sound ON' : 'Sound OFF'}</span>
+                            <span className="hidden sm:inline text-sm">{soundEnabled ? 'Sound ON' : 'Sound OFF'}</span>
                           </button>
                           <button
                             onClick={() => handleScanMethodChange('manual')}
-                            className="flex items-center space-x-1 px-3 py-1 text-gray-600 hover:text-gray-800"
+                            className="flex items-center justify-center space-x-2 px-4 py-2.5 text-gray-600 hover:text-gray-800 touch-manipulation min-h-[44px]"
                           >
-                            <X className="w-4 h-4" />
-                            <span>Stop Camera</span>
+                            <X className="w-5 h-5" />
+                            <span className="text-sm font-medium hidden sm:inline">Stop Camera</span>
                           </button>
                         </div>
                       </div>
                     )}
 
                     {/* Fullscreen exit hint */}
-                    {isFullscreen && isCameraActive && (
-                      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm" style={{ zIndex: 60 }}>
-                        Tap "Scan Another" to continue or use browser gesture to exit fullscreen
+                    {isFullscreen && isCameraActive && !scanResult && (
+                      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm sm:text-base bg-black/60 px-5 py-3 rounded-lg backdrop-blur-sm" style={{ zIndex: 60 }}>
+                        Tap "Scan Another" to continue or use ✕ button to exit
                       </div>
                     )}
                   </div>
@@ -1086,20 +1100,21 @@ const Scan = ({ user }) => {
                       value={isbn}
                       onChange={(e) => setIsbn(e.target.value)}
                       placeholder={loading ? "Processing..." : "Scan barcode or type ISBN..."}
-                      className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50"
+                      className="w-full px-4 py-4 text-lg sm:text-xl border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50 touch-manipulation"
                       autoComplete="off"
                       spellCheck="false"
                       disabled={loading}
+                      inputMode="numeric"
                     />
-                    <Barcode className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
+                    <Barcode className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
                     {loading && (
-                      <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2">
                         <Loader className="w-5 h-5 text-primary animate-spin" />
                       </div>
                     )}
                   </div>
                 )}
-                <p className="mt-2 text-xs text-gray-500 text-center">
+                <p className="mt-2 text-xs sm:text-sm text-gray-500 text-center">
                   {scanMethod === 'camera'
                     ? 'Auto-stops after successful scan • Switch to text input if needed'
                     : (mode === 'inbound' ? '📦 Scanning adds +1 to stock' : '📤 Scanning removes -1 from stock') + ' • Auto-focuses after each scan'}
@@ -1108,15 +1123,15 @@ const Scan = ({ user }) => {
 
               {/* Current Book Display */}
               {bookInfo && (
-                <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-primary">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <ShoppingBag className="w-6 h-6 text-primary" />
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border-l-4 border-primary">
+                  <div className="flex items-start space-x-3 sm:space-x-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-gray-900 truncate">{bookInfo.TITLE}</h3>
-                      <p className="text-sm text-gray-600">by {bookInfo.AUTHOR || 'Unknown Author'}</p>
-                      <div className="flex flex-wrap gap-4 mt-2 text-sm">
+                      <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">{bookInfo.TITLE}</h3>
+                      <p className="text-xs sm:text-sm text-gray-600">by {bookInfo.AUTHOR || 'Unknown Author'}</p>
+                      <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 mt-2 text-xs sm:text-sm">
                         <span className="font-medium text-gray-700">ISBN: {bookInfo.ISBN}</span>
                         <span className={`font-bold text-lg ${mode === 'inbound' ? 'text-green-600' : 'text-red-600'}`}>
                           Stock: {bookInfo.QTY}
@@ -1130,13 +1145,13 @@ const Scan = ({ user }) => {
 
               {/* Error/Success Messages */}
               {error && (
-                <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
-                  <div className="flex items-center space-x-3">
+                <div className="bg-red-50 border-l-4 border-red-400 p-3 sm:p-4 rounded-r-lg">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-x-3 gap-2 sm:gap-0">
                     <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
                     <p className="text-sm text-red-700 flex-1">{error}</p>
                     <button
                       onClick={() => setError(null)}
-                      className="text-sm text-red-600 hover:text-red-800 underline"
+                      className="px-3 py-1.5 text-sm text-red-600 hover:text-red-800 bg-red-50 rounded-lg touch-manipulation min-h-[44px]"
                     >
                       Dismiss
                     </button>
@@ -1145,13 +1160,13 @@ const Scan = ({ user }) => {
               )}
 
               {success && (
-                <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg">
-                  <div className="flex items-center space-x-3">
+                <div className="bg-green-50 border-l-4 border-green-400 p-3 sm:p-4 rounded-r-lg">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-x-3 gap-2 sm:gap-0">
                     <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
                     <p className="text-sm text-green-700 flex-1">{success}</p>
                     <button
                       onClick={() => setSuccess(null)}
-                      className="text-sm text-green-600 hover:text-green-800 underline"
+                      className="px-3 py-1.5 text-sm text-green-600 hover:text-green-800 bg-green-50 rounded-lg touch-manipulation min-h-[44px]"
                     >
                       Dismiss
                     </button>
@@ -1162,26 +1177,26 @@ const Scan = ({ user }) => {
               {/* Recent Scans History */}
               {recentScans.length > 0 && (
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                  <div className="px-3 sm:px-4 py-3 border-b border-gray-200 bg-gray-50">
                     <h3 className="font-semibold text-gray-900 flex items-center space-x-2">
-                      <Barcode className="w-5 h-5 text-gray-500" />
-                      Recent Scans ({recentScans.length})
+                      <Barcode className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
+                      <span>Recent Scans ({recentScans.length})</span>
                     </h3>
                   </div>
                   <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
                     {recentScans.map((scan, index) => (
-                      <div key={index} className="px-4 py-3 hover:bg-gray-50 flex items-center justify-between">
+                      <div key={index} className="px-3 sm:px-4 py-3 hover:bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 truncate">{scan.title}</p>
                           <p className="text-xs text-gray-500">ISBN: {scan.isbn} • {scan.timestamp}</p>
                         </div>
-                        <div className="flex items-center space-x-3 ml-4">
-                          <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                        <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto justify-end">
+                          <span className={`px-2 py-1.5 text-xs font-bold rounded-full ${
                             scan.action === 'IN' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                           }`}>
                             {scan.action === 'IN' ? '+1' : '-1'}
                           </span>
-                          <span className="text-sm font-medium text-gray-700 w-16 text-right">
+                          <span className="text-sm font-medium text-gray-700 w-14 sm:w-16 text-right">
                             {scan.newStock}
                           </span>
                         </div>
@@ -1194,20 +1209,27 @@ const Scan = ({ user }) => {
           )}
         </div>
 
-        {/* Instructions */}
-        <div className="bg-white rounded-lg shadow p-4 text-sm text-gray-600">
-          <h4 className="font-semibold text-gray-900 mb-2 flex items-center space-x-2">
-            <Barcode className="w-4 h-4 text-primary" />
-            How to Use
-          </h4>
-          <ul className="space-y-1 list-disc list-inside">
-            <li>Select <strong>Receive Stock</strong> to add inventory or <strong>Ship Stock</strong> to remove</li>
-            <li>Point your barcode scanner at a book's ISBN barcode</li>
-            <li>Each scan automatically updates stock by <strong>±1</strong></li>
-            <li>Input auto-focuses after each scan - just keep scanning</li>
-            <li>Recent scans are shown below with new stock levels</li>
-            <li>Click "Change Mode" to switch between Receive/Ship</li>
-          </ul>
+        {/* Instructions - collapsible on mobile */}
+        <div className="bg-white rounded-lg shadow p-3 sm:p-4 text-sm text-gray-600">
+          <details className="group">
+            <summary className="flex items-center justify-between cursor-pointer list-none font-semibold text-gray-900">
+              <span className="flex items-center space-x-2">
+                <Barcode className="w-4 h-4 text-primary" />
+                <span>How to Use</span>
+              </span>
+              <span className="text-gray-400 group-open:rotate-180 transition-transform">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+              </span>
+            </summary>
+            <ul className="mt-3 space-y-2 list-disc list-inside text-sm sm:text-base">
+              <li>Select <strong>Receive Stock</strong> to add inventory or <strong>Ship Stock</strong> to remove</li>
+              <li>Point your barcode scanner at a book's ISBN barcode</li>
+              <li>Each scan automatically updates stock by <strong>±1</strong></li>
+              <li>Input auto-focuses after each scan - just keep scanning</li>
+              <li>Recent scans are shown below with new stock levels</li>
+              <li>Tap "Change Mode" to switch between Receive/Ship</li>
+            </ul>
+          </details>
         </div>
       </div>
     </div>
