@@ -54,7 +54,21 @@ const Scan = ({ user }) => {
 
   // Camera scanner cleanup on unmount - uses ref for live instance
   useEffect(() => {
+    const handlePageHide = () => {
+      // Exit fullscreen before page unloads (back button, tab close, etc.)
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    };
+
+    // Listen for page hide (mobile back button, tab switch, etc.)
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('beforeunload', handlePageHide);
+
     return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('beforeunload', handlePageHide);
+
       // Exit fullscreen if active before unmounting
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(() => {});
@@ -986,7 +1000,7 @@ const Scan = ({ user }) => {
                         className={`w-full overflow-hidden ${isFullscreen ? 'flex-1 flex items-center justify-center rounded-none' : 'rounded-lg'}`}
                         style={{
                           aspectRatio: isFullscreen ? undefined : '16/9',
-                          maxHeight: isFullscreen ? 'calc(100vh - 200px)' : '500px',
+                          maxHeight: isFullscreen ? 'calc(100vh - 260px)' : '500px',
                           backgroundColor: '#000'
                         }}
                       />
