@@ -54,35 +54,7 @@ const Scan = ({ user }) => {
 
   // Camera scanner cleanup on unmount - uses ref for live instance
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      // Exit fullscreen when page becomes hidden (mobile back, tab switch, app switch)
-      if (document.visibilityState === 'hidden' && document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-      }
-    };
-
-    const handlePageHide = () => {
-      // Exit fullscreen before page unloads (back button, tab close, etc.)
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-      }
-    };
-
-    // Listen for visibility change (mobile back button, tab switch, app switch)
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    // Listen for page hide (mobile back button, tab close, etc.)
-    window.addEventListener('pagehide', handlePageHide);
-    window.addEventListener('beforeunload', handlePageHide);
-
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pagehide', handlePageHide);
-      window.removeEventListener('beforeunload', handlePageHide);
-
-      // Exit fullscreen if active before unmounting
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-      }
       // Reset fullscreen and camera states
       setIsFullscreen(false);
       setIsCameraActive(false);
@@ -101,29 +73,14 @@ const Scan = ({ user }) => {
   useEffect(() => {
     if (scanMethod !== 'camera' && cameraScannerRef.current) {
       cameraScannerRef.current.stop().catch(() => {});
-      // Exit fullscreen if active
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-      }
       setCameraScanner(null);
       setIsCameraActive(false);
+      setIsFullscreen(false);
     }
   }, [scanMethod, mode]);
 
-  // Fullscreen handling for mobile camera
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      const isFull = document.fullscreenElement !== null;
-      setIsFullscreen(isFull);
-      if (!isFull && scanMethod === 'camera') {
-        // User exited fullscreen manually, stop camera
-        handleScanMethodChange('manual');
-      }
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [scanMethod]);
+  // Fullscreen handling for mobile camera (CSS-based, no Fullscreen API)
+  // No event listeners needed - isFullscreen state is controlled directly
 
   // Clear scan result when mode or scan method changes
   useEffect(() => {
@@ -334,19 +291,9 @@ const Scan = ({ user }) => {
       cameraScannerRef.current = html5Qrcode;
       setIsCameraActive(true);
 
-      // Request fullscreen on mobile/tablet for better scanning experience
-      if (isMobile && fullscreenContainerRef.current) {
-        try {
-          // Try to request fullscreen on the parent container (includes X button and overlays)
-          await fullscreenContainerRef.current.requestFullscreen({ navigationUI: 'hide' });
-          // If successful, manually set isFullscreen as fallback (in case event doesn't fire)
-          setIsFullscreen(true);
-        } catch (fsErr) {
-          console.warn('Fullscreen request failed:', fsErr);
-          // Even if fullscreen fails, we can still set isFullscreen for mobile to show the UI properly
-          // This ensures X button and scan results work
-          setIsFullscreen(true);
-        }
+      // Use CSS fullscreen layout on mobile/tablet (no Fullscreen API to avoid white screen on back)
+      if (isMobile) {
+        setIsFullscreen(true);
       }
     } catch (err) {
       console.error('Camera start error:', err);
