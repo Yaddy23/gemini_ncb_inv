@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Loader, FileText, Edit, Trash2, Eye, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Loader, FileText, Edit, Trash2, Eye, User, ChevronLeft, ChevronRight, XCircle } from 'lucide-react';
 import { drsiApi } from '../api/drsi';
 import DocumentForm from '../components/drsi/DocumentForm';
 import { formatDate, formatCurrency } from '../utils/numberToWords';
@@ -16,6 +16,7 @@ const SalesInvoices = ({ user }) => {
   const [editingSI, setEditingSI] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(null);
+  const [cancelling, setCancelling] = useState(null);
 
   const fetchSIs = async () => {
     setLoading(true);
@@ -86,6 +87,23 @@ const SalesInvoices = ({ user }) => {
     }
   };
 
+  const handleCancel = async (id) => {
+    const reason = window.prompt('Enter cancellation reason:');
+    if (!reason || !reason.trim()) return;
+    const sure = window.confirm('Cancel this sales invoice? This cannot be undone.');
+    if (!sure) return;
+    setCancelling(id);
+    try {
+      await drsiApi.cancelSI(id, reason.trim());
+      alert('Document cancelled');
+      fetchSIs();
+    } catch (err) {
+      alert('Cancel failed: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setCancelling(null);
+    }
+  };
+
   const handleExport = async (id, format) => {
     setExporting(id);
     try {
@@ -109,6 +127,9 @@ const SalesInvoices = ({ user }) => {
   const getStatusBadge = (status) => {
     if (status === 'issued') {
       return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Issued</span>;
+    }
+    if (status === 'cancelled') {
+      return <span className="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">Cancelled</span>;
     }
     return <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">Draft</span>;
   };
@@ -150,6 +171,7 @@ const SalesInvoices = ({ user }) => {
             <option value="">All Status</option>
             <option value="draft">Draft</option>
             <option value="issued">Issued</option>
+            <option value="cancelled">Cancelled</option>
           </select>
         </div>
       </div>
@@ -223,6 +245,17 @@ const SalesInvoices = ({ user }) => {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                      {user?.role === 'Admin' && si.status === 'issued' && (
+                        <button
+                          onClick={() => handleCancel(si._id)}
+                          disabled={cancelling === si._id}
+                          className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                          title="Cancel document"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          <span className="text-sm font-medium">Cancel</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleExport(si._id, 'xlsx')}
                         disabled={exporting === si._id}
@@ -243,18 +276,18 @@ const SalesInvoices = ({ user }) => {
                       </button>
                       <button
                         onClick={() => handleEdit(si)}
-                        disabled={si.status === 'issued'}
+                        disabled={si.status !== 'draft'}
                         className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
-                        title={si.status === 'issued' ? 'Cannot edit issued SI' : 'Edit'}
+                        title={si.status !== 'draft' ? 'Cannot edit issued/cancelled SI' : 'Edit'}
                       >
                         <Edit className="w-4 h-4" />
                         <span className="text-sm font-medium">Edit</span>
                       </button>
                       <button
                         onClick={() => handleDelete(si._id)}
-                        disabled={si.status === 'issued'}
+                        disabled={si.status !== 'draft'}
                         className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
-                        title={si.status === 'issued' ? 'Cannot delete issued SI' : 'Delete'}
+                        title={si.status !== 'draft' ? 'Cannot delete issued/cancelled SI' : 'Delete'}
                       >
                         <Trash2 className="w-4 h-4" />
                         <span className="text-sm font-medium">Delete</span>
@@ -309,6 +342,16 @@ const SalesInvoices = ({ user }) => {
                       <td className="px-4 py-3 text-sm text-gray-500">{formatDate(si.createdAt)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center space-x-1 justify-end">
+                          {user?.role === 'Admin' && si.status === 'issued' && (
+                            <button
+                              onClick={() => handleCancel(si._id)}
+                              disabled={cancelling === si._id}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
+                              title="Cancel document"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleExport(si._id, 'xlsx')}
                             disabled={exporting === si._id}
@@ -327,17 +370,17 @@ const SalesInvoices = ({ user }) => {
                           </button>
                           <button
                             onClick={() => handleEdit(si)}
-                            disabled={si.status === 'issued'}
+                            disabled={si.status !== 'draft'}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
-                            title={si.status === 'issued' ? 'Cannot edit issued SI' : 'Edit'}
+                            title={si.status !== 'draft' ? 'Cannot edit issued/cancelled SI' : 'Edit'}
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(si._id)}
-                            disabled={si.status === 'issued'}
+                            disabled={si.status !== 'draft'}
                             className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
-                            title={si.status === 'issued' ? 'Cannot delete issued SI' : 'Delete'}
+                            title={si.status !== 'draft' ? 'Cannot delete issued/cancelled SI' : 'Delete'}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

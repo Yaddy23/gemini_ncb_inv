@@ -2,14 +2,33 @@ const express = require('express');
 const router = express.Router();
 const EvaluationForm = require('../models/EvaluationForm');
 const DeliveryReceipt = require('../models/DeliveryReceipt');
+const SalesInvoice = require('../models/SalesInvoice');
 const Book = require('../models/Book');
 const StockTransaction = require('../models/StockTransaction');
 const { protect, admin } = require('../middleware/auth');
 const documentGenerator = require('../services/documentGenerator');
+const UserLog = require('../models/UserLog');
 
 // Apply auth + admin to all routes
 router.use(protect);
 router.use(admin);
+
+// Helper function to log user activities
+const logUserActivity = async (userId, action, details = '', req = null) => {
+  try {
+    const logEntry = new UserLog({
+      userId,
+      action,
+      details,
+      ipAddress: req ? req.ip : null,
+      userAgent: req ? req.get('User-Agent') : null,
+    });
+    await logEntry.save();
+  } catch (error) {
+    console.error('Failed to log user activity:', error);
+    // Don't throw error to avoid breaking the main operation
+  }
+};
 
 // Helper function to check for duplicate ISBNs
 const checkDuplicateISBNs = (items) => {
@@ -205,7 +224,7 @@ router.post('/:id/issue', async (req, res) => {
   try {
     const ef = await EvaluationForm.findById(req.params.id);
     if (!ef) return res.status(404).json({ message: 'Evaluation Form not found' });
-    if (ef.status === 'issued') return res.status(400).json({ message: 'EF already issued' });
+    if (ef.status !== 'draft') return res.status(400).json({ message: 'EF already issued or cancelled' });
 
     // Create linked DR draft from EF data
     const dr = new DeliveryReceipt({
@@ -225,6 +244,63 @@ router.post('/:id/issue', async (req, res) => {
     await ef.save();
 
     res.json({ ef, dr });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Cancel EF (issued only) - cascades to linked draft DR (and its draft SI). No stock impact:
+// draft DRs never decremented stock, and an issued linked DR blocks the cancel.
+router.post('/:id/cancel', async (req, res) => {
+  try {
+    const { cancelReason } = req.body;
+    if (!cancelReason || !cancelReason.trim()) {
+      return res.status(400).json({ message: 'cancelReason is required' });
+    }
+
+    // Load EF first so we can check the linked DR BEFORE mutating anything
+    const existing = await EvaluationForm.findById(req.params.id);
+    if (!existing) return res.status(404).json({ message: 'EF not found or not in issued status' });
+    if (existing.status !== 'issued') return res.status(400).json({ message: 'EF not found or not in issued status' });
+
+    // Cascade check: linked DR must not be issued (it already moved stock)
+    const linkedDR = await DeliveryReceipt.findOne({ efRef: existing._id });
+    if (linkedDR && linkedDR.status === 'issued') {
+      return res.status(400).json({ message: 'Linked DR is already issued - cancel the DR first' });
+    }
+
+    // Atomic claim (guards double-click): flip issued -> cancelled
+    const ef = await EvaluationForm.findOneAndUpdate(
+      { _id: req.params.id, status: 'issued' },
+      { status: 'cancelled', cancelledAt: new Date(), cancelledBy: req.user._id, cancelReason: cancelReason.trim() },
+      { new: true }
+    );
+    if (!ef) return res.status(404).json({ message: 'EF not found or not in issued status' });
+
+    // Cancel the linked draft DR and its linked draft SI with the same reason
+    let linkedSI = null;
+    if (linkedDR && linkedDR.status === 'draft') {
+      linkedSI = await SalesInvoice.findOne({ drRef: linkedDR._id });
+      if (linkedSI && linkedSI.status === 'draft') {
+        linkedSI.status = 'cancelled';
+        linkedSI.cancelledAt = new Date();
+        linkedSI.cancelledBy = req.user._id;
+        linkedSI.cancelReason = cancelReason.trim();
+        await linkedSI.save();
+      } else {
+        linkedSI = null;
+      }
+
+      linkedDR.status = 'cancelled';
+      linkedDR.cancelledAt = new Date();
+      linkedDR.cancelledBy = req.user._id;
+      linkedDR.cancelReason = cancelReason.trim();
+      await linkedDR.save();
+    }
+
+    await logUserActivity(req.user._id, 'CANCEL_EF', `Cancelled EF ${ef.efNumber} - Reason: ${cancelReason.trim()}`, req);
+
+    res.json({ ef, dr: linkedDR, si: linkedSI });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

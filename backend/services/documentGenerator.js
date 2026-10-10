@@ -203,6 +203,8 @@ async function fillEFSheet(workbook, data) {
   }
 
   // Template handles totals at row 662 automatically - no need to add totals rows
+
+  if (data.status === 'cancelled') stampCancelled(sheet);
 }
 
 // Helper to clear cell formula and set value
@@ -222,6 +224,13 @@ function setCellValue(sheet, arg1, arg2, arg3) {
   try { delete cell.formula; } catch (e) {}
   try { delete cell.sharedFormula; } catch (e) {}
   return cell;
+}
+
+// Stamp CANCELLED marker into A7 (empty header cell in all templates - text overflows
+// across the empty adjacent cells) so voided documents are unmistakable on re-export
+function stampCancelled(sheet) {
+  const cell = setCellValue(sheet, 'A7', '*** CANCELLED ***');
+  cell.font = { bold: true, size: 14, color: { argb: 'FF9C0006' } };
 }
 
 // Load template and fill DR1 sheet
@@ -272,6 +281,8 @@ async function fillDR1Sheet(workbook, data) {
   }
 
   // Template handles totals at row 662 automatically - no need to add totals rows
+
+  if (data.status === 'cancelled') stampCancelled(sheet);
 }
 
 // Load template and fill INV1 sheet
@@ -338,6 +349,8 @@ async function fillINV1Sheet(workbook, data) {
 
   // Write discount fraction to helper cell K677 - drives template formulas H676 (label), I676 (discount), I677 (net total)
   setCellValue(sheet, 'K677', (data.discountPercentage || 0) / 100);
+
+  if (data.status === 'cancelled') stampCancelled(sheet);
 }
 
 // Fill Pesos sheet (sheet "1")
@@ -473,9 +486,11 @@ function generateDR1HTML(data, items, subtotal, total, amountWords, dateStr) {
     .amount-words { margin-top: 20px; font-style: italic; }
     .signatures { margin-top: 50px; display: flex; justify-content: space-between; }
     .sig-line { border-top: 1px solid #000; width: 200px; text-align: center; padding-top: 5px; }
+    .cancelled-banner { background: #9C0006; color: #fff; font-weight: bold; text-align: center; padding: 8px; font-size: 16px; letter-spacing: 2px; margin-bottom: 10px; }
   </style>
 </head>
 <body>
+  ${data.status === 'cancelled' ? '<div class="cancelled-banner">*** CANCELLED DOCUMENT ***</div>' : ''}
   <div class="header">
     <div class="company">DELIVERY RECEIPT</div>
     <div class="company">${data.customerName || ''}</div>
@@ -581,9 +596,11 @@ function generateINV1HTML(data, items, subtotal, discountPercentage, discountAmo
     .amount-words { margin-top: 20px; font-style: italic; }
     .signatures { margin-top: 50px; display: flex; justify-content: space-between; }
     .sig-line { border-top: 1px solid #000; width: 180px; text-align: center; padding-top: 5px; font-size: 9px; }
+    .cancelled-banner { background: #9C0006; color: #fff; font-weight: bold; text-align: center; padding: 8px; font-size: 16px; letter-spacing: 2px; margin-bottom: 10px; }
   </style>
 </head>
 <body>
+  ${data.status === 'cancelled' ? '<div class="cancelled-banner">*** CANCELLED DOCUMENT ***</div>' : ''}
   <div class="header">
     ${marketingExecHtml}
     <div class="info-grid">

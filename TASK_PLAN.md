@@ -73,7 +73,7 @@ Each task lists priority, estimated effort, and the files it touches.
 
 ## Phase 2 — Document lifecycle (biggest workflow improvement)
 
-- [ ] **2.1 Void/cancel issued documents with stock restore**
+- [x] **2.1 Void/cancel issued documents with stock restore**
   - `status: 'cancelled'` flow → write an INBOUND `StockTransaction` to restore stock; cascade to linked SI/EF.
   - Files: `backend/models/{DeliveryReceipt,SalesInvoice,EvaluationForm}.js`, `backend/routes/drsi.js`, `backend/routes/ef.js`, three list pages
   - Effort: medium

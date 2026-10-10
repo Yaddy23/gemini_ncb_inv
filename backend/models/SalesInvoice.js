@@ -21,7 +21,10 @@ const salesInvoiceSchema = new mongoose.Schema({
   discountPercentage: { type: Number, default: 0, min: 0, max: 100 },
   discountAmount: { type: Number, default: 0 },
   totalAmount: { type: Number, default: 0 },
-  status: { type: String, enum: ['draft', 'issued'], default: 'draft' },
+  status: { type: String, enum: ['draft', 'issued', 'cancelled'], default: 'draft' },
+  cancelledAt: { type: Date },
+  cancelledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  cancelReason: { type: String, trim: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

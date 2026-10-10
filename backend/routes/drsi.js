@@ -6,10 +6,28 @@ const Book = require('../models/Book');
 const StockTransaction = require('../models/StockTransaction');
 const { protect, admin } = require('../middleware/auth');
 const documentGenerator = require('../services/documentGenerator');
+const UserLog = require('../models/UserLog');
 
 // Apply auth + admin to all routes
 router.use(protect);
 router.use(admin);
+
+// Helper function to log user activities
+const logUserActivity = async (userId, action, details = '', req = null) => {
+  try {
+    const logEntry = new UserLog({
+      userId,
+      action,
+      details,
+      ipAddress: req ? req.ip : null,
+      userAgent: req ? req.get('User-Agent') : null,
+    });
+    await logEntry.save();
+  } catch (error) {
+    console.error('Failed to log user activity:', error);
+    // Don't throw error to avoid breaking the main operation
+  }
+};
 
 // ============================================
 // DELIVERY RECEIPTS
@@ -206,7 +224,7 @@ router.post('/dr/:id/issue', async (req, res) => {
   try {
     const dr = await DeliveryReceipt.findById(req.params.id);
     if (!dr) return res.status(404).json({ message: 'Delivery Receipt not found' });
-    if (dr.status === 'issued') return res.status(400).json({ message: 'DR already issued' });
+    if (dr.status !== 'draft') return res.status(400).json({ message: 'DR already issued or cancelled' });
 
     // Decrement stock for each item
     for (const item of dr.items) {
@@ -253,6 +271,74 @@ router.post('/dr/:id/issue', async (req, res) => {
     await dr.save();
 
     res.json({ dr, si });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Cancel DR (issued only) - cascades to linked draft SI and restores stock
+router.post('/dr/:id/cancel', async (req, res) => {
+  try {
+    const { cancelReason } = req.body;
+    if (!cancelReason || !cancelReason.trim()) {
+      return res.status(400).json({ message: 'cancelReason is required' });
+    }
+
+    // Load DR first so we can check the linked SI BEFORE mutating anything
+    const existing = await DeliveryReceipt.findById(req.params.id);
+    if (!existing) return res.status(404).json({ message: 'DR not found or not in issued status' });
+    if (existing.status !== 'issued') return res.status(400).json({ message: 'DR not found or not in issued status' });
+
+    // Cascade check: linked SI must not be issued
+    const linkedSI = await SalesInvoice.findOne({ drRef: existing._id });
+    if (linkedSI && linkedSI.status === 'issued') {
+      return res.status(400).json({ message: 'Linked SI is already issued - cancel the SI first' });
+    }
+
+    // Atomic claim (guards double-click): flip issued -> cancelled
+    const dr = await DeliveryReceipt.findOneAndUpdate(
+      { _id: req.params.id, status: 'issued' },
+      { status: 'cancelled', cancelledAt: new Date(), cancelledBy: req.user._id, cancelReason: cancelReason.trim() },
+      { new: true }
+    );
+    if (!dr) return res.status(404).json({ message: 'DR not found or not in issued status' });
+
+    // Cancel linked draft SI with the same reason
+    if (linkedSI && linkedSI.status === 'draft') {
+      linkedSI.status = 'cancelled';
+      linkedSI.cancelledAt = new Date();
+      linkedSI.cancelledBy = req.user._id;
+      linkedSI.cancelReason = cancelReason.trim();
+      await linkedSI.save();
+    }
+
+    // Restore stock for each item (reverse of issue)
+    const missingBooks = [];
+    for (const item of dr.items) {
+      const book = await Book.findOne({ ISBN: item.isbn });
+      if (book) {
+        const previousQty = book.QTY;
+        book.QTY += item.qty;
+        await book.save();
+
+        // Create stock transaction record
+        await StockTransaction.create({
+          ISBN: book.ISBN,
+          action: 'INBOUND',
+          qtyChanged: item.qty,
+          previousQty,
+          newQty: book.QTY,
+          performedBy: req.user._id,
+        });
+      } else {
+        missingBooks.push(item.isbn);
+      }
+    }
+
+    const missingNote = missingBooks.length > 0 ? ` (WARNING: no book record found for ISBNs: ${missingBooks.join(', ')} - stock not restored for those items)` : '';
+    await logUserActivity(req.user._id, 'CANCEL_DR', `Cancelled DR ${dr.drNumber} - Reason: ${cancelReason.trim()}${missingNote}`, req);
+
+    res.json({ dr, si: linkedSI });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -445,10 +531,34 @@ router.post('/si/:id/issue', async (req, res) => {
   try {
     const si = await SalesInvoice.findById(req.params.id);
     if (!si) return res.status(404).json({ message: 'Sales Invoice not found' });
-    if (si.status === 'issued') return res.status(400).json({ message: 'SI already issued' });
+    if (si.status !== 'draft') return res.status(400).json({ message: 'SI already issued or cancelled' });
 
     si.status = 'issued';
     await si.save();
+
+    res.json(si);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Cancel SI (issued only) - no stock changes (SIs never moved stock)
+router.post('/si/:id/cancel', async (req, res) => {
+  try {
+    const { cancelReason } = req.body;
+    if (!cancelReason || !cancelReason.trim()) {
+      return res.status(400).json({ message: 'cancelReason is required' });
+    }
+
+    // Atomic claim (guards double-click): flip issued -> cancelled
+    const si = await SalesInvoice.findOneAndUpdate(
+      { _id: req.params.id, status: 'issued' },
+      { status: 'cancelled', cancelledAt: new Date(), cancelledBy: req.user._id, cancelReason: cancelReason.trim() },
+      { new: true }
+    );
+    if (!si) return res.status(404).json({ message: 'SI not found or not in issued status' });
+
+    await logUserActivity(req.user._id, 'CANCEL_SI', `Cancelled SI ${si.siNumber} - Reason: ${cancelReason.trim()}`, req);
 
     res.json(si);
   } catch (err) {

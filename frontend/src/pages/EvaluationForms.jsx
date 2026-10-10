@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Loader, FileText, Download, Printer, Edit, Trash2, Eye, AlertTriangle, CheckCircle, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Loader, FileText, Download, Printer, Edit, Trash2, Eye, AlertTriangle, CheckCircle, User, ChevronLeft, ChevronRight, XCircle } from 'lucide-react';
 import { efApi } from '../api/ef';
 import DocumentForm from '../components/drsi/DocumentForm';
 import { formatDate, formatCurrency, numberToWords } from '../utils/numberToWords';
@@ -16,6 +16,7 @@ const EvaluationForms = ({ user }) => {
   const [editingEF, setEditingEF] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(null);
+  const [cancelling, setCancelling] = useState(null);
 
   const fetchEFs = async () => {
     setLoading(true);
@@ -86,6 +87,23 @@ const EvaluationForms = ({ user }) => {
     }
   };
 
+  const handleCancel = async (id) => {
+    const reason = window.prompt('Enter cancellation reason:');
+    if (!reason || !reason.trim()) return;
+    const sure = window.confirm('Cancel this evaluation form? Its linked delivery receipt draft (and its invoice draft) will also be cancelled. This cannot be undone.');
+    if (!sure) return;
+    setCancelling(id);
+    try {
+      await efApi.cancelEF(id, reason.trim());
+      alert('Document cancelled');
+      fetchEFs();
+    } catch (err) {
+      alert('Cancel failed: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setCancelling(null);
+    }
+  };
+
   const handleExport = async (id, format) => {
     setExporting(id);
     try {
@@ -109,6 +127,9 @@ const EvaluationForms = ({ user }) => {
   const getStatusBadge = (status) => {
     if (status === 'issued') {
       return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Issued</span>;
+    }
+    if (status === 'cancelled') {
+      return <span className="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">Cancelled</span>;
     }
     return <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">Draft</span>;
   };
@@ -150,6 +171,7 @@ const EvaluationForms = ({ user }) => {
             <option value="">All Status</option>
             <option value="draft">Draft</option>
             <option value="issued">Issued</option>
+            <option value="cancelled">Cancelled</option>
           </select>
         </div>
       </div>
@@ -215,6 +237,17 @@ const EvaluationForms = ({ user }) => {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                      {user?.role === 'Admin' && ef.status === 'issued' && (
+                        <button
+                          onClick={() => handleCancel(ef._id)}
+                          disabled={cancelling === ef._id}
+                          className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                          title="Cancel document"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          <span className="text-sm font-medium">Cancel</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleExport(ef._id, 'xlsx')}
                         disabled={exporting === ef._id}
@@ -235,18 +268,18 @@ const EvaluationForms = ({ user }) => {
                       </button>
                       <button
                         onClick={() => handleEdit(ef)}
-                        disabled={ef.status === 'issued'}
+                        disabled={ef.status !== 'draft'}
                         className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
-                        title={ef.status === 'issued' ? 'Cannot edit issued EF' : 'Edit'}
+                        title={ef.status !== 'draft' ? 'Cannot edit issued/cancelled EF' : 'Edit'}
                       >
                         <Edit className="w-4 h-4" />
                         <span className="text-sm font-medium">Edit</span>
                       </button>
                       <button
                         onClick={() => handleDelete(ef._id)}
-                        disabled={ef.status === 'issued'}
+                        disabled={ef.status !== 'draft'}
                         className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
-                        title={ef.status === 'issued' ? 'Cannot delete issued EF' : 'Delete'}
+                        title={ef.status !== 'draft' ? 'Cannot delete issued/cancelled EF' : 'Delete'}
                       >
                         <Trash2 className="w-4 h-4" />
                         <span className="text-sm font-medium">Delete</span>
@@ -295,6 +328,16 @@ const EvaluationForms = ({ user }) => {
                       <td className="px-4 py-3 text-sm text-gray-500">{formatDate(ef.createdAt)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center space-x-1 justify-end">
+                          {user?.role === 'Admin' && ef.status === 'issued' && (
+                            <button
+                              onClick={() => handleCancel(ef._id)}
+                              disabled={cancelling === ef._id}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
+                              title="Cancel document"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleExport(ef._id, 'xlsx')}
                             disabled={exporting === ef._id}
@@ -313,17 +356,17 @@ const EvaluationForms = ({ user }) => {
                           </button>
                           <button
                             onClick={() => handleEdit(ef)}
-                            disabled={ef.status === 'issued'}
+                            disabled={ef.status !== 'draft'}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
-                            title={ef.status === 'issued' ? 'Cannot edit issued EF' : 'Edit'}
+                            title={ef.status !== 'draft' ? 'Cannot edit issued/cancelled EF' : 'Edit'}
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(ef._id)}
-                            disabled={ef.status === 'issued'}
+                            disabled={ef.status !== 'draft'}
                             className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
-                            title={ef.status === 'issued' ? 'Cannot delete issued EF' : 'Delete'}
+                            title={ef.status !== 'draft' ? 'Cannot delete issued/cancelled EF' : 'Delete'}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

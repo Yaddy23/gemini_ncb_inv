@@ -23,7 +23,10 @@ const userLogSchema = new mongoose.Schema({
       'OUTBOUND_STOCK',
       'BULK_IMPORT',
       'EXPORT_BOOKS',
-      'EXPORT_STOCK_TRANSACTIONS'
+      'EXPORT_STOCK_TRANSACTIONS',
+      'CANCEL_DR',
+      'CANCEL_SI',
+      'CANCEL_EF'
     ]
   },
   details: {

@@ -8,6 +8,7 @@ export const drsiApi = {
   updateDR: (id, data) => api.put(`/drsi/dr/${id}`, data),
   deleteDR: (id) => api.delete(`/drsi/dr/${id}`),
   issueDR: (id) => api.post(`/drsi/dr/${id}/issue`),
+  cancelDR: (id, cancelReason) => api.post(`/drsi/dr/${id}/cancel`, { cancelReason }),
   exportDR: (id, format = 'pdf') => api.get(`/drsi/dr/${id}/export`, {
     params: { format },
     responseType: 'blob'
@@ -20,6 +21,7 @@ export const drsiApi = {
   updateSI: (id, data) => api.put(`/drsi/si/${id}`, data),
   deleteSI: (id) => api.delete(`/drsi/si/${id}`),
   issueSI: (id) => api.post(`/drsi/si/${id}/issue`),
+  cancelSI: (id, cancelReason) => api.post(`/drsi/si/${id}/cancel`, { cancelReason }),
   exportSI: (id, format = 'pdf') => api.get(`/drsi/si/${id}/export`, {
     params: { format },
     responseType: 'blob'
