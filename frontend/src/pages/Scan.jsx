@@ -21,6 +21,7 @@ const Scan = ({ user }) => {
   const [scanCooldown, setScanCooldown] = useState(false); // Global 0.5s cooldown after ANY scan
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [scanResult, setScanResult] = useState(null); // { type: 'success'|'error', book?, message? }
+  const [isCameraPaused, setIsCameraPaused] = useState(false); // Camera pause after scan in fullscreen
 
   // Import state
   const [showImport, setShowImport] = useState(false);
@@ -272,11 +273,17 @@ const Scan = ({ user }) => {
 
             setLastScannedIsbn(decodedText);
             // Clear per-ISBN cooldown after 2 seconds
-            setTimeout(() => setLastScannedIsbn(null), 500);
+            setTimeout(() => setLastScannedIsbn(null), 2000);
 
             // Set global scan cooldown for 0.5 seconds
             setScanCooldown(true);
             setTimeout(() => setScanCooldown(false), 500);
+
+            // Pause camera feed in fullscreen mode for visual feedback (0.5s)
+            if (isFullscreen) {
+              setIsCameraPaused(true);
+              setTimeout(() => setIsCameraPaused(false), 500);
+            }
 
             setIsbn(decodedText);
             playBeep();
@@ -963,7 +970,7 @@ const Scan = ({ user }) => {
                       />
 
                       {/* Scan frame overlay - only when no result and camera active */}
-                      {isCameraActive && !scanResult && (
+                      {isCameraActive && !scanResult && !isCameraPaused && (
                         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
                           {/* Scan frame - matches qrbox proportion: 2.5:1, white border for better visibility */}
                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] max-w-[320px] h-auto aspect-[2.5/1] border-2 border-white/90 rounded-lg">
@@ -979,6 +986,18 @@ const Scan = ({ user }) => {
                           <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-center text-white/90 text-sm font-medium bg-black/40 px-3 py-1 rounded">
                             Align ISBN barcode within frame
                           </div>
+                        </div>
+                      )}
+
+                      {/* Camera pause overlay - shown after successful scan in fullscreen */}
+                      {isCameraPaused && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-20 pointer-events-none" aria-live="polite">
+                          <div className="w-16 h-16 bg-green-500/90 rounded-full flex items-center justify-center mb-4 animate-pulse">
+                            <CheckCircle className="w-8 h-8 text-white" />
+                          </div>
+                          <p className="text-white text-lg font-semibold text-center px-4">
+                            Scanned! Preparing next scan...
+                          </p>
                         </div>
                       )}
 
