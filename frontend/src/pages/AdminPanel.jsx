@@ -359,65 +359,148 @@ const AdminPanel = ({ user }) => {
   }, [execCurrentPage, execSearch, execIsActiveFilter]);
 
   if (!user || user.role !== 'Admin') {
-    return <div className="p-6">Access denied. Admin privileges required.</div>;
+    return <div className="p-4 sm:p-6">Access denied. Admin privileges required.</div>;
   }
 
   return (
     <>
-      <div className="p-6">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold">Admin Panel</h1>
-        <p className="text-gray-600">Manage users and view activity logs</p>
+      <div className="p-4 sm:p-6">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Admin Panel</h1>
+        <p className="text-gray-600 mt-1">Manage users and view activity logs</p>
       </div>
 
       {/* Status Messages */}
-      {error && <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">{error}</div>}
-      {success && <div className="mb-4 p-4 bg-green-50 border-l-4 border-green-500 text-green-700">{success}</div>}
+      {error && (
+        <div className="mb-4 p-3 sm:p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="mb-4 p-3 sm:p-4 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm">
+          {success}
+        </div>
+      )}
 
-      {/* Tabs */}
-      <div className="mb-6">
-        <button
-          onClick={() => setActiveTab('users')}
-          className={`${activeTab === 'users' ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'} px-4 py-2 mr-2 rounded`}>
-          User Management
-        </button>
-        <button
-          onClick={() => setActiveTab('logs')}
-          className={`${activeTab === 'logs' ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'} px-4 py-2 mr-2 rounded`}>
-          Activity Logs
-        </button>
-        <button
-          onClick={() => setActiveTab('executives')}
-          className={`${activeTab === 'executives' ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'} px-4 py-2 rounded`}>
-          Marketing Executives
-        </button>
+      {/* Tabs - scrollable on mobile */}
+      <div className="mb-4 sm:mb-6 overflow-x-auto pb-2">
+        <div className="flex space-x-2 min-w-max">
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors touch-manipulation min-h-[44px] ${
+              activeTab === 'users' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}>
+            User Management
+          </button>
+          <button
+            onClick={() => setActiveTab('logs')}
+            className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors touch-manipulation min-h-[44px] ${
+              activeTab === 'logs' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}>
+            Activity Logs
+          </button>
+          <button
+            onClick={() => setActiveTab('executives')}
+            className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors touch-manipulation min-h-[44px] ${
+              activeTab === 'executives' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}>
+            Marketing Executives
+          </button>
+        </div>
       </div>
 
       {/* User Management Tab */}
       {activeTab === 'users' && (
         <div>
-          <div className="mb-4 flex items-center justify-between">
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={filters.search}
-              onChange={(e) => {
-                setFilters(prev => ({ ...prev, search: e.target.value }));
-                setCurrentPage(1); // Reset to first page
-                fetchUsers(1, e.target.value);
-              }}
-              className="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="w-full sm:w-auto flex-1">
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={filters.search}
+                onChange={(e) => {
+                  setFilters(prev => ({ ...prev, search: e.target.value }));
+                  setCurrentPage(1);
+                  fetchUsers(1, e.target.value);
+                }}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              />
+            </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+              className="flex-shrink-0 flex items-center justify-center space-x-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors touch-manipulation min-h-[44px] min-w-[140px]"
             >
-              <Plus className="w-4 h-4" />
-              <span>Add New User</span>
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Add New User</span>
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Card Layout */}
+          <div className="block md:hidden">
+            {loading ? (
+              <div className="p-6 text-center">
+                <div className="flex space-x-3 justify-center">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-primary self-center">Loading users...</span>
+                </div>
+              </div>
+            ) : users.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <p>No users found</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden">
+                {users.map((user) => (
+                  <div key={user._id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 truncate">{user.username}</h3>
+                        <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                      </div>
+                      <span className={`flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full ${
+                        user.role === 'Admin' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                      }`}>
+                        {user.role}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleToggleStatus(user._id, user.isActive)}
+                        disabled={loading}
+                        className={`flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 rounded-lg touch-manipulation min-h-[44px] transition-colors disabled:opacity-50 ${
+                          user.isActive ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-red-50 text-red-700 hover:bg-red-100'
+                        }`}
+                      >
+                        <span className="text-sm font-medium">{user.isActive ? 'Deactivate' : 'Activate'}</span>
+                      </button>
+                      <button
+                        onClick={() => handleRoleChange(user._id, user.role)}
+                        disabled={loading}
+                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                      >
+                        <span className="text-sm font-medium">Change Role</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user._id)}
+                        disabled={loading}
+                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                      >
+                        <span className="text-sm font-medium">Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden md:block overflow-x-auto bg-white rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -489,24 +572,35 @@ const AdminPanel = ({ user }) => {
 
           {/* Pagination for Users */}
           {totalUsers > 0 && (
-            <div className="mt-4 flex items-center justify-between">
-              <div className="text-sm text-gray-500">
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-500 text-center sm:text-left">
                 Showing {((currentPage - 1) * usersPerPage) + 1}-{Math.min(currentPage * usersPerPage, totalUsers)} of {totalUsers} users
-              </div>
-              <div>
+              </p>
+              <div className="flex items-center space-x-2">
                 <button
                   onClick={() => currentPage > 1 && fetchUsers(currentPage - 1, filters.search)}
                   disabled={loading || currentPage === 1}
-                  className="px-3 py-1 mr-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
+                    currentPage === 1 ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  }`}
+                  aria-label="Previous page"
                 >
-                  Previous
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                  </svg>
                 </button>
+                <span className="px-3 py-1 text-sm font-medium flex items-center justify-center w-10">{currentPage}</span>
                 <button
                   onClick={() => currentPage < totalPages && fetchUsers(currentPage + 1, filters.search)}
                   disabled={loading || currentPage === totalPages}
-                  className="px-3 py-1 text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
+                    currentPage === totalPages ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  }`}
+                  aria-label="Next page"
                 >
-                  Next
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -518,13 +612,13 @@ const AdminPanel = ({ user }) => {
       {activeTab === 'logs' && (
         <div>
           <div className="mb-4">
-            <div className="flex flex-wrap gap-4 mb-4">
-              <div>
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Action</label>
                 <select
                   value={filters.action}
                   onChange={handleFiltersChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
                 >
                   <option value="">All Actions</option>
                   {logActions.map(action => (
@@ -534,12 +628,12 @@ const AdminPanel = ({ user }) => {
                   ))}
                 </select>
               </div>
-              <div>
+              <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
                 <select
                   value={filters.userId}
                   onChange={handleFiltersChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
                 >
                   <option value="">All Users</option>
                   {logUsers.map(user => (
@@ -549,35 +643,80 @@ const AdminPanel = ({ user }) => {
                   ))}
                 </select>
               </div>
-              <div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                 <input
                   type="date"
                   value={filters.startDate}
                   onChange={(e) => handleDateChange('startDate', e.target.value ? new Date(e.target.value) : null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
                 />
               </div>
-              <div>
+              <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
                 <input
                   type="date"
                   value={filters.endDate}
                   onChange={(e) => handleDateChange('endDate', e.target.value ? new Date(e.target.value) : null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
                 />
               </div>
-              <button
-                onClick={exportLogs}
-                disabled={loading}
-                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md flex items-center"
-              >
-                Export Logs
-              </button>
             </div>
+            <button
+              onClick={exportLogs}
+              disabled={loading}
+              className="flex items-center justify-center space-x-2 px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[140px]"
+            >
+              <span>Export Logs</span>
+            </button>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Card Layout */}
+          <div className="block md:hidden">
+            {loading ? (
+              <div className="p-6 text-center">
+                <div className="flex space-x-3 justify-center">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-primary self-center">Loading logs...</span>
+                </div>
+              </div>
+            ) : filteredLogs.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <p>No logs found</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden">
+                {filteredLogs.map((log) => (
+                  <div key={log._id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 truncate">{log.userId?.username || 'Unknown User'}</h3>
+                        <p className="text-sm text-gray-500 truncate">{log.details || '-'}</p>
+                      </div>
+                      <span className={`flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full ${
+                        log.action === 'LOGIN' ? 'bg-blue-100 text-blue-700' :
+                        log.action === 'LOGOUT' ? 'bg-gray-100 text-gray-700' :
+                        log.action.startsWith('CREATE') || log.action.startsWith('UPDATE') || log.action.startsWith('DELETE') ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
+                      }`}>
+                        {log.action}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400">{new Date(log.createdAt).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden md:block overflow-x-auto bg-white rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -626,24 +765,35 @@ const AdminPanel = ({ user }) => {
 
           {/* Pagination for Logs */}
           {totalLogs > 0 && (
-            <div className="mt-4 flex items-center justify-between">
-              <div className="text-sm text-gray-500">
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-500 text-center sm:text-left">
                 Showing {((currentPage - 1) * logsPerPage) + 1}-{Math.min(currentPage * logsPerPage, totalLogs)} of {totalLogs} logs
-              </div>
-              <div>
+              </p>
+              <div className="flex items-center space-x-2">
                 <button
                   onClick={() => currentPage > 1 && fetchUserLogs(currentPage - 1)}
                   disabled={loading || currentPage === 1}
-                  className="px-3 py-1 mr-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
+                    currentPage === 1 ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  }`}
+                  aria-label="Previous page"
                 >
-                  Previous
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                  </svg>
                 </button>
+                <span className="px-3 py-1 text-sm font-medium flex items-center justify-center w-10">{currentPage}</span>
                 <button
                   onClick={() => currentPage < totalPages && fetchUserLogs(currentPage + 1)}
                   disabled={loading || currentPage === totalPages}
-                  className="px-3 py-1 text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
+                    currentPage === totalPages ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  }`}
+                  aria-label="Next page"
                 >
-                  Next
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -654,9 +804,9 @@ const AdminPanel = ({ user }) => {
       {/* Marketing Executives Tab */}
       {activeTab === 'executives' && (
         <div>
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex flex-wrap gap-4">
-              <div>
+          <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="w-full sm:w-auto flex-1 flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
                 <input
                   type="text"
@@ -667,10 +817,10 @@ const AdminPanel = ({ user }) => {
                     setExecCurrentPage(1);
                     fetchExecutives(1, e.target.value, execIsActiveFilter);
                   }}
-                  className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
                 />
               </div>
-              <div>
+              <div className="flex-1 sm:w-48">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
                   value={execIsActiveFilter}
@@ -679,7 +829,7 @@ const AdminPanel = ({ user }) => {
                     setExecCurrentPage(1);
                     fetchExecutives(1, execSearch, e.target.value);
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
                 >
                   <option value="">All</option>
                   <option value="true">Active</option>
@@ -689,14 +839,67 @@ const AdminPanel = ({ user }) => {
             </div>
             <button
               onClick={() => setShowExecCreateModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+              className="flex-shrink-0 flex items-center justify-center space-x-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors touch-manipulation min-h-[44px] min-w-[140px]"
             >
-              <Plus className="w-4 h-4" />
-              <span>Add New Executive</span>
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Add New Executive</span>
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Card Layout */}
+          <div className="block md:hidden">
+            {loading ? (
+              <div className="p-6 text-center">
+                <div className="flex space-x-3 justify-center">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-primary self-center">Loading executives...</span>
+                </div>
+              </div>
+            ) : executives.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <p>No marketing executives found</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden">
+                {executives.map((exec) => (
+                  <div key={exec._id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 truncate">{exec.name}</h3>
+                      </div>
+                      <span className={`flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full ${exec.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {exec.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleEditExecutive(exec)}
+                        disabled={loading}
+                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                      >
+                        <span className="text-sm font-medium">Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteExecutive(exec._id)}
+                        disabled={loading}
+                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                      >
+                        <span className="text-sm font-medium">Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden md:block overflow-x-auto bg-white rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -760,24 +963,35 @@ const AdminPanel = ({ user }) => {
 
           {/* Pagination for Executives */}
           {execTotal > 0 && (
-            <div className="mt-4 flex items-center justify-between">
-              <div className="text-sm text-gray-500">
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-500 text-center sm:text-left">
                 Showing {((execCurrentPage - 1) * 20) + 1}-{Math.min(execCurrentPage * 20, execTotal)} of {execTotal} executives
-              </div>
-              <div>
+              </p>
+              <div className="flex items-center space-x-2">
                 <button
                   onClick={() => execCurrentPage > 1 && fetchExecutives(execCurrentPage - 1, execSearch, execIsActiveFilter)}
                   disabled={loading || execCurrentPage === 1}
-                  className="px-3 py-1 mr-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
+                    execCurrentPage === 1 ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  }`}
+                  aria-label="Previous page"
                 >
-                  Previous
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                  </svg>
                 </button>
+                <span className="px-3 py-1 text-sm font-medium flex items-center justify-center w-10">{execCurrentPage}</span>
                 <button
                   onClick={() => execCurrentPage < execTotalPages && fetchExecutives(execCurrentPage + 1, execSearch, execIsActiveFilter)}
                   disabled={loading || execCurrentPage === execTotalPages}
-                  className="px-3 py-1 text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
+                    execCurrentPage === execTotalPages ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  }`}
+                  aria-label="Next page"
                 >
-                  Next
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -790,21 +1004,21 @@ const AdminPanel = ({ user }) => {
     {showCreateModal && (
       <div className="fixed inset-0 z-50 overflow-y-auto">
         <div className="fixed inset-0 bg-black/50" onClick={() => setShowCreateModal(false)} />
-        <div className="relative mx-auto mt-10 w-full max-w-md bg-white rounded-xl shadow-xl">
+        <div className="relative mx-auto my-8 sm:mt-10 w-full max-w-md sm:max-w-lg bg-white rounded-xl shadow-xl sm:rounded-2xl">
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <h2 className="text-xl font-bold text-gray-900">Create New User</h2>
-            <button onClick={() => setShowCreateModal(false)} className="p-2 text-gray-500 hover:text-gray-700">
+            <button onClick={() => setShowCreateModal(false)} className="p-2 text-gray-500 hover:text-gray-700 touch-manipulation min-h-[44px] min-w-[44px]">
               <X className="w-5 h-5" />
             </button>
           </div>
-          <form onSubmit={handleCreateUser} className="p-4 space-y-4">
+          <form onSubmit={handleCreateUser} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Username <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={newUser.username}
                 onChange={(e) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
                 placeholder="Username"
               />
             </div>
@@ -814,7 +1028,7 @@ const AdminPanel = ({ user }) => {
                 type="email"
                 value={newUser.email}
                 onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
                 placeholder="user@example.com"
               />
             </div>
@@ -824,7 +1038,7 @@ const AdminPanel = ({ user }) => {
                 type="password"
                 value={newUser.password}
                 onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
                 placeholder="Min 6 characters"
                 minLength="6"
               />
@@ -834,24 +1048,24 @@ const AdminPanel = ({ user }) => {
               <select
                 value={newUser.role}
                 onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
               >
                 <option value="Staff">Staff</option>
                 <option value="Admin">Admin</option>
               </select>
             </div>
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 touch-manipulation min-h-[44px] transition-colors"
               >
                 {loading ? 'Creating...' : 'Create User'}
               </button>
@@ -865,21 +1079,21 @@ const AdminPanel = ({ user }) => {
     {showExecCreateModal && (
       <div className="fixed inset-0 z-50 overflow-y-auto">
         <div className="fixed inset-0 bg-black/50" onClick={() => setShowExecCreateModal(false)} />
-        <div className="relative mx-auto mt-10 w-full max-w-md bg-white rounded-xl shadow-xl">
+        <div className="relative mx-auto my-8 sm:mt-10 w-full max-w-md sm:max-w-lg bg-white rounded-xl shadow-xl sm:rounded-2xl">
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <h2 className="text-xl font-bold text-gray-900">Create Marketing Executive</h2>
-            <button onClick={() => setShowExecCreateModal(false)} className="p-2 text-gray-500 hover:text-gray-700">
+            <button onClick={() => setShowExecCreateModal(false)} className="p-2 text-gray-500 hover:text-gray-700 touch-manipulation min-h-[44px] min-w-[44px]">
               <X className="w-5 h-5" />
             </button>
           </div>
-          <form onSubmit={handleCreateExecutive} className="p-4 space-y-4">
+          <form onSubmit={handleCreateExecutive} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={newExecutive.name}
                 onChange={(e) => setNewExecutive(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
                 placeholder="Marketing Executive Name"
               />
             </div>
@@ -888,24 +1102,24 @@ const AdminPanel = ({ user }) => {
               <select
                 value={newExecutive.isActive ? 'true' : 'false'}
                 onChange={(e) => setNewExecutive(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
               >
                 <option value="true">Active</option>
                 <option value="false">Inactive</option>
               </select>
             </div>
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
               <button
                 type="button"
                 onClick={() => setShowExecCreateModal(false)}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 touch-manipulation min-h-[44px] transition-colors"
               >
                 {loading ? 'Creating...' : 'Create Executive'}
               </button>
@@ -919,21 +1133,21 @@ const AdminPanel = ({ user }) => {
     {showExecEditModal && (
       <div className="fixed inset-0 z-50 overflow-y-auto">
         <div className="fixed inset-0 bg-black/50" onClick={() => { setShowExecEditModal(false); setEditingExecutive(null); setNewExecutive({ name: '', isActive: true }); }} />
-        <div className="relative mx-auto mt-10 w-full max-w-md bg-white rounded-xl shadow-xl">
+        <div className="relative mx-auto my-8 sm:mt-10 w-full max-w-md sm:max-w-lg bg-white rounded-xl shadow-xl sm:rounded-2xl">
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <h2 className="text-xl font-bold text-gray-900">Edit Marketing Executive</h2>
-            <button onClick={() => { setShowExecEditModal(false); setEditingExecutive(null); setNewExecutive({ name: '', isActive: true }); }} className="p-2 text-gray-500 hover:text-gray-700">
+            <button onClick={() => { setShowExecEditModal(false); setEditingExecutive(null); setNewExecutive({ name: '', isActive: true }); }} className="p-2 text-gray-500 hover:text-gray-700 touch-manipulation min-h-[44px] min-w-[44px]">
               <X className="w-5 h-5" />
             </button>
           </div>
-          <form onSubmit={handleUpdateExecutive} className="p-4 space-y-4">
+          <form onSubmit={handleUpdateExecutive} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={newExecutive.name}
                 onChange={(e) => setNewExecutive(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
                 placeholder="Marketing Executive Name"
               />
             </div>
@@ -942,24 +1156,24 @@ const AdminPanel = ({ user }) => {
               <select
                 value={newExecutive.isActive ? 'true' : 'false'}
                 onChange={(e) => setNewExecutive(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
               >
                 <option value="true">Active</option>
                 <option value="false">Inactive</option>
               </select>
             </div>
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
               <button
                 type="button"
                 onClick={() => { setShowExecEditModal(false); setEditingExecutive(null); setNewExecutive({ name: '', isActive: true }); }}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 touch-manipulation min-h-[44px] transition-colors"
               >
                 {loading ? 'Updating...' : 'Update Executive'}
               </button>
