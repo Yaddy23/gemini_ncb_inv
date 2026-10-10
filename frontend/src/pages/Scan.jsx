@@ -36,6 +36,10 @@ const Scan = ({ user }) => {
   const cameraScannerRef = useRef(null); // Ref for live scanner instance
   const fullscreenElementRef = useRef(null); // Ref for fullscreen element
 
+  // Mobile detection for responsive UI
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                   window.innerWidth <= 768;
+
   // Keep ref in sync with state
   useEffect(() => {
     cameraScannerRef.current = cameraScanner;
@@ -299,13 +303,17 @@ const Scan = ({ user }) => {
       setIsCameraActive(true);
 
       // Request fullscreen on mobile/tablet for better scanning experience
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                       window.innerWidth <= 768;
       if (isMobile && cameraContainerRef.current) {
         try {
+          // Try to request fullscreen on the container
           await cameraContainerRef.current.requestFullscreen({ navigationUI: 'hide' });
+          // If successful, manually set isFullscreen as fallback (in case event doesn't fire)
+          setIsFullscreen(true);
         } catch (fsErr) {
           console.warn('Fullscreen request failed:', fsErr);
+          // Even if fullscreen fails, we can still set isFullscreen for mobile to show the UI properly
+          // This ensures X button and scan results work
+          setIsFullscreen(true);
         }
       }
     } catch (err) {
@@ -938,13 +946,14 @@ const Scan = ({ user }) => {
                     )}
                     <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-black rounded-none flex flex-col' : ''}`}>
                       {/* Close button in fullscreen - top right */}
-                      {isFullscreen && isCameraActive && (
+                      {/* Show on mobile when camera is active, or when isFullscreen is true */}
+                      {(isFullscreen || (isMobile && isCameraActive)) && isCameraActive && (
                         <button
                           onClick={() => handleScanMethodChange('manual')}
-                          className="absolute top-4 right-4 z-60 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                          className="absolute top-4 right-4 z-70 p-3 bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center shadow-lg"
                           aria-label="Close camera"
                         >
-                          <X className="w-6 h-6" />
+                          <X className="w-7 h-7" />
                         </button>
                       )}
 
@@ -990,7 +999,7 @@ const Scan = ({ user }) => {
 
                       {/* Scan Result Display - shows after scan in camera feed area */}
                       {isCameraActive && scanResult && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6 text-center bg-black/85" style={{ zIndex: 20 }}>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6 text-center bg-black/90" style={{ zIndex: 25 }}>
                           {scanResult.type === 'success' ? (
                             <div className="max-w-sm w-full">
                               <div className="bg-green-500/20 border border-green-500 rounded-xl p-5 sm:p-6 backdrop-blur-sm">
@@ -1047,8 +1056,8 @@ const Scan = ({ user }) => {
                       )}
                     </div>
 
-                    {/* Camera controls - hidden in fullscreen, shown below on desktop */}
-                    {!isFullscreen && isCameraActive && (
+                    {/* Camera controls - hidden in fullscreen/mobile, shown below on desktop */}
+                    {!(isFullscreen || (isMobile && isCameraActive)) && isCameraActive && (
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm sm:text-base text-gray-500">
                         <span className="flex items-center space-x-1 text-green-600 w-full sm:w-auto text-center sm:text-left">
                           <CheckCircle className="w-4 h-4" />
@@ -1085,7 +1094,7 @@ const Scan = ({ user }) => {
                     )}
 
                     {/* Fullscreen exit hint */}
-                    {isFullscreen && isCameraActive && !scanResult && (
+                    {(isFullscreen || (isMobile && isCameraActive)) && isCameraActive && !scanResult && (
                       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm sm:text-base bg-black/60 px-5 py-3 rounded-lg backdrop-blur-sm" style={{ zIndex: 60 }}>
                         Tap "Scan Another" to continue or use ✕ button to exit
                       </div>
