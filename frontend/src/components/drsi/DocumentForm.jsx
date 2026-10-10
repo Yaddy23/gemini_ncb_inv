@@ -394,6 +394,7 @@ const DocumentForm = ({
             items={formData.items}
             onItemsChange={(items) => setFormData(prev => ({ ...prev, items }))}
             documentType={documentType}
+            discountPercentage={documentType === 'SI' ? formData.discountPercentage : 0}
             maxRows={300}
           />
         </div>

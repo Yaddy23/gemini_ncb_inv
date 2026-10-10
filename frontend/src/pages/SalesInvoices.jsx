@@ -43,18 +43,17 @@ const SalesInvoices = ({ user }) => {
   const handleSubmit = async (data, action) => {
     setSubmitting(true);
     try {
+      let docId;
       if (editingSI) {
         await drsiApi.updateSI(editingSI._id, data);
+        docId = editingSI._id;
       } else {
-        await drsiApi.createSI(data);
+        const response = await drsiApi.createSI(data);
+        docId = response.data._id;
       }
 
-      if (action === 'issue' && !editingSI) {
-        const response = await drsiApi.createSI(data);
-        await drsiApi.issueSI(response.data._id);
-      } else if (action === 'issue' && editingSI) {
-        await drsiApi.updateSI(editingSI._id, data);
-        await drsiApi.issueSI(editingSI._id);
+      if (action === 'issue') {
+        await drsiApi.issueSI(docId);
       }
 
       setFormOpen(false);

@@ -335,7 +335,9 @@ async function fillINV1Sheet(workbook, data) {
   }
 
   // Template handles totals at row 675/677 automatically
-  // Discount is only for DB recording, not for Excel export
+
+  // Write discount fraction to helper cell K677 - drives template formulas H676 (label), I676 (discount), I677 (net total)
+  setCellValue(sheet, 'K677', (data.discountPercentage || 0) / 100);
 }
 
 // Fill Pesos sheet (sheet "1")

@@ -43,19 +43,17 @@ const EvaluationForms = ({ user }) => {
   const handleSubmit = async (data, action) => {
     setSubmitting(true);
     try {
+      let docId;
       if (editingEF) {
         await efApi.updateEF(editingEF._id, data);
+        docId = editingEF._id;
       } else {
-        await efApi.createEF(data);
+        const response = await efApi.createEF(data);
+        docId = response.data._id;
       }
 
-      if (action === 'issue' && !editingEF) {
-        // For new EFs, we need to create then issue
-        const response = await efApi.createEF(data);
-        await efApi.issueEF(response.data._id);
-      } else if (action === 'issue' && editingEF) {
-        await efApi.updateEF(editingEF._id, data);
-        await efApi.issueEF(editingEF._id);
+      if (action === 'issue') {
+        await efApi.issueEF(docId);
       }
 
       setFormOpen(false);

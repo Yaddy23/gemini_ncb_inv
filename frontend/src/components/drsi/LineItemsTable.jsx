@@ -3,7 +3,7 @@ import { Plus, Trash2, Loader, CheckCircle, AlertTriangle, Copy, AlertCircle } f
 import { drsiApi } from '../../api/drsi';
 import { formatCurrency } from '../../utils/numberToWords';
 
-const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) => {
+const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage = 0, maxRows = 39 }) => {
   const [lookupLoading, setLookupLoading] = useState({});
   const [lookupErrors, setLookupErrors] = useState({});
   const [focusNextInput, setFocusNextInput] = useState(false);
@@ -166,6 +166,8 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
   };
 
   const subtotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const discountAmount = (subtotal * (discountPercentage || 0)) / 100;
+  const grandTotal = subtotal - discountAmount;
 
 // Get unique duplicate ISBNs for summary
   const uniqueDuplicateISBNs = useMemo(() => {
@@ -325,9 +327,16 @@ const LineItemsTable = ({ items, onItemsChange, documentType, maxRows = 39 }) =>
               <td className="px-3 py-2 font-bold text-gray-900 text-right">{formatCurrency(subtotal)}</td>
               <td></td>
             </tr>
+            {documentType === 'SI' && discountPercentage > 0 && (
+              <tr>
+                <td colSpan="6" className="px-3 py-2 text-right font-bold text-gray-700">LESS {discountPercentage}% DISCOUNT:</td>
+                <td className="px-3 py-2 font-bold text-gray-900 text-right">{formatCurrency(discountAmount)}</td>
+                <td></td>
+              </tr>
+            )}
             <tr>
               <td colSpan="6" className="px-3 py-2 text-right font-bold text-primary">TOTAL:</td>
-              <td className="px-3 py-2 font-bold text-primary text-right">{formatCurrency(subtotal)}</td>
+              <td className="px-3 py-2 font-bold text-primary text-right">{formatCurrency(documentType === 'SI' ? grandTotal : subtotal)}</td>
               <td></td>
             </tr>
           </tfoot>

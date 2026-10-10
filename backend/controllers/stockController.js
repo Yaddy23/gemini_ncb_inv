@@ -30,10 +30,11 @@ const updateStock = async (req, res) => {
   const { isbn } = req.params;
   const { action, qtyChanged } = req.body; // action: 'INBOUND' or 'OUTBOUND'
 
+  let statusCode = 500;
   try {
     const book = await Book.findOne({ ISBN: isbn });
     if (!book) {
-      res.status(404);
+      statusCode = 404;
       throw new Error('Book not found');
     }
 
@@ -43,11 +44,11 @@ const updateStock = async (req, res) => {
     } else if (action === 'OUTBOUND') {
       newQty = book.QTY - qtyChanged;
       if (newQty < 0) {
-        res.status(400);
+        statusCode = 400;
         throw new Error('Insufficient stock');
       }
     } else {
-      res.status(400);
+      statusCode = 400;
       throw new Error('Invalid action. Use INBOUND or OUTBOUND');
     }
 
@@ -70,7 +71,7 @@ const updateStock = async (req, res) => {
 
     res.json(book);
   } catch (error) {
-    res.status(400 || error.status || 500).json({ message: error.message });
+    res.status(statusCode).json({ message: error.message });
   }
 };
 
@@ -79,9 +80,10 @@ const updateStock = async (req, res) => {
 // @access  Private/Admin
 const bulkImportBooks = async (req, res) => {
   let file = null;
+  let statusCode = 500;
   try {
     if (!req.file) {
-      res.status(400);
+      statusCode = 400;
       throw new Error('No file uploaded');
     }
 
@@ -89,7 +91,7 @@ const bulkImportBooks = async (req, res) => {
     const { mode } = req.body; // 'skip', 'update', or 'merge'
 
     if (!mode || !['skip', 'update', 'merge'].includes(mode)) {
-      res.status(400);
+      statusCode = 400;
       throw new Error('Invalid import mode. Use skip, update, or merge');
     }
 
@@ -153,7 +155,7 @@ const bulkImportBooks = async (req, res) => {
     });
 
     if (validRows.length === 0) {
-      res.status(400);
+      statusCode = 400;
       throw new Error('No valid rows found in the file');
     }
 
@@ -239,7 +241,7 @@ const bulkImportBooks = async (req, res) => {
     await logUserActivity(req.user._id, 'BULK_IMPORT', `Bulk imported books: ${results.succeeded} created, ${results.updated} updated, ${results.merged} merged, ${results.skipped} skipped, ${results.errors.length} errors`, req);
 
   } catch (error) {
-    res.status(400 || error.status || 500).json({ message: error.message });
+    res.status(statusCode).json({ message: error.message });
   } finally {
     if (file && file.path) {
       fs.unlink(file.path, (err) => { if (err) console.error('Failed to delete uploaded file:', err); });
@@ -433,8 +435,22 @@ const getTransactions = async (req, res) => {
       if (endDate) query.createdAt.$lte = new Date(endDate);
     }
 
-    // For search, we need to search in book title/ISBN and user name/email
-    // This requires a more complex aggregation
+    // Search in ISBN or user name/email - fold into the Mongo query before pagination
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escapedSearch, 'i');
+
+      // Find users matching the search by username or email
+      const matchingUsers = await User.find({
+        $or: [{ username: searchRegex }, { email: searchRegex }]
+      }).select('_id');
+
+      const orConditions = [{ ISBN: searchRegex }];
+      if (matchingUsers.length > 0) {
+        orConditions.push({ performedBy: { $in: matchingUsers.map(u => u._id) } });
+      }
+      query.$or = orConditions;
+    }
 
     const transactions = await StockTransaction.find(query)
       .populate('performedBy', 'username email role')
@@ -442,22 +458,10 @@ const getTransactions = async (req, res) => {
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
-    // If search is provided, we need to filter by book title/ISBN or user name/email
-    // For simplicity, we'll do a post-filter for search (in production, use aggregation)
-    let filteredTransactions = transactions;
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filteredTransactions = transactions.filter(t =>
-        (t.ISBN && t.ISBN.toLowerCase().includes(searchLower)) ||
-        (t.performedBy && t.performedBy.username && t.performedBy.username.toLowerCase().includes(searchLower)) ||
-        (t.performedBy && t.performedBy.email && t.performedBy.email.toLowerCase().includes(searchLower))
-      );
-    }
-
     const total = await StockTransaction.countDocuments(query);
 
     res.json({
-      transactions: filteredTransactions,
+      transactions,
       page: parseInt(page),
       pages: Math.ceil(total / limit),
       total

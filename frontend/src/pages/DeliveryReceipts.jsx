@@ -43,19 +43,17 @@ const DeliveryReceipts = ({ user }) => {
   const handleSubmit = async (data, action) => {
     setSubmitting(true);
     try {
+      let docId;
       if (editingDR) {
         await drsiApi.updateDR(editingDR._id, data);
+        docId = editingDR._id;
       } else {
-        await drsiApi.createDR(data);
+        const response = await drsiApi.createDR(data);
+        docId = response.data._id;
       }
 
-      if (action === 'issue' && !editingDR) {
-        // For new DRs, we need to create then issue
-        const response = await drsiApi.createDR(data);
-        await drsiApi.issueDR(response.data._id);
-      } else if (action === 'issue' && editingDR) {
-        await drsiApi.updateDR(editingDR._id, data);
-        await drsiApi.issueDR(editingDR._id);
+      if (action === 'issue') {
+        await drsiApi.issueDR(docId);
       }
 
       setFormOpen(false);
