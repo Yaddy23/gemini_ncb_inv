@@ -23,6 +23,16 @@ const Scan = ({ user }) => {
   const [scanResult, setScanResult] = useState(null); // { type: 'success'|'error', book?, message? }
   const [isCameraPaused, setIsCameraPaused] = useState(false); // Camera pause after scan in fullscreen
 
+  // Offline queue state - persisted to localStorage
+  const [scanQueue, setScanQueue] = useState(() => {
+    try {
+      const saved = localStorage.getItem('scanQueue_v1');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [isOnline, setIsOnline] = useState(true);
+  const [flushing, setFlushing] = useState(false);
+
   // Import state
   const [showImport, setShowImport] = useState(false);
   const [importFile, setImportFile] = useState(null);
@@ -88,6 +98,41 @@ const Scan = ({ user }) => {
     setScanResult(null);
   }, [mode, scanMethod]);
 
+  // Persist scan queue to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('scanQueue_v1', JSON.stringify(scanQueue));
+    } catch (err) {
+      console.warn('Failed to persist scan queue:', err);
+    }
+  }, [scanQueue]);
+
+  // Online/offline detection
+  useEffect(() => {
+    const updateOnline = () => setIsOnline(navigator.onLine);
+    updateOnline();
+    window.addEventListener('online', updateOnline);
+    window.addEventListener('offline', updateOnline);
+    return () => {
+      window.removeEventListener('online', updateOnline);
+      window.removeEventListener('offline', updateOnline);
+    };
+  }, []);
+
+  // Flush queue when coming online or queue changes
+  useEffect(() => {
+    if (isOnline && scanQueue.length > 0 && !flushing) {
+      flushQueue();
+    }
+  }, [isOnline, scanQueue.length]);
+
+  // Flush queue when mode is selected (in case queue has items from previous session)
+  useEffect(() => {
+    if (mode && scanQueue.length > 0 && !flushing) {
+      flushQueue();
+    }
+  }, [mode]);
+
   // Auto-lookup and process when ISBN changes (for scanner input)
   useEffect(() => {
     if (!mode || !isbn || isbn.length < 8) return; // Need mode and valid ISBN
@@ -102,85 +147,114 @@ const Scan = ({ user }) => {
   }, [isbn, mode, scanMethod, scanCooldown]);
 
   const processScan = async (code) => {
-    setLoading(true);
     setError(null);
     setScanResult(null); // Clear previous scan result
 
     // Clear ISBN immediately so camera can scan next barcode
     setIsbn('');
 
-    try {
-      // First lookup the book
-      const lookupResponse = await api.get(`/books/lookup/${code}`);
+    // Create queue item with unique ID
+    const queueItem = {
+      id: Date.now() + Math.random(),
+      isbn: code,
+      mode: mode,
+      qty: 1,
+      timestamp: new Date().toLocaleTimeString(),
+      pending: true
+    };
 
-      if (!lookupResponse.data || !lookupResponse.data.ISBN) {
-        throw new Error('Book not found in inventory');
+    // Add to queue (persisted to localStorage via effect)
+    setScanQueue(prev => [...prev, queueItem]);
+
+    // Optimistically add to recent scans with 'pending' flag
+    setRecentScans(prev => [
+      {
+        ...queueItem,
+        title: 'Looking up...',
+        action: mode === 'inbound' ? 'IN' : 'OUT',
+        newStock: '—',
+        pending: true
+      },
+      ...prev.slice(0, 19)
+    ]);
+
+    // Set scan result for camera view display (pending)
+    setScanResult({
+      type: 'pending',
+      scannedIsbn: code
+    });
+
+    // Re-focus input for next scan
+    setTimeout(() => {
+      if (isbnInputRef.current) {
+        isbnInputRef.current.focus();
       }
+    }, 50);
 
-      const book = lookupResponse.data;
+    // If online, try to flush immediately
+    if (isOnline && !flushing) {
+      flushQueue();
+    }
+  };
 
-      // Then process stock action (always qty = 1)
-      const stockResponse = await api.patch(`/stock/${book.ISBN}/stock`, {
-        action: mode === 'inbound' ? 'INBOUND' : 'OUTBOUND',
-        qtyChanged: 1
-      });
+  // Flush offline scan queue to server
+  const flushQueue = async () => {
+    if (flushing || scanQueue.length === 0 || !isOnline) return;
 
-      const updatedBook = stockResponse.data;
+    setFlushing(true);
 
-      // Add to recent scans
-      setRecentScans(prev => [
-        {
-          isbn: book.ISBN,
-          title: book.TITLE,
-          action: mode === 'inbound' ? 'IN' : 'OUT',
-          qty: 1,
-          newStock: updatedBook.QTY,
-          timestamp: new Date().toLocaleTimeString()
-        },
-        ...prev.slice(0, 19) // Keep last 20
-      ]);
+    try {
+      // Process queue items sequentially
+      for (const item of scanQueue) {
+        if (!isOnline) break; // Stop if went offline mid-flush
 
-      // Update book info display
-      setBookInfo(updatedBook);
+        try {
+          // Lookup book
+          const lookupResponse = await api.get(`/books/lookup/${item.isbn}`);
 
-      // Success message
-      const successMsg = `${mode === 'inbound' ? 'Added' : 'Removed'} 1 unit to "${book.TITLE}" (Stock: ${updatedBook.QTY})`;
-      setSuccess(successMsg);
+          if (!lookupResponse.data || !lookupResponse.data.ISBN) {
+            throw new Error('Book not found in inventory');
+          }
 
-      // Set scan result for camera view display
-      setScanResult({
-        type: 'success',
-        book: updatedBook,
-        action: mode === 'inbound' ? 'IN' : 'OUT'
-      });
+          const book = lookupResponse.data;
 
-      // Re-focus input for next scan
-      setTimeout(() => {
-        if (isbnInputRef.current) {
-          isbnInputRef.current.focus();
+          // Process stock action
+          const stockResponse = await api.patch(`/stock/${book.ISBN}/stock`, {
+            action: item.mode === 'inbound' ? 'INBOUND' : 'OUTBOUND',
+            qtyChanged: item.qty || 1
+          });
+
+          const updatedBook = stockResponse.data;
+
+          // Add to recent scans (remove from queue on success)
+          setRecentScans(prev => [
+            {
+              isbn: book.ISBN,
+              title: book.TITLE,
+              action: item.mode === 'inbound' ? 'IN' : 'OUT',
+              qty: item.qty || 1,
+              newStock: updatedBook.QTY,
+              timestamp: new Date().toLocaleTimeString()
+            },
+            ...prev.slice(0, 19)
+          ]);
+
+          // Update book info display for the last successful scan
+          setBookInfo(updatedBook);
+
+          // Remove this item from queue
+          setScanQueue(prev => prev.filter(q => q.id !== item.id));
+
+          // Small delay to avoid overwhelming server
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (err) {
+          // If any item fails, stop flushing and keep remaining in queue
+          console.warn('Queue flush failed for item:', item.isbn, err);
+          break;
         }
-      }, 50);
-    } catch (err) {
-      const msg = err.response?.data?.message || err.message;
-      const errorMsg = `Failed to ${mode === 'inbound' ? 'receive' : 'ship'} stock: ${msg}`;
-      setError(errorMsg);
-
-      // Set scan result for camera view display
-      setScanResult({
-        type: 'error',
-        message: msg,
-        scannedIsbn: code
-      });
-
-      // Still clear ISBN so user can scan next
-      setIsbn('');
-      setTimeout(() => {
-        if (isbnInputRef.current) {
-          isbnInputRef.current.focus();
-        }
-      }, 50);
+      }
     } finally {
-      setLoading(false);
+      setFlushing(false);
     }
   };
 
@@ -1137,17 +1211,60 @@ const Scan = ({ user }) => {
                 </div>
               )}
 
+              {/* Pending Queue - shows scans waiting to sync */}
+              {scanQueue.length > 0 && (
+                <div className="bg-yellow-50 rounded-lg shadow-sm border border-yellow-200 overflow-hidden">
+                  <div className="px-3 sm:px-4 py-3 border-b border-yellow-200 bg-yellow-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <h3 className="font-semibold text-yellow-900 flex items-center space-x-2">
+                      <Loader className={`w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 ${flushing ? 'animate-spin' : ''}`} />
+                      <span>Pending Sync ({scanQueue.length})</span>
+                    </h3>
+                    {!isOnline && (
+                      <span className="text-xs text-yellow-700 bg-yellow-200 px-2 py-1 rounded-full">
+                        Offline — will sync when connected
+                      </span>
+                    )}
+                    {isOnline && !flushing && scanQueue.length > 0 && (
+                      <button
+                        onClick={flushQueue}
+                        className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-yellow-700 bg-yellow-100 hover:bg-yellow-200 rounded-lg touch-manipulation min-h-[44px]"
+                      >
+                        Retry Sync
+                      </button>
+                    )}
+                  </div>
+                  <div className="divide-y divide-yellow-100 max-h-48 overflow-y-auto">
+                    {scanQueue.map((item, index) => (
+                      <div key={item.id} className="px-3 sm:px-4 py-3 hover:bg-yellow-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-yellow-900 truncate">ISBN: {item.isbn}</p>
+                          <p className="text-xs text-yellow-700">
+                            {item.mode === 'inbound' ? 'Receive' : 'Ship'} • {item.timestamp}
+                            {flushing && <span className="ml-2 text-yellow-600">Syncing...</span>}
+                          </p>
+                        </div>
+                        <span className={`px-2 py-1.5 text-xs font-bold rounded-full ${
+                          item.mode === 'inbound' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {item.mode === 'inbound' ? '+1' : '-1'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Recent Scans History */}
               {recentScans.length > 0 && (
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                   <div className="px-3 sm:px-4 py-3 border-b border-gray-200 bg-gray-50">
                     <h3 className="font-semibold text-gray-900 flex items-center space-x-2">
                       <Barcode className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
-                      <span>Recent Scans ({recentScans.length})</span>
+                      <span>Recent Scans ({recentScans.filter(s => !s.pending).length})</span>
                     </h3>
                   </div>
                   <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
-                    {recentScans.map((scan, index) => (
+                    {recentScans.filter(s => !s.pending).map((scan, index) => (
                       <div key={index} className="px-3 sm:px-4 py-3 hover:bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 truncate">{scan.title}</p>
