@@ -55,6 +55,14 @@ const Scan = ({ user }) => {
   // Camera scanner cleanup on unmount - uses ref for live instance
   useEffect(() => {
     return () => {
+      // Exit fullscreen if active before unmounting
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      // Reset fullscreen and camera states
+      setIsFullscreen(false);
+      setIsCameraActive(false);
+
       if (cameraScannerRef.current) {
         cameraScannerRef.current.stop().catch(() => {});
         // Also force-stop any active media streams
