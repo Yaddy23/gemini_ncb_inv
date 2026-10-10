@@ -34,7 +34,7 @@ const Scan = ({ user }) => {
   const isbnInputRef = useRef(null);
   const audioContextRef = useRef(null);
   const cameraScannerRef = useRef(null); // Ref for live scanner instance
-  const fullscreenElementRef = useRef(null); // Ref for fullscreen element
+  const fullscreenContainerRef = useRef(null); // Ref for fullscreen parent container
 
   // Mobile detection for responsive UI
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
@@ -303,10 +303,10 @@ const Scan = ({ user }) => {
       setIsCameraActive(true);
 
       // Request fullscreen on mobile/tablet for better scanning experience
-      if (isMobile && cameraContainerRef.current) {
+      if (isMobile && fullscreenContainerRef.current) {
         try {
-          // Try to request fullscreen on the container
-          await cameraContainerRef.current.requestFullscreen({ navigationUI: 'hide' });
+          // Try to request fullscreen on the parent container (includes X button and overlays)
+          await fullscreenContainerRef.current.requestFullscreen({ navigationUI: 'hide' });
           // If successful, manually set isFullscreen as fallback (in case event doesn't fire)
           setIsFullscreen(true);
         } catch (fsErr) {
@@ -946,7 +946,10 @@ const Scan = ({ user }) => {
                     )}
 
                     {/* Camera view container - always relative, becomes fixed fullscreen when isFullscreen */}
-                    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-black rounded-none flex flex-col' : ''}`}>
+                    <div
+                      ref={fullscreenContainerRef}
+                      className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-black rounded-none flex flex-col' : ''}`}
+                    >
                       {/* Close button (X) - ALWAYS visible when camera is active, top-right of camera area */}
                       {isCameraActive && (
                         <button
