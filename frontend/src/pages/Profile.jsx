@@ -110,24 +110,24 @@ const Profile = ({ user, onLogin }) => {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
-          <User className="w-5 h-5 text-primary" />
+    <div className="p-4 sm:p-6">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center space-x-3">
+          <User className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
           User Profile
         </h1>
         <p className="mt-2 text-gray-600">Manage your account settings</p>
       </div>
 
       {/* Profile Info Section */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Account Information</h2>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Account Information</h2>
 
         {editMode ? (
           <form onSubmit={(e) => {
             e.preventDefault();
             handleUpdateProfile();
-          }} className="space-y-4">
+          }} className="space-y-4 sm:space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
               <input
@@ -136,7 +136,7 @@ const Profile = ({ user, onLogin }) => {
                 value={profileData.username}
                 onChange={handleProfileChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
               />
             </div>
 
@@ -148,65 +148,65 @@ const Profile = ({ user, onLogin }) => {
                 value={profileData.email}
                 onChange={handleProfileChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
               />
             </div>
 
             <div className="flex items-center space-x-3">
               <label className="text-sm font-medium text-gray-700">Role:</label>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                profileData.role === 'Admin' ? 'bg-primary/20 text-primary' : 'bg-green/20 text-green'
+                profileData.role === 'Admin' ? 'bg-primary/20 text-primary' : 'bg-green-100 text-green-700'
               }`}>
                 {profileData.role}
               </span>
             </div>
 
-            <div className="flex items-center justify-end space-x-3 mt-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200">
               <button
                 type="button"
                 onClick={() => setEditMode(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors touch-manipulation min-h-[44px]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 bg-primary text-white rounded-md disabled:opacity-50 transition-colors"
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors touch-manipulation min-h-[44px]"
               >
                 {loading ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </form>
         ) : (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <User className="w-5 h-5 text-primary" />
+          <div className="space-y-4 sm:space-y-5">
+            <div className="flex items-center space-x-3 sm:space-x-4 p-3 bg-gray-50 rounded-lg">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-700">Username</p>
-                <p className="text-xl font-bold text-gray-900">{profileData.username}</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">{profileData.username}</p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Edit className="w-5 h-5 text-primary" />
+            <div className="flex items-center space-x-3 sm:space-x-4 p-3 bg-gray-50 rounded-lg">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Edit className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-700">Email</p>
-                <p className="text-xl font-bold text-gray-900">{profileData.email}</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">{profileData.email}</p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Lock className="w-5 h-5 text-primary" />
+            <div className="flex items-center space-x-3 sm:space-x-4 p-3 bg-gray-50 rounded-lg">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-700">Role</p>
-                <p className={`text-xl font-bold ${
+                <p className={`text-lg sm:text-xl font-bold ${
                   profileData.role === 'Admin' ? 'text-primary' : 'text-green-600'
                 }`}>
                   {profileData.role}
@@ -214,20 +214,20 @@ const Profile = ({ user, onLogin }) => {
               </div>
             </div>
 
-            <div className="mt-6 flex items-center space-x-3">
+            <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button
                 onClick={() => setEditMode(true)}
-                className="flex items-center justify-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+                className="flex-1 flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors touch-manipulation min-h-[48px]"
               >
-                <Edit className="mr-2 w-4 h-4" />
+                <Edit className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
                 Edit Profile
               </button>
 
               <button
                 onClick={() => setShowPasswordChange(!showPasswordChange)}
-                className="flex items-center justify-center px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                className="flex-1 flex items-center justify-center px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors touch-manipulation min-h-[48px]"
               >
-                <Lock className="mr-2 w-4 h-4" />
+                <Lock className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
                 Change Password
               </button>
             </div>
@@ -236,7 +236,7 @@ const Profile = ({ user, onLogin }) => {
 
         {/* Success/Error Messages */}
         {error && (
-          <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400">
+          <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
             <div className="flex">
               <div className="flex-shrink-0">
                 <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -249,7 +249,7 @@ const Profile = ({ user, onLogin }) => {
         )}
 
         {success && (
-          <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-400">
+          <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-400 rounded-r-lg">
             <div className="flex">
               <div className="flex-shrink-0">
                 <CheckCircle className="w-5 h-5 text-green-400" />
@@ -264,12 +264,12 @@ const Profile = ({ user, onLogin }) => {
 
       {/* Password Change Section */}
       {showPasswordChange && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Change Password</h2>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Change Password</h2>
           <form onSubmit={(e) => {
             e.preventDefault();
             handleChangePassword();
-          }} className="space-y-4">
+          }} className="space-y-4 sm:space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
               <input
@@ -278,7 +278,7 @@ const Profile = ({ user, onLogin }) => {
                 value={passwordData.currentPassword}
                 onChange={handlePasswordChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
               />
             </div>
 
@@ -291,7 +291,7 @@ const Profile = ({ user, onLogin }) => {
                 onChange={handlePasswordChange}
                 required
                 minLength="6"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
               />
             </div>
 
@@ -304,22 +304,22 @@ const Profile = ({ user, onLogin }) => {
                 onChange={handlePasswordChange}
                 required
                 minLength="6"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
               />
             </div>
 
-            <div className="flex items-center justify-end space-x-3 mt-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200">
               <button
                 type="button"
                 onClick={() => setShowPasswordChange(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors touch-manipulation min-h-[44px]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 bg-primary text-white rounded-md disabled:opacity-50 transition-colors"
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors touch-manipulation min-h-[44px]"
               >
                 {loading ? 'Changing...' : 'Change Password'}
               </button>
@@ -328,7 +328,7 @@ const Profile = ({ user, onLogin }) => {
 
           {/* Password Change Messages */}
           {error && (
-            <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400">
+            <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -341,7 +341,7 @@ const Profile = ({ user, onLogin }) => {
           )}
 
           {success && (
-            <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-400">
+            <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-400 rounded-r-lg">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <CheckCircle className="w-5 h-5 text-green-400" />
