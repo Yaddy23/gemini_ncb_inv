@@ -3,6 +3,7 @@ import { Loader, FileText, Download, Printer, X, AlertTriangle, Trash2, CheckCir
 import LineItemsTable from './LineItemsTable';
 import { formatDate, formatDateInput } from '../../utils/numberToWords';
 import api from '../../api/axios';
+import { useToast } from '../Toast';
 
 const DocumentForm = ({
   documentType, // 'DR', 'SI', or 'EF'
@@ -16,6 +17,8 @@ const DocumentForm = ({
   const isEF = documentType === 'EF';
   const title = isDR ? 'Delivery Receipt' : isEF ? 'Evaluation Form' : 'Sales Invoice';
   const numberLabel = isDR ? 'DR Number' : isEF ? 'EF Number' : 'SI Number';
+
+  const { toast } = useToast();
 
   const [formData, setFormData] = useState({
     documentNumber: '',
@@ -160,7 +163,10 @@ const DocumentForm = ({
   };
 
   const handleExport = async (format) => {
-    if (!initialData?._id) return alert('Save document first before exporting');
+    if (!initialData?._id) {
+      toast.error('Save document first before exporting');
+      return;
+    }
     try {
       let url;
       if (isDR) {
@@ -184,7 +190,7 @@ const DocumentForm = ({
     } catch (err) {
       console.error('Export error:', err);
       const message = err.response?.data?.message || err.message || 'Export failed';
-      alert('Export failed: ' + message);
+      toast.error('Export failed: ' + message);
     }
   };
 

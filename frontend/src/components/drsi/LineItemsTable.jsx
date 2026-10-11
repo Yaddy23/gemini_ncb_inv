@@ -8,6 +8,18 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
   const [lookupErrors, setLookupErrors] = useState({});
   const [focusNextInput, setFocusNextInput] = useState(false);
   const isbnInputRefs = useRef({});
+  const lookupTimersRef = useRef({}); // per-row debounce timers
+  const lookupSeqRef = useRef({}); // per-row sequence numbers to discard stale responses
+  const itemsRef = useRef(items); // latest items, so a lookup firing after other rows changed doesn't clobber them
+  itemsRef.current = items;
+
+  // Clear all pending debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(lookupTimersRef.current).forEach(timer => clearTimeout(timer));
+      lookupTimersRef.current = {};
+    };
+  }, []);
 
   // Focus the next input when a new row is added after successful scan
   useEffect(() => {
@@ -49,60 +61,91 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
     return parts.join(' / ');
   };
 
-  const handleISBNChange = async (index, isbn) => {
+  // Performs the (debounced) book lookup for a row, guarded by a per-row
+  // sequence number so stale/out-of-order responses are discarded.
+  const performLookup = async (index, isbn) => {
+    const seq = (lookupSeqRef.current[index] || 0) + 1;
+    lookupSeqRef.current[index] = seq;
+
+    setLookupLoading(prev => ({ ...prev, [index]: true }));
+    setLookupErrors(prev => ({ ...prev, [index]: null }));
+
+    try {
+      const response = await drsiApi.lookupBook(isbn);
+      const book = response.data;
+
+      // Discard stale responses: a newer keystroke already started/bumped this row
+      if (lookupSeqRef.current[index] !== seq) return;
+
+      if (book && book.ISBN) {
+        const description = formatDescription(book);
+        // Read the latest items from the ref so edits made to other rows
+        // during the debounce window are not overwritten
+        const updatedItems = [...itemsRef.current];
+        updatedItems[index] = {
+          ...updatedItems[index],
+          title: description, // Store formatted description
+          // Keep raw fields for export
+          rawTitle: book.TITLE,
+          edition: book.EDITION,
+          bind: book.BIND,
+          year: book.YEAR,
+          author: book.AUTHOR,
+          unitPrice: book.PRICE || 0,
+          amount: (book.PRICE || 0) * (updatedItems[index].qty || 1)
+        };
+        setLookupErrors(prev => ({ ...prev, [index]: null }));
+
+        // Auto-add new row after successful scan if this is the last row and we haven't reached maxRows
+        if (index === updatedItems.length - 1 && updatedItems.length < maxRows) {
+          updatedItems.push({
+            isbn: '',
+            title: '',
+            rawTitle: '',
+            edition: '',
+            bind: '',
+            year: '',
+            author: '',
+            qty: 1,
+            unitPrice: 0,
+            amount: 0
+          });
+          // Trigger focus on the new input after state updates
+          setFocusNextInput(true);
+        }
+        onItemsChange(updatedItems);
+      } else {
+        setLookupErrors(prev => ({ ...prev, [index]: 'Book not found - enter title manually' }));
+      }
+    } catch (err) {
+      if (lookupSeqRef.current[index] !== seq) return;
+      setLookupErrors(prev => ({ ...prev, [index]: 'Lookup failed - enter title manually' }));
+    } finally {
+      if (lookupSeqRef.current[index] === seq) {
+        setLookupLoading(prev => ({ ...prev, [index]: false }));
+      }
+    }
+  };
+
+  const handleISBNChange = (index, isbn) => {
     const cleanISBN = isbn.trim();
     const newItems = [...items];
     newItems[index] = { ...newItems[index], isbn: cleanISBN };
 
+    // Cancel any pending debounced lookup for this row and invalidate
+    // any lookup already in flight (stale responses will be discarded)
+    if (lookupTimersRef.current[index] !== undefined) {
+      clearTimeout(lookupTimersRef.current[index]);
+      delete lookupTimersRef.current[index];
+    }
+    lookupSeqRef.current[index] = (lookupSeqRef.current[index] || 0) + 1;
+
     if (cleanISBN.length >= 8) {
-      setLookupLoading(prev => ({ ...prev, [index]: true }));
-      setLookupErrors(prev => ({ ...prev, [index]: null }));
-
-      try {
-        const response = await drsiApi.lookupBook(cleanISBN);
-        const book = response.data;
-
-        if (book && book.ISBN) {
-          const description = formatDescription(book);
-          newItems[index] = {
-            ...newItems[index],
-            title: description, // Store formatted description
-            // Keep raw fields for export
-            rawTitle: book.TITLE,
-            edition: book.EDITION,
-            bind: book.BIND,
-            year: book.YEAR,
-            author: book.AUTHOR,
-            unitPrice: book.PRICE || 0,
-            amount: (book.PRICE || 0) * (newItems[index].qty || 1)
-          };
-          setLookupErrors(prev => ({ ...prev, [index]: null }));
-
-          // Auto-add new row after successful scan if this is the last row and we haven't reached maxRows
-          if (index === newItems.length - 1 && newItems.length < maxRows) {
-            newItems.push({
-              isbn: '',
-              title: '',
-              rawTitle: '',
-              edition: '',
-              bind: '',
-              year: '',
-              author: '',
-              qty: 1,
-              unitPrice: 0,
-              amount: 0
-            });
-            // Trigger focus on the new input after state updates
-            setFocusNextInput(true);
-          }
-        } else {
-          setLookupErrors(prev => ({ ...prev, [index]: 'Book not found' }));
-        }
-      } catch (err) {
-        setLookupErrors(prev => ({ ...prev, [index]: 'Lookup failed' }));
-      } finally {
-        setLookupLoading(prev => ({ ...prev, [index]: false }));
-      }
+      // Debounce: only look up after the user pauses typing (~400ms)
+      lookupTimersRef.current[index] = setTimeout(() => {
+        delete lookupTimersRef.current[index];
+        performLookup(index, cleanISBN);
+      }, 400);
     } else {
       // Clear title/price if ISBN too short
       newItems[index] = {
@@ -116,8 +159,20 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
         unitPrice: 0,
         amount: 0
       };
+      // Clear lookup state left over from a previous longer ISBN
+      setLookupLoading(prev => ({ ...prev, [index]: false }));
+      setLookupErrors(prev => ({ ...prev, [index]: null }));
     }
 
+    // ISBN value propagates immediately on every keystroke
+    onItemsChange(newItems);
+  };
+
+  const handleTitleChange = (index, value) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], title: value, rawTitle: value };
+    // Clearing the lookup error lets submit proceed and hides the error badge
+    setLookupErrors(prev => ({ ...prev, [index]: null }));
     onItemsChange(newItems);
   };
 
@@ -284,8 +339,14 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
                   <input
                     type="text"
                     value={item.title || ''}
-                    readOnly
-                    className="w-full px-2 py-1 text-sm border border-gray-200 rounded bg-gray-50 text-gray-700"
+                    readOnly={!!lookupErrors[index] && !lookupLoading[index] ? false : true}
+                    onChange={(e) => handleTitleChange(index, e.target.value)}
+                    placeholder={lookupErrors[index] ? 'Enter title manually' : ''}
+                    className={`w-full px-2 py-1 text-sm border rounded ${
+                      lookupErrors[index] && !lookupLoading[index]
+                        ? 'border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary'
+                        : 'border-gray-200 bg-gray-50 text-gray-700'
+                    }`}
                   />
                 </td>
                 <td className="px-3 py-2">

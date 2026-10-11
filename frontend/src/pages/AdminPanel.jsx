@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { Plus, X, Edit as EditIcon, Trash2, CheckCircle } from 'lucide-react';
+import { useToast } from '../components/Toast';
 
 const AdminPanel = ({ user }) => {
   const [users, setUsers] = useState([]);
@@ -18,6 +19,8 @@ const AdminPanel = ({ user }) => {
   const [usersPerPage, setUsersPerPage] = useState(10);
   const [logsPerPage, setLogsPerPage] = useState(50);
   const [activeTab, setActiveTab] = useState('users');
+
+  const { confirmDialog } = useToast();
 
   // Create user modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -112,7 +115,7 @@ const AdminPanel = ({ user }) => {
 
   // Handle user deletion
   const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+    if (await confirmDialog('Are you sure you want to delete this user?', { title: 'Delete User', danger: true, confirmText: 'Delete' })) {
       setLoading(true);
       try {
         await api.delete(`/auth/users/${userId}`);
@@ -312,7 +315,8 @@ const AdminPanel = ({ user }) => {
 
   // Handle marketing executive deletion
   const handleDeleteExecutive = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this marketing executive?')) return;
+    const sure = await confirmDialog('Are you sure you want to delete this marketing executive?', { title: 'Delete Marketing Executive', danger: true, confirmText: 'Delete' });
+    if (!sure) return;
     setLoading(true);
     try {
       await api.delete(`/marketing-executives/${id}`);

@@ -34,37 +34,37 @@ Each task lists priority, estimated effort, and the files it touches.
 
 ## Phase 1 — Quick wins (small endpoints over data you already collect)
 
-- [ ] **1.1 Per-book transaction history**
+- [x] **1.1 Per-book transaction history**
   - `GET /api/books/:isbn/transactions` (paginated) + "History" drill-down on Books page.
   - Note: `{ISBN, timestamp}` index already exists in `StockTransaction` — no route uses it.
   - Files: `backend/routes/books.js`, `backend/controllers/bookController.js`, `frontend/src/pages/Books.jsx`
   - Effort: small
 
-- [ ] **1.2 Low-stock endpoint + per-book threshold**
+- [x] **1.2 Low-stock endpoint + per-book threshold**
   - `GET /api/books/low-stock`; `MIN_QTY` field on Book schema (5 is currently hardcoded);
     dashboard low-stock widget; warn on threshold crossing in `updateStock`.
   - Files: `backend/models/Book.js`, `bookController.js`, `stockController.js`, `frontend/src/pages/Dashboard.jsx`
   - Effort: small–medium
 
-- [ ] **1.3 Auto-generate document numbers**
+- [ ] **1.3 Auto-generate document numbers** *(skipped — not needed for now)*
   - `GET /api/drsi/dr/next-number` so users don't hand-type `DR-YYYYMMDD-NNN`.
   - Also fixes fragile EF→DR→SI string-replacement numbering; enforce prefix format.
   - Files: `backend/routes/drsi.js`, `backend/routes/ef.js`, `frontend/src/components/drsi/DocumentForm.jsx`
   - Effort: small–medium
 
-- [ ] **1.4 UserLog coverage for DR/SI/EF**
+- [x] **1.4 UserLog coverage for DR/SI/EF**
   - Document create/update/delete/issue is invisible in the audit log.
   - Add `CREATE_DR`, `ISSUE_DR`, etc. to the action enum and log them.
   - Files: `backend/models/UserLog.js`, `backend/routes/drsi.js`, `backend/routes/ef.js`, `backend/controllers/userLogController.js`
   - Effort: small
 
-- [ ] **1.5 Cancellable, debounced ISBN lookup in LineItemsTable**
+- [x] **1.5 Cancellable, debounced ISBN lookup in LineItemsTable**
   - Every keystroke past 8 chars fires a request with no cancellation → slow responses overwrite newer edits.
   - Also: allow manual title entry when lookup fails (unlisted books currently block submit).
   - Files: `frontend/src/components/drsi/LineItemsTable.jsx`
   - Effort: small
 
-- [ ] **1.6 Toast notification system**
+- [x] **1.6 Toast notification system**
   - Replace raw `alert()` / `window.confirm()` across all pages.
   - Files: new `frontend/src/components/Toast.jsx`, `App.jsx`, all pages
   - Effort: small–medium

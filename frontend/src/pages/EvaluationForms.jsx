@@ -3,6 +3,7 @@ import { Plus, Search, Loader, FileText, Download, Printer, Edit, Trash2, Eye, A
 import { efApi } from '../api/ef';
 import DocumentForm from '../components/drsi/DocumentForm';
 import { formatDate, formatCurrency, numberToWords } from '../utils/numberToWords';
+import { useToast } from '../components/Toast';
 
 const EvaluationForms = ({ user }) => {
   const [efs, setEFs] = useState([]);
@@ -17,6 +18,8 @@ const EvaluationForms = ({ user }) => {
   const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(null);
   const [cancelling, setCancelling] = useState(null);
+
+  const { toast, confirmDialog, promptDialog } = useToast();
 
   const fetchEFs = async () => {
     setLoading(true);
@@ -61,7 +64,7 @@ const EvaluationForms = ({ user }) => {
       setEditingEF(null);
       fetchEFs();
     } catch (err) {
-      alert('Error: ' + (err.response?.data?.message || err.message));
+      toast.error('Error: ' + (err.response?.data?.message || err.message));
     } finally {
       setSubmitting(false);
     }
@@ -78,27 +81,28 @@ const EvaluationForms = ({ user }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this Evaluation Form?')) return;
+    const sure = await confirmDialog('Delete this Evaluation Form?', { title: 'Delete Document', danger: true, confirmText: 'Delete' });
+    if (!sure) return;
     try {
       await efApi.deleteEF(id);
       fetchEFs();
     } catch (err) {
-      alert('Error: ' + (err.response?.data?.message || err.message));
+      toast.error('Error: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const handleCancel = async (id) => {
-    const reason = window.prompt('Enter cancellation reason:');
+    const reason = await promptDialog('Enter cancellation reason:', { title: 'Cancel Document' });
     if (!reason || !reason.trim()) return;
-    const sure = window.confirm('Cancel this evaluation form? Its linked delivery receipt draft (and its invoice draft) will also be cancelled. This cannot be undone.');
+    const sure = await confirmDialog('Cancel this evaluation form? Its linked delivery receipt draft (and its invoice draft) will also be cancelled. This cannot be undone.', { title: 'Cancel Document', danger: true, confirmText: 'Cancel Document' });
     if (!sure) return;
     setCancelling(id);
     try {
       await efApi.cancelEF(id, reason.trim());
-      alert('Document cancelled');
+      toast.success('Document cancelled');
       fetchEFs();
     } catch (err) {
-      alert('Cancel failed: ' + (err.response?.data?.message || err.message));
+      toast.error('Cancel failed: ' + (err.response?.data?.message || err.message));
     } finally {
       setCancelling(null);
     }
@@ -118,7 +122,7 @@ const EvaluationForms = ({ user }) => {
       link.click();
       link.remove();
     } catch (err) {
-      alert('Export failed: ' + err.message);
+      toast.error('Export failed: ' + err.message);
     } finally {
       setExporting(null);
     }

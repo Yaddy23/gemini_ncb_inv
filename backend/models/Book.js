@@ -44,6 +44,11 @@ const bookSchema = new mongoose.Schema({
     default: 0.00,
     min: 0
   },
+  MIN_QTY: {
+    type: Number,
+    default: 5,
+    min: 0
+  },
   PUBLISHER: {
     type: String,
     trim: true

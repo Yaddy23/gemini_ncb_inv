@@ -3,6 +3,7 @@ import { Plus, Search, Loader, FileText, Download, Printer, Edit, Trash2, Eye, A
 import { drsiApi } from '../api/drsi';
 import DocumentForm from '../components/drsi/DocumentForm';
 import { formatDate, formatCurrency, numberToWords } from '../utils/numberToWords';
+import { useToast } from '../components/Toast';
 
 const DeliveryReceipts = ({ user }) => {
   const [drs, setDRs] = useState([]);
@@ -17,6 +18,8 @@ const DeliveryReceipts = ({ user }) => {
   const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(null);
   const [cancelling, setCancelling] = useState(null);
+
+  const { toast, confirmDialog, promptDialog } = useToast();
 
   const fetchDRs = async () => {
     setLoading(true);
@@ -61,7 +64,7 @@ const DeliveryReceipts = ({ user }) => {
       setEditingDR(null);
       fetchDRs();
     } catch (err) {
-      alert('Error: ' + (err.response?.data?.message || err.message));
+      toast.error('Error: ' + (err.response?.data?.message || err.message));
     } finally {
       setSubmitting(false);
     }
@@ -78,27 +81,28 @@ const DeliveryReceipts = ({ user }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this Delivery Receipt?')) return;
+    const sure = await confirmDialog('Delete this Delivery Receipt?', { title: 'Delete Document', danger: true, confirmText: 'Delete' });
+    if (!sure) return;
     try {
       await drsiApi.deleteDR(id);
       fetchDRs();
     } catch (err) {
-      alert('Error: ' + (err.response?.data?.message || err.message));
+      toast.error('Error: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const handleCancel = async (id) => {
-    const reason = window.prompt('Enter cancellation reason:');
+    const reason = await promptDialog('Enter cancellation reason:', { title: 'Cancel Document' });
     if (!reason || !reason.trim()) return;
-    const sure = window.confirm('Cancel this delivery receipt? Its quantities will be restored to stock. This cannot be undone.');
+    const sure = await confirmDialog('Cancel this delivery receipt? Its quantities will be restored to stock. This cannot be undone.', { title: 'Cancel Document', danger: true, confirmText: 'Cancel Document' });
     if (!sure) return;
     setCancelling(id);
     try {
       await drsiApi.cancelDR(id, reason.trim());
-      alert('Document cancelled');
+      toast.success('Document cancelled');
       fetchDRs();
     } catch (err) {
-      alert('Cancel failed: ' + (err.response?.data?.message || err.message));
+      toast.error('Cancel failed: ' + (err.response?.data?.message || err.message));
     } finally {
       setCancelling(null);
     }
@@ -118,7 +122,7 @@ const DeliveryReceipts = ({ user }) => {
       link.click();
       link.remove();
     } catch (err) {
-      alert('Export failed: ' + err.message);
+      toast.error('Export failed: ' + err.message);
     } finally {
       setExporting(null);
     }

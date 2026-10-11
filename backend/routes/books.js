@@ -8,12 +8,16 @@ const {
   updateBook,
   deleteBook,
   getStats,
+  getBookTransactions,
+  getLowStockBooks,
 } = require('../controllers/bookController');
 
 // Public routes (protected but accessible to both roles)
 router.get('/', protect, getBooks);
 router.get('/stats', protect, getStats);
+router.get('/low-stock', protect, getLowStockBooks);
 router.get('/lookup/:isbn', protect, lookupBookByISBN);
+router.get('/:isbn/transactions', protect, getBookTransactions);
 
 // Admin only routes
 router.post('/', protect, admin, createBook);

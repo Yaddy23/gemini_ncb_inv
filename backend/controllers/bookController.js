@@ -265,7 +265,7 @@ const getStats = async (req, res) => {
           totalQuantity: { $sum: '$QTY' },
           lowStockCount: {
             $sum: {
-              $cond: [{ $and: [{ $lt: ['$QTY', 5] }, { $gt: ['$QTY', 0] }] }, 1, 0]
+              $cond: [{ $and: [{ $gt: ['$QTY', 0] }, { $lt: ['$QTY', { $ifNull: ['$MIN_QTY', 5] }] }] }, 1, 0]
             }
           },
           outOfStockCount: {
@@ -309,6 +309,53 @@ const getStats = async (req, res) => {
   }
 };
 
+// @desc    Get transaction history for a single book
+// @route   GET /api/books/:isbn/transactions
+// @access  Private
+const getBookTransactions = async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 100);
+
+    const transactions = await StockTransaction.find({ ISBN: req.params.isbn })
+      .populate('performedBy', 'username email role')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const total = await StockTransaction.countDocuments({ ISBN: req.params.isbn });
+
+    res.json({
+      transactions,
+      page,
+      pages: Math.ceil(total / limit),
+      total
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get books that are low on stock (against their own MIN_QTY)
+// @route   GET /api/books/low-stock
+// @access  Private
+const getLowStockBooks = async (req, res) => {
+  try {
+    const books = await Book.find({
+      $and: [
+        { QTY: { $gt: 0 } },
+        { $expr: { $lt: ['$QTY', { $ifNull: ['$MIN_QTY', 5] }] } }
+      ]
+    })
+      .sort({ QTY: 1 })
+      .limit(50);
+
+    res.json({ books, count: books.length });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getBooks,
   lookupBookByISBN,
@@ -316,4 +363,6 @@ module.exports = {
   updateBook,
   deleteBook,
   getStats,
+  getBookTransactions,
+  getLowStockBooks,
 };

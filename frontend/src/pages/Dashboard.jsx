@@ -8,6 +8,7 @@ const Dashboard = ({ user }) => {
     totalQuantity: 0,
     todayTransactions: 0
   });
+  const [lowStock, setLowStock] = useState({ books: [], count: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -15,12 +16,19 @@ const Dashboard = ({ user }) => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/books/stats');
+        const [statsResponse, lowStockResponse] = await Promise.all([
+          api.get('/books/stats'),
+          api.get('/books/low-stock')
+        ]);
 
         setStats({
-          totalBooks: response.data.totalBooks,
-          totalQuantity: response.data.totalQuantity,
-          todayTransactions: response.data.todayTransactions
+          totalBooks: statsResponse.data.totalBooks,
+          totalQuantity: statsResponse.data.totalQuantity,
+          todayTransactions: statsResponse.data.todayTransactions
+        });
+        setLowStock({
+          books: lowStockResponse.data.books || [],
+          count: lowStockResponse.data.count || 0
         });
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load dashboard stats');
@@ -108,6 +116,30 @@ const Dashboard = ({ user }) => {
             </div>
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
               <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            </div>
+          </div>
+        </div>
+
+        {/* Low Stock */}
+        <div className="bg-white rounded-xl shadow-sm p-5 sm:p-6 border border-gray-100">
+          <div className="flex items-start justify-between">
+            <div className="min-w-0">
+              <p className="text-sm sm:text-base font-medium text-gray-500 truncate">Low Stock Titles</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{lowStock.count}</p>
+              {lowStock.count === 0 ? (
+                <p className="text-xs sm:text-sm text-green-600 mt-1">All stock above minimum</p>
+              ) : (
+                <ul className="mt-2 space-y-1">
+                  {lowStock.books.slice(0, 5).map((b) => (
+                    <li key={b.ISBN} className="text-xs sm:text-sm text-gray-600 truncate">
+                      <span className="font-medium text-gray-800">{b.TITLE}</span> — QTY: {b.QTY} · min {b.MIN_QTY ?? 5}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
+              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
             </div>
           </div>
         </div>

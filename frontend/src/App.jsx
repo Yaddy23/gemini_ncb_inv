@@ -16,6 +16,7 @@ import SalesInvoices from './pages/SalesInvoices';
 import EvaluationForms from './pages/EvaluationForms';
 import NavBar from './components/NavBar';
 import PrivateRoute from './components/PrivateRoute';
+import { ToastProvider } from './components/Toast';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -77,139 +78,141 @@ function App() {
   }
 
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        {/* Mobile Top Bar */}
-        {user && isMobile && (
-          <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b shadow-sm z-40 flex items-center px-4">
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="p-2 rounded-lg hover:bg-gray-100"
-              aria-label="Open menu"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <h1 className="ml-4 font-semibold text-gray-900">Book Inventory</h1>
-          </header>
-        )}
+    <ToastProvider>
+      <Router>
+        <div className="min-h-screen bg-gray-50">
+          {/* Mobile Top Bar */}
+          {user && isMobile && (
+            <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b shadow-sm z-40 flex items-center px-4">
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="p-2 rounded-lg hover:bg-gray-100"
+                aria-label="Open menu"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <h1 className="ml-4 font-semibold text-gray-900">Book Inventory</h1>
+            </header>
+          )}
 
-        {/* Sidebar / Mobile Drawer */}
-        {user && (
-          <NavBar
-            user={user}
-            onLogout={logout}
-            collapsed={sidebarCollapsed}
-            onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-            isMobile={isMobile}
-            isOpen={mobileMenuOpen}
-            onClose={() => setMobileMenuOpen(false)}
-          />
-        )}
+          {/* Sidebar / Mobile Drawer */}
+          {user && (
+            <NavBar
+              user={user}
+              onLogout={logout}
+              collapsed={sidebarCollapsed}
+              onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              isMobile={isMobile}
+              isOpen={mobileMenuOpen}
+              onClose={() => setMobileMenuOpen(false)}
+            />
+          )}
 
-        {/* Mobile Drawer Overlay */}
-        {user && isMobile && mobileMenuOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-40"
-            onClick={() => setMobileMenuOpen(false)}
-            aria-hidden="true"
-          />
-        )}
+          {/* Mobile Drawer Overlay */}
+          {user && isMobile && mobileMenuOpen && (
+            <div
+              className="fixed inset-0 bg-black/50 z-40"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-hidden="true"
+            />
+          )}
 
-        <main
-          className={user
-            ? isMobile
-              ? 'pt-16'
-              : sidebarCollapsed
-                ? 'ml-16'
-                : 'ml-64'
-            : 'ml-0'
-          }
-          style={{ transition: 'margin-left 0.3s ease' }}
-        >
-          <Routes>
-            <Route
-              path="/login"
-              element={user ? <Navigate to="/" replace /> : <Login onLogin={login} />}
-            />
-            <Route
-              path="/"
-              element={
-                <PrivateRoute isAuthenticated={!!user}>
-                  <Dashboard user={user} />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/books"
-              element={
-                <PrivateRoute isAuthenticated={!!user}>
-                  <Books user={user} />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/scan"
-              element={
-                <PrivateRoute isAuthenticated={!!user}>
-                  <Scan user={user} />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/import-export"
-              element={
-                <PrivateRoute isAuthenticated={!!user && user.role === 'Admin'}>
-                  <ImportExport user={user} />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <PrivateRoute isAuthenticated={!!user}>
-                  <Profile user={user} onLogin={login} />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <PrivateRoute isAuthenticated={!!user && user.role === 'Admin'}>
-                  <AdminPanel user={user} />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/delivery-receipts"
-              element={
-                <PrivateRoute isAuthenticated={!!user}>
-                  <DeliveryReceipts user={user} />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/sales-invoices"
-              element={
-                <PrivateRoute isAuthenticated={!!user}>
-                  <SalesInvoices user={user} />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/evaluation-forms"
-              element={
-                <PrivateRoute isAuthenticated={!!user}>
-                  <EvaluationForms user={user} />
-                </PrivateRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
+          <main
+            className={user
+              ? isMobile
+                ? 'pt-16'
+                : sidebarCollapsed
+                  ? 'ml-16'
+                  : 'ml-64'
+              : 'ml-0'
+            }
+            style={{ transition: 'margin-left 0.3s ease' }}
+          >
+            <Routes>
+              <Route
+                path="/login"
+                element={user ? <Navigate to="/" replace /> : <Login onLogin={login} />}
+              />
+              <Route
+                path="/"
+                element={
+                  <PrivateRoute isAuthenticated={!!user}>
+                    <Dashboard user={user} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/books"
+                element={
+                  <PrivateRoute isAuthenticated={!!user}>
+                    <Books user={user} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/scan"
+                element={
+                  <PrivateRoute isAuthenticated={!!user}>
+                    <Scan user={user} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/import-export"
+                element={
+                  <PrivateRoute isAuthenticated={!!user && user.role === 'Admin'}>
+                    <ImportExport user={user} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <PrivateRoute isAuthenticated={!!user}>
+                    <Profile user={user} onLogin={login} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <PrivateRoute isAuthenticated={!!user && user.role === 'Admin'}>
+                    <AdminPanel user={user} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/delivery-receipts"
+                element={
+                  <PrivateRoute isAuthenticated={!!user}>
+                    <DeliveryReceipts user={user} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/sales-invoices"
+                element={
+                  <PrivateRoute isAuthenticated={!!user}>
+                    <SalesInvoices user={user} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/evaluation-forms"
+                element={
+                  <PrivateRoute isAuthenticated={!!user}>
+                    <EvaluationForms user={user} />
+                  </PrivateRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+        </div>
+      </Router>
+    </ToastProvider>
   );
 }
 

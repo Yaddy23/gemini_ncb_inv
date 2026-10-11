@@ -138,6 +138,7 @@ router.post('/', async (req, res) => {
     await ef.save();
     // Populate marketingExecutive for response
     await ef.populate('marketingExecutive', 'name');
+    await logUserActivity(req.user._id, 'CREATE_EF', `Created EF ${ef.efNumber} for ${ef.customerName} (${ef.items.length} items)`, req);
     res.status(201).json(ef);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -199,6 +200,7 @@ router.put('/:id', async (req, res) => {
 
     await ef.save();
     await ef.populate('marketingExecutive', 'name');
+    await logUserActivity(req.user._id, 'UPDATE_EF', `Updated EF ${ef.efNumber}`, req);
     res.json(ef);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -212,7 +214,9 @@ router.delete('/:id', async (req, res) => {
     if (!ef) return res.status(404).json({ message: 'Evaluation Form not found' });
     if (ef.status !== 'draft') return res.status(400).json({ message: 'Cannot delete issued EF' });
 
+    const { efNumber } = ef;
     await ef.deleteOne();
+    await logUserActivity(req.user._id, 'DELETE_EF', `Deleted EF ${efNumber}`, req);
     res.json({ message: 'Evaluation Form deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -242,6 +246,8 @@ router.post('/:id/issue', async (req, res) => {
     // Mark EF as issued
     ef.status = 'issued';
     await ef.save();
+
+    await logUserActivity(req.user._id, 'ISSUE_EF', `Issued EF ${ef.efNumber} for ${ef.customerName}`, req);
 
     res.json({ ef, dr });
   } catch (err) {

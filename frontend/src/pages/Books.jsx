@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../api/axios';
-import { ShoppingBag, Search, Plus, Barcode, Trash, Edit, Loader, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ShoppingBag, Search, Plus, Barcode, Trash, Edit, Loader, CheckCircle, AlertTriangle, History } from 'lucide-react';
 
 const Books = ({ user }) => {
   const [books, setBooks] = useState([]);
@@ -28,6 +28,12 @@ const Books = ({ user }) => {
     PRICE: 0.00
   });
   const [formError, setFormError] = useState(null);
+
+  // Per-book transaction history modal state
+  const [historyBook, setHistoryBook] = useState(null);
+  const [historyData, setHistoryData] = useState({ transactions: [], page: 1, pages: 0, total: 0 });
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
 
   // Populate formData when selectedBook changes for editing
   useEffect(() => {
@@ -112,6 +118,49 @@ const Books = ({ user }) => {
   const handlePageChange = (newPage) => {
     setPage(newPage);
   };
+
+  const isLowStock = (book) => book.QTY > 0 && book.QTY <= (book.MIN_QTY ?? 5);
+
+  const getActionBadgeClass = (action) => {
+    if (action === 'INBOUND') return 'bg-green-100 text-green-700';
+    if (action === 'OUTBOUND') return 'bg-red-100 text-red-700';
+    return 'bg-gray-100 text-gray-700';
+  };
+
+  const openHistory = (book) => {
+    setHistoryBook(book);
+    setHistoryPage(1);
+  };
+
+  // Fetch the selected book's transaction history
+  useEffect(() => {
+    if (!historyBook) return;
+    let cancelled = false;
+    const fetchHistory = async () => {
+      try {
+        setHistoryLoading(true);
+        const response = await api.get(`/books/${encodeURIComponent(historyBook.ISBN)}/transactions`, {
+          params: { page: historyPage, limit: 10 }
+        });
+        if (!cancelled) {
+          setHistoryData({
+            transactions: response.data.transactions,
+            page: response.data.page,
+            pages: response.data.pages,
+            total: response.data.total
+          });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setHistoryData({ transactions: [], page: 1, pages: 0, total: 0 });
+        }
+      } finally {
+        if (!cancelled) setHistoryLoading(false);
+      }
+    };
+    fetchHistory();
+    return () => { cancelled = true; };
+  }, [historyBook, historyPage]);
 
   const handleDeleteBook = async (isbn) => {
     if (deleteMode) {
@@ -224,11 +273,18 @@ const Books = ({ user }) => {
                       <h3 className="font-semibold text-gray-900 truncate">{book.TITLE}</h3>
                       <p className="text-sm text-gray-500">by {book.AUTHOR || 'Unknown Author'}</p>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-bold rounded-full ${
-                      book.QTY > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {book.QTY} in stock
-                    </span>
+                    <div className="flex flex-shrink-0 items-center gap-1">
+                      <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                        book.QTY > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {book.QTY} in stock
+                      </span>
+                      {isLowStock(book) && (
+                        <span className="px-2 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800">
+                          Low stock
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                     <div>
@@ -249,6 +305,14 @@ const Books = ({ user }) => {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => openHistory(book)}
+                      disabled={deleteMode}
+                      className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors touch-manipulation disabled:opacity-50 min-h-[44px]"
+                    >
+                      <History className="w-4 h-4" />
+                      <span>History</span>
+                    </button>
                     <button
                       onClick={() => setSelectedBook({ action: 'edit', book })}
                       disabled={deleteMode && selectedBook?.action !== 'delete'}
@@ -317,9 +381,22 @@ const Books = ({ user }) => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.AUTHOR || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.YEAR || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.PUBLISHER || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{book.QTY}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                      {book.QTY}
+                      {isLowStock(book) && (
+                        <span className="ml-1 px-1.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800">Low</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{book.PRICE.toFixed(2)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2">
+                      <button
+                        onClick={() => openHistory(book)}
+                        className="flex items-center justify-center px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
+                        disabled={deleteMode}
+                        title="Transaction history"
+                      >
+                        <History className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => setSelectedBook({ action: 'edit', book })}
                         className="flex items-center justify-center px-3 py-1 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50"
@@ -589,6 +666,79 @@ const Books = ({ user }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Transaction History Modal */}
+      {historyBook && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md sm:max-w-lg p-4 sm:p-6 md:max-h-[90vh] md:overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div className="min-w-0">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Stock History</h2>
+                <p className="text-sm text-gray-500 truncate">{historyBook.TITLE} · {historyBook.ISBN}</p>
+              </div>
+              <button
+                onClick={() => setHistoryBook(null)}
+                className="text-gray-400 hover:text-gray-600 p-2"
+                aria-label="Close modal"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {historyLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader className="w-6 h-6 text-primary animate-spin" />
+                <span className="ml-2 text-primary">Loading history...</span>
+              </div>
+            ) : historyData.transactions.length === 0 ? (
+              <div className="py-8 text-center text-gray-500">
+                <History className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                <p>No transactions yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {historyData.transactions.map((t) => (
+                  <div key={t._id} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getActionBadgeClass(t.action)}`}>{t.action}</span>
+                      <span className={`text-sm font-bold ${t.qtyChanged > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {t.qtyChanged > 0 ? '+' : ''}{t.qtyChanged}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 truncate">
+                      {t.previousQty} → {t.newQty} · {t.performedBy?.username || 'Unknown'} · {new Date(t.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {historyData.total > 10 && (
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <p className="text-sm text-gray-500">Page {historyData.page} of {historyData.pages}</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setHistoryPage(Math.max(1, historyPage - 1))}
+                    disabled={historyPage === 1 || historyLoading}
+                    className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition-colors touch-manipulation min-h-[44px]"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    onClick={() => setHistoryPage(Math.min(historyData.pages, historyPage + 1))}
+                    disabled={historyPage === historyData.pages || historyLoading}
+                    className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition-colors touch-manipulation min-h-[44px]"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -137,6 +137,7 @@ router.post('/dr', async (req, res) => {
 
     await dr.save();
     await dr.populate('marketingExecutive', 'name');
+    await logUserActivity(req.user._id, 'CREATE_DR', `Created DR ${dr.drNumber} for ${dr.customerName} (${dr.items.length} items)`, req);
     res.status(201).json(dr);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -199,6 +200,7 @@ router.put('/dr/:id', async (req, res) => {
 
     await dr.save();
     await dr.populate('marketingExecutive', 'name');
+    await logUserActivity(req.user._id, 'UPDATE_DR', `Updated DR ${dr.drNumber}`, req);
     res.json(dr);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -212,7 +214,9 @@ router.delete('/dr/:id', async (req, res) => {
     if (!dr) return res.status(404).json({ message: 'Delivery Receipt not found' });
     if (dr.status !== 'draft') return res.status(400).json({ message: 'Cannot delete issued DR' });
 
+    const { drNumber } = dr;
     await dr.deleteOne();
+    await logUserActivity(req.user._id, 'DELETE_DR', `Deleted DR ${drNumber}`, req);
     res.json({ message: 'Delivery Receipt deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -269,6 +273,8 @@ router.post('/dr/:id/issue', async (req, res) => {
     // Mark DR as issued
     dr.status = 'issued';
     await dr.save();
+
+    await logUserActivity(req.user._id, 'ISSUE_DR', `Issued DR ${dr.drNumber} for ${dr.customerName}`, req);
 
     res.json({ dr, si });
   } catch (err) {
@@ -442,6 +448,7 @@ router.post('/si', async (req, res) => {
 
     await si.save();
     await si.populate('marketingExecutive', 'name');
+    await logUserActivity(req.user._id, 'CREATE_SI', `Created SI ${si.siNumber} for ${si.customerName} (${si.items.length} items)`, req);
     res.status(201).json(si);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -506,6 +513,7 @@ router.put('/si/:id', async (req, res) => {
 
     await si.save();
     await si.populate('marketingExecutive', 'name');
+    await logUserActivity(req.user._id, 'UPDATE_SI', `Updated SI ${si.siNumber}`, req);
     res.json(si);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -519,7 +527,9 @@ router.delete('/si/:id', async (req, res) => {
     if (!si) return res.status(404).json({ message: 'Sales Invoice not found' });
     if (si.status !== 'draft') return res.status(400).json({ message: 'Cannot delete issued SI' });
 
+    const { siNumber } = si;
     await si.deleteOne();
+    await logUserActivity(req.user._id, 'DELETE_SI', `Deleted SI ${siNumber}`, req);
     res.json({ message: 'Sales Invoice deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -535,6 +545,8 @@ router.post('/si/:id/issue', async (req, res) => {
 
     si.status = 'issued';
     await si.save();
+
+    await logUserActivity(req.user._id, 'ISSUE_SI', `Issued SI ${si.siNumber} for ${si.customerName}`, req);
 
     res.json(si);
   } catch (err) {

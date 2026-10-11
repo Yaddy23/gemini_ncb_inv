@@ -3,6 +3,7 @@ import { Plus, Search, Loader, FileText, Edit, Trash2, Eye, User, ChevronLeft, C
 import { drsiApi } from '../api/drsi';
 import DocumentForm from '../components/drsi/DocumentForm';
 import { formatDate, formatCurrency } from '../utils/numberToWords';
+import { useToast } from '../components/Toast';
 
 const SalesInvoices = ({ user }) => {
   const [sis, setSIs] = useState([]);
@@ -17,6 +18,8 @@ const SalesInvoices = ({ user }) => {
   const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(null);
   const [cancelling, setCancelling] = useState(null);
+
+  const { toast, confirmDialog, promptDialog } = useToast();
 
   const fetchSIs = async () => {
     setLoading(true);
@@ -61,7 +64,7 @@ const SalesInvoices = ({ user }) => {
       setEditingSI(null);
       fetchSIs();
     } catch (err) {
-      alert('Error: ' + (err.response?.data?.message || err.message));
+      toast.error('Error: ' + (err.response?.data?.message || err.message));
     } finally {
       setSubmitting(false);
     }
@@ -78,27 +81,28 @@ const SalesInvoices = ({ user }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this Sales Invoice?')) return;
+    const sure = await confirmDialog('Delete this Sales Invoice?', { title: 'Delete Document', danger: true, confirmText: 'Delete' });
+    if (!sure) return;
     try {
       await drsiApi.deleteSI(id);
       fetchSIs();
     } catch (err) {
-      alert('Error: ' + (err.response?.data?.message || err.message));
+      toast.error('Error: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const handleCancel = async (id) => {
-    const reason = window.prompt('Enter cancellation reason:');
+    const reason = await promptDialog('Enter cancellation reason:', { title: 'Cancel Document' });
     if (!reason || !reason.trim()) return;
-    const sure = window.confirm('Cancel this sales invoice? This cannot be undone.');
+    const sure = await confirmDialog('Cancel this sales invoice? This cannot be undone.', { title: 'Cancel Document', danger: true, confirmText: 'Cancel Document' });
     if (!sure) return;
     setCancelling(id);
     try {
       await drsiApi.cancelSI(id, reason.trim());
-      alert('Document cancelled');
+      toast.success('Document cancelled');
       fetchSIs();
     } catch (err) {
-      alert('Cancel failed: ' + (err.response?.data?.message || err.message));
+      toast.error('Cancel failed: ' + (err.response?.data?.message || err.message));
     } finally {
       setCancelling(null);
     }
@@ -118,7 +122,7 @@ const SalesInvoices = ({ user }) => {
       link.click();
       link.remove();
     } catch (err) {
-      alert('Export failed: ' + err.message);
+      toast.error('Export failed: ' + err.message);
     } finally {
       setExporting(null);
     }

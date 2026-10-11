@@ -69,7 +69,16 @@ const updateStock = async (req, res) => {
     // Log stock update
     await logUserActivity(req.user._id, `${action}_STOCK`, `Stock ${action.toLowerCase()}: "${book.TITLE}" (ISBN: ${book.ISBN}) - Qty: ${previousQty} -> ${newQty}`, req);
 
-    res.json(book);
+    const minQty = book.MIN_QTY ?? 5;
+    if (newQty > 0 && newQty <= minQty) {
+      res.json({
+        ...book.toObject(),
+        lowStockWarning: true,
+        warningMessage: `Low stock: ${newQty} left (min ${minQty})`
+      });
+    } else {
+      res.json(book);
+    }
   } catch (error) {
     res.status(statusCode).json({ message: error.message });
   }
