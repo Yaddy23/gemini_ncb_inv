@@ -5,6 +5,7 @@ const DeliveryReceipt = require('../models/DeliveryReceipt');
 const SalesInvoice = require('../models/SalesInvoice');
 const Book = require('../models/Book');
 const StockTransaction = require('../models/StockTransaction');
+const Customer = require('../models/Customer');
 const { protect, admin } = require('../middleware/auth');
 const documentGenerator = require('../services/documentGenerator');
 const UserLog = require('../models/UserLog');
@@ -138,6 +139,7 @@ router.post('/', async (req, res) => {
     await ef.save();
     // Populate marketingExecutive for response
     await ef.populate('marketingExecutive', 'name');
+    await Customer.recordCustomer(ef.customerName, ef.customerAddress);
     await logUserActivity(req.user._id, 'CREATE_EF', `Created EF ${ef.efNumber} for ${ef.customerName} (${ef.items.length} items)`, req);
     res.status(201).json(ef);
   } catch (err) {
@@ -200,6 +202,7 @@ router.put('/:id', async (req, res) => {
 
     await ef.save();
     await ef.populate('marketingExecutive', 'name');
+    await Customer.recordCustomer(ef.customerName, ef.customerAddress);
     await logUserActivity(req.user._id, 'UPDATE_EF', `Updated EF ${ef.efNumber}`, req);
     res.json(ef);
   } catch (err) {

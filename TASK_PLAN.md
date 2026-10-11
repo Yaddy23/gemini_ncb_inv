@@ -103,12 +103,12 @@ Each task lists priority, estimated effort, and the files it touches.
 
 ## Phase 3 — Data & reporting
 
-- [ ] **3.1 Customer entity + autocomplete**
+- [x] **3.1 Customer entity + autocomplete**
   - Customer is free-text everywhere; Customer model enables address memory, history, reporting.
   - Files: new `backend/models/Customer.js` + routes, `DocumentForm.jsx`
   - Effort: medium
 
-- [ ] **3.2 Dashboard charts + activity feed**
+- [x] **3.2 Dashboard charts + activity feed**
   - Add inbound-vs-outbound bar chart, low-stock widget, recent-transactions feed (existing endpoints).
   - Also fix Quick Actions using `window.location.href` full reloads.
   - Files: `frontend/src/pages/Dashboard.jsx`

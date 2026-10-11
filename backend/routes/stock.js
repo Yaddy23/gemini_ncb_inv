@@ -7,11 +7,17 @@ const {
   bulkImportBooks,
   exportBooks,
   getTransactions,
-  exportTransactions
+  exportTransactions,
+  getStockSummary,
+  getRecentTransactions
 } = require('../controllers/stockController');
 
 // Stock update routes (accessible to both roles)
 router.patch('/:isbn/stock', protect, updateStock);
+
+// Dashboard chart + activity feed (accessible to both roles)
+router.get('/summary', protect, getStockSummary);
+router.get('/recent', protect, getRecentTransactions);
 
 // Bulk import and export (admin only)
 router.post('/bulk-import', protect, admin, upload.single('file'), bulkImportBooks);

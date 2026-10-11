@@ -51,6 +51,7 @@ const userLogRoutes = require('./routes/userLog');
 const drsiRoutes = require('./routes/drsi');
 const efRoutes = require('./routes/ef');
 const marketingExecutiveRoutes = require('./routes/marketingExecutive');
+const customerRoutes = require('./routes/customers');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
@@ -59,6 +60,7 @@ app.use('/api/user-logs', userLogRoutes);
 app.use('/api/drsi', drsiRoutes);
 app.use('/api/ef', efRoutes);
 app.use('/api/marketing-executives', marketingExecutiveRoutes);
+app.use('/api/customers', customerRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

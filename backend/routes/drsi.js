@@ -4,6 +4,7 @@ const DeliveryReceipt = require('../models/DeliveryReceipt');
 const SalesInvoice = require('../models/SalesInvoice');
 const Book = require('../models/Book');
 const StockTransaction = require('../models/StockTransaction');
+const Customer = require('../models/Customer');
 const { protect, admin } = require('../middleware/auth');
 const documentGenerator = require('../services/documentGenerator');
 const UserLog = require('../models/UserLog');
@@ -138,6 +139,7 @@ router.post('/dr', async (req, res) => {
 
     await dr.save();
     await dr.populate('marketingExecutive', 'name');
+    await Customer.recordCustomer(dr.customerName, dr.customerAddress);
     await logUserActivity(req.user._id, 'CREATE_DR', `Created DR ${dr.drNumber} for ${dr.customerName} (${dr.items.length} items)`, req);
     res.status(201).json(dr);
   } catch (err) {
@@ -201,6 +203,7 @@ router.put('/dr/:id', async (req, res) => {
 
     await dr.save();
     await dr.populate('marketingExecutive', 'name');
+    await Customer.recordCustomer(dr.customerName, dr.customerAddress);
     await logUserActivity(req.user._id, 'UPDATE_DR', `Updated DR ${dr.drNumber}`, req);
     res.json(dr);
   } catch (err) {
@@ -493,6 +496,7 @@ router.post('/si', async (req, res) => {
 
     await si.save();
     await si.populate('marketingExecutive', 'name');
+    await Customer.recordCustomer(si.customerName, si.customerAddress);
     await logUserActivity(req.user._id, 'CREATE_SI', `Created SI ${si.siNumber} for ${si.customerName} (${si.items.length} items)`, req);
     res.status(201).json(si);
   } catch (err) {
@@ -558,6 +562,7 @@ router.put('/si/:id', async (req, res) => {
 
     await si.save();
     await si.populate('marketingExecutive', 'name');
+    await Customer.recordCustomer(si.customerName, si.customerAddress);
     await logUserActivity(req.user._id, 'UPDATE_SI', `Updated SI ${si.siNumber}`, req);
     res.json(si);
   } catch (err) {

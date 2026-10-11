@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Loader, FileText, Download, Printer, X, AlertTriangle, Trash2, CheckCircle } from 'lucide-react';
 import LineItemsTable from './LineItemsTable';
+import CustomerAutocomplete from './CustomerAutocomplete';
 import { formatDate, formatDateInput } from '../../utils/numberToWords';
 import api from '../../api/axios';
 import { useToast } from '../Toast';
@@ -433,13 +434,17 @@ const DocumentForm = ({
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name <span className="text-red-500">*</span></label>
-              <input
-                type="text"
+              <CustomerAutocomplete
                 value={formData.customerName}
-                onChange={(e) => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="Customer name"
+                onNameChange={(name) => setFormData(prev => ({ ...prev, customerName: name }))}
+                onSelect={(customer) => setFormData(prev => ({
+                  ...prev,
+                  // Fill the remembered address only when the stored one is
+                  // non-empty, so picking a customer never wipes a typed address
+                  ...(customer.address ? { customerAddress: customer.address } : {})
+                }))}
                 disabled={loading}
+                hasError={!!errors.customerName}
               />
               {errors.customerName && <p className="mt-1 text-sm text-red-500">{errors.customerName}</p>}
             </div>

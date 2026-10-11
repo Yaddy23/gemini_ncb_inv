@@ -1,24 +1,101 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { ScanBarcode, ShoppingBag, Plus, Users, Loader, AlertTriangle, CheckCircle } from 'lucide-react';
+import {
+  ScanBarcode, ShoppingBag, Plus, Users, Loader, AlertTriangle,
+  ArrowDownCircle, ArrowUpCircle, Package, SlidersHorizontal, Activity
+} from 'lucide-react';
+import StockMovementChart from '../components/dashboard/StockMovementChart';
+
+// Feed icon + tint per action; inbound/outbound reuse the chart's series
+// colors so the two views read as the same entities
+const ACTION_STYLES = {
+  INBOUND: { icon: ArrowDownCircle, color: '#2a78d6' },
+  OUTBOUND: { icon: ArrowUpCircle, color: '#eb6834' },
+  ADJUSTMENT: { icon: SlidersHorizontal, color: '#6b7280' },
+  BULK_IMPORT: { icon: Package, color: '#6b7280' },
+};
+
+const timeAgo = (date) => {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(date).toLocaleDateString();
+};
+
+const RecentActivity = ({ transactions }) => {
+  if (!transactions || transactions.length === 0) {
+    return (
+      <div className="h-40 flex items-center justify-center">
+        <p className="text-sm text-gray-400">No recent stock activity</p>
+      </div>
+    );
+  }
+
+  return (
+    <ul className="divide-y divide-gray-100">
+      {transactions.map(t => {
+        const style = ACTION_STYLES[t.action] || ACTION_STYLES.ADJUSTMENT;
+        const Icon = style.icon;
+        const qty = t.qtyChanged > 0 ? `+${t.qtyChanged}` : `${t.qtyChanged}`;
+        return (
+          <li key={t._id} className="flex items-start space-x-3 py-2.5">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ color: style.color, backgroundColor: `${style.color}1A` }}
+            >
+              <Icon className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-gray-900 truncate">
+                <span className="font-medium">{t.title || t.ISBN}</span>
+                <span className="ml-2 font-semibold">{qty}</span>
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {t.action === 'BULK_IMPORT' ? 'Bulk import' : t.action === 'ADJUSTMENT' ? 'Adjustment' : t.action.charAt(0) + t.action.slice(1).toLowerCase()}
+                {' · '}
+                {t.performedBy?.username || 'Unknown'}
+                {' · '}
+                {timeAgo(t.createdAt)}
+              </p>
+            </div>
+            <p className="text-xs text-gray-400 flex-shrink-0 pt-0.5" style={{ fontVariantNumeric: 'tabular-nums' }}>
+              QTY {t.newQty}
+            </p>
+          </li>
+        );
+      })}
+    </ul>
+  );
+};
 
 const Dashboard = ({ user }) => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalBooks: 0,
     totalQuantity: 0,
     todayTransactions: 0
   });
   const [lowStock, setLowStock] = useState({ books: [], count: 0 });
+  const [movement, setMovement] = useState([]);
+  const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchDashboard = async () => {
       try {
         setLoading(true);
-        const [statsResponse, lowStockResponse] = await Promise.all([
+        const [statsResponse, lowStockResponse, summaryResponse, recentResponse] = await Promise.all([
           api.get('/books/stats'),
-          api.get('/books/low-stock')
+          api.get('/books/low-stock'),
+          api.get('/stock/summary', { params: { days: 14 } }),
+          api.get('/stock/recent', { params: { limit: 12 } })
         ]);
 
         setStats({
@@ -30,6 +107,8 @@ const Dashboard = ({ user }) => {
           books: lowStockResponse.data.books || [],
           count: lowStockResponse.data.count || 0
         });
+        setMovement(summaryResponse.data.perDay || []);
+        setRecent(recentResponse.data.transactions || []);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load dashboard stats');
       } finally {
@@ -37,7 +116,7 @@ const Dashboard = ({ user }) => {
       }
     };
 
-    fetchStats();
+    fetchDashboard();
   }, []);
 
   if (loading) {
@@ -145,12 +224,27 @@ const Dashboard = ({ user }) => {
         </div>
       </div>
 
+      {/* Stock movement chart + recent activity */}
+      <div className="mt-6 sm:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-5 sm:p-6">
+          <StockMovementChart data={movement} />
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 sm:p-6">
+          <div className="flex items-center space-x-2 mb-2">
+            <Activity className="w-4 h-4 text-primary" />
+            <h3 className="text-base font-bold text-gray-900">Recent Activity</h3>
+          </div>
+          <RecentActivity transactions={recent} />
+        </div>
+      </div>
+
       {/* Quick Actions */}
       <div className="mt-6 sm:mt-8">
         <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 gap-3 sm:gap-4">
           <button
-            onClick={() => window.location.href = '/scan'}
+            onClick={() => navigate('/scan')}
             className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex items-center justify-between border border-gray-100 touch-manipulation min-h-[48px]"
           >
             <div className="flex-1 min-w-0">
@@ -163,7 +257,7 @@ const Dashboard = ({ user }) => {
           </button>
 
           <button
-            onClick={() => window.location.href = '/books'}
+            onClick={() => navigate('/books')}
             className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex items-center justify-between border border-gray-100 touch-manipulation min-h-[48px]"
           >
             <div className="flex-1 min-w-0">
@@ -177,7 +271,7 @@ const Dashboard = ({ user }) => {
 
           {user.role === 'Admin' && (
             <button
-              onClick={() => window.location.href = '/import-export'}
+              onClick={() => navigate('/import-export')}
               className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex items-center justify-between border border-gray-100 touch-manipulation min-h-[48px]"
             >
               <div className="flex-1 min-w-0">

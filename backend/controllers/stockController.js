@@ -572,10 +572,106 @@ const exportTransactions = async (req, res) => {
   }
 };
 
+// @desc    Daily inbound/outbound totals for the dashboard chart
+// @route   GET /api/stock/summary
+// @access  Private
+const getStockSummary = async (req, res) => {
+  try {
+    const days = Math.min(Math.max(parseInt(req.query.days) || 14, 7), 90);
+
+    // Start of the window in server-local time (same "today" getStats uses)
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (days - 1));
+
+    // Group by calendar day in the server's own timezone so the chart's days
+    // line up with how users experience "today". An IANA zone name (unlike a
+    // fixed offset) tracks DST changes across the window; fall back to the
+    // request-time offset if the runtime can't resolve one.
+    const offsetMinutes = -start.getTimezoneOffset();
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const absOffset = Math.abs(offsetMinutes);
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      || `${sign}${String(Math.floor(absOffset / 60)).padStart(2, '0')}:${String(absOffset % 60).padStart(2, '0')}`;
+
+    const buckets = await StockTransaction.aggregate([
+      { $match: { createdAt: { $gte: start } } },
+      {
+        $group: {
+          _id: {
+            day: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone } },
+            // Direction by sign, not action name: adjustments and bulk imports
+            // land on the side their quantity moves
+            direction: { $cond: [{ $gte: ['$qtyChanged', 0] }, 'inbound', 'outbound'] }
+          },
+          qty: { $sum: { $abs: '$qtyChanged' } }
+        }
+      }
+    ]);
+
+    const byDay = {};
+    buckets.forEach(bucket => {
+      const entry = (byDay[bucket._id.day] = byDay[bucket._id.day] || { inbound: 0, outbound: 0 });
+      entry[bucket._id.direction] = bucket.qty;
+    });
+
+    // Fill missing days with zeros so the chart gets a continuous axis
+    const perDay = [];
+    const cursor = new Date(start);
+    for (let i = 0; i < days; i++) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
+      perDay.push({ date: key, ...(byDay[key] || { inbound: 0, outbound: 0 }) });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    res.json({ days, perDay });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Recent stock transactions for the dashboard activity feed
+// @route   GET /api/stock/recent
+// @access  Private
+const getRecentTransactions = async (req, res) => {
+  try {
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 12, 1), 50);
+
+    const transactions = await StockTransaction.find({})
+      .populate('performedBy', 'username')
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    // Batch-fetch book titles for the feed in one query
+    const isbns = [...new Set(transactions.map(t => t.ISBN))];
+    const books = isbns.length
+      ? await Book.find({ ISBN: { $in: isbns } }).select('ISBN TITLE')
+      : [];
+    const titles = Object.fromEntries(books.map(b => [b.ISBN, b.TITLE]));
+
+    res.json({
+      transactions: transactions.map(t => ({
+        _id: t._id,
+        ISBN: t.ISBN,
+        title: titles[t.ISBN] || '',
+        action: t.action,
+        qtyChanged: t.qtyChanged,
+        newQty: t.newQty,
+        performedBy: t.performedBy ? { username: t.performedBy.username } : null,
+        createdAt: t.createdAt
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   updateStock,
   bulkImportBooks,
   exportBooks,
   getTransactions,
-  exportTransactions
+  exportTransactions,
+  getStockSummary,
+  getRecentTransactions
 };
