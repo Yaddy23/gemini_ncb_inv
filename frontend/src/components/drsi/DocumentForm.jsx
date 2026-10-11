@@ -1,9 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Loader, FileText, Download, Printer, X, AlertTriangle, Trash2, CheckCircle } from 'lucide-react';
 import LineItemsTable from './LineItemsTable';
 import { formatDate, formatDateInput } from '../../utils/numberToWords';
 import api from '../../api/axios';
 import { useToast } from '../Toast';
+
+// A draft is only worth keeping if it has meaningful content
+// (avoids junk drafts from casually opening the modal)
+const hasDraftContent = (data) => {
+  if (!data || typeof data !== 'object') return false;
+  if (data.documentNumber?.trim() || data.customerName?.trim() || data.customerAddress?.trim()) return true;
+  const items = Array.isArray(data.items) ? data.items : [];
+  return items.some(item => item?.isbn?.trim() || item?.title?.trim());
+};
 
 const DocumentForm = ({
   documentType, // 'DR', 'SI', or 'EF'
@@ -18,7 +27,7 @@ const DocumentForm = ({
   const title = isDR ? 'Delivery Receipt' : isEF ? 'Evaluation Form' : 'Sales Invoice';
   const numberLabel = isDR ? 'DR Number' : isEF ? 'EF Number' : 'SI Number';
 
-  const { toast } = useToast();
+  const { toast, confirmDialog } = useToast();
 
   const [formData, setFormData] = useState({
     documentNumber: '',
@@ -35,6 +44,13 @@ const DocumentForm = ({
   const [duplicateDialog, setDuplicateDialog] = useState({ open: false, duplicates: [], action: null, payload: null });
   const [marketingExecutives, setMarketingExecutives] = useState([]);
   const [loadingExecutives, setLoadingExecutives] = useState(false);
+
+  // Draft autosave (new documents only) - one draft per document type
+  const draftKey = `docform-draft-${documentType}`;
+  const autosaveTimerRef = useRef(null);
+  const submittedRef = useRef(false);
+  // Baseline snapshot of initialData fields, used to detect unsaved changes while editing
+  const baselineRef = useRef(null);
 
   // Fetch active marketing executives for dropdown
   useEffect(() => {
@@ -54,7 +70,7 @@ const DocumentForm = ({
 
   useEffect(() => {
     if (initialData) {
-      setFormData({
+      const mapped = {
         documentNumber: initialData.drNumber || initialData.siNumber || initialData.efNumber || '',
         date: initialData.date ? formatDateInput(initialData.date) : formatDateInput(new Date()),
         customerName: initialData.customerName || '',
@@ -63,9 +79,77 @@ const DocumentForm = ({
         poNumber: initialData.poNumber || '',
         discountPercentage: initialData.discountPercentage || 0,
         items: initialData.items?.length ? initialData.items : [{ isbn: '', title: '', qty: 1, unitPrice: 0, amount: 0 }]
-      });
+      };
+      setFormData(mapped);
+      baselineRef.current = JSON.stringify(mapped);
     }
   }, [initialData]);
+
+  // Debounced draft autosave for new documents - skips empty drafts
+  useEffect(() => {
+    if (initialData) return;
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    if (!hasDraftContent(formData)) return;
+    autosaveTimerRef.current = setTimeout(() => {
+      autosaveTimerRef.current = null;
+      try {
+        localStorage.setItem(draftKey, JSON.stringify(formData));
+      } catch (err) {
+        // Private mode / quota exceeded - fail silently
+      }
+    }, 500);
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+  }, [formData, initialData, draftKey]);
+
+  // On mount of a new document form, offer to restore a previously saved draft
+  useEffect(() => {
+    if (initialData) return;
+    let storedDraft = null;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) storedDraft = JSON.parse(raw);
+    } catch (err) {
+      storedDraft = null;
+    }
+    if (!hasDraftContent(storedDraft)) return;
+
+    const offerRestore = async () => {
+      const restore = await confirmDialog(`An unsaved ${title} draft was found. Restore it?`, { title: 'Unsaved Draft', confirmText: 'Restore' });
+      if (restore) {
+        setFormData(prev => ({
+          ...prev,
+          ...storedDraft,
+          items: Array.isArray(storedDraft.items) ? storedDraft.items : prev.items
+        }));
+      } else {
+        try {
+          localStorage.removeItem(draftKey);
+        } catch (err) {
+          // Fail silently
+        }
+      }
+    };
+    offerRestore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // On unmount, clear the draft if the form was submitted (parent unmounts after a successful save)
+  useEffect(() => {
+    return () => {
+      if (submittedRef.current) {
+        try {
+          localStorage.removeItem(draftKey);
+        } catch (err) {
+          // Fail silently
+        }
+      }
+    };
+  }, [draftKey]);
 
   // Helper function to check for duplicate ISBNs
   const checkDuplicateISBNs = (items) => {
@@ -159,7 +243,19 @@ const DocumentForm = ({
       payload.discountPercentage = formData.discountPercentage;
     }
     payload.allowDuplicates = allowDuplicates;
+    submittedRef.current = true;
     onSubmit(payload, action);
+  };
+
+  // Close guard: while editing, confirm before discarding unsaved changes.
+  // New documents keep their autosaved draft, so they close without prompting.
+  const handleClose = async () => {
+    if (loading) return;
+    if (initialData && baselineRef.current !== null && JSON.stringify(formData) !== baselineRef.current) {
+      const confirmed = await confirmDialog('You have unsaved changes. Close anyway?', { title: 'Unsaved Changes', danger: true, confirmText: 'Discard & Close' });
+      if (!confirmed) return;
+    }
+    onClose();
   };
 
   const handleExport = async (format) => {
@@ -279,7 +375,7 @@ const DocumentForm = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Overlay */}
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50" onClick={handleClose} />
 
       {/* Modal */}
       <div className="relative mx-auto mt-10 w-full max-w-5xl bg-white rounded-xl shadow-xl">
@@ -289,7 +385,7 @@ const DocumentForm = ({
             <FileText className="w-6 h-6 text-primary" />
             <span>{title} {initialData ? 'Edit' : 'New'}</span>
           </h2>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+          <button onClick={handleClose} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -431,7 +527,7 @@ const DocumentForm = ({
               </>
             )}
             <button
-              onClick={onClose}
+              onClick={handleClose}
               disabled={loading}
               className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 disabled:opacity-50"
             >

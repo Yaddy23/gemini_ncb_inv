@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Loader, FileText, Download, Printer, Edit, Trash2, Eye, AlertTriangle, CheckCircle, User, ChevronLeft, ChevronRight, XCircle } from 'lucide-react';
+import { Plus, Search, Loader, FileText, Download, Printer, Edit, Trash2, Eye, AlertTriangle, CheckCircle, User, ChevronLeft, ChevronRight, XCircle, FileOutput } from 'lucide-react';
 import { drsiApi } from '../api/drsi';
 import DocumentForm from '../components/drsi/DocumentForm';
+import DocumentPreview from '../components/drsi/DocumentPreview';
 import { formatDate, formatCurrency, numberToWords } from '../utils/numberToWords';
 import { useToast } from '../components/Toast';
 
@@ -18,6 +19,8 @@ const DeliveryReceipts = ({ user }) => {
   const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(null);
   const [cancelling, setCancelling] = useState(null);
+  const [previewDoc, setPreviewDoc] = useState(null);
+  const [linkedSI, setLinkedSI] = useState(null);
 
   const { toast, confirmDialog, promptDialog } = useToast();
 
@@ -71,13 +74,60 @@ const DeliveryReceipts = ({ user }) => {
   };
 
   const handleEdit = (dr) => {
+    setPreviewDoc(null);
+    setLinkedSI(null);
     setEditingDR(dr);
     setFormOpen(true);
   };
 
   const handleNew = () => {
+    setPreviewDoc(null);
+    setLinkedSI(null);
     setEditingDR(null);
     setFormOpen(true);
+  };
+
+  const openPreview = (doc, type) => {
+    setFormOpen(false);
+    setEditingDR(null);
+    setLinkedSI(null);
+    setPreviewDoc({ doc, type });
+  };
+
+  const handleOpenLinkedSI = async (dr) => {
+    try {
+      const res = await drsiApi.getSIs({ drRef: dr._id });
+      const si = res.data.sis?.[0];
+      if (!si) {
+        toast.info('No linked sales invoice');
+        return;
+      }
+      if (si.status === 'draft') {
+        setPreviewDoc(null);
+        setFormOpen(false);
+        setEditingDR(null);
+        setLinkedSI(si);
+      } else {
+        openPreview(si, 'SI');
+      }
+    } catch (err) {
+      toast.error('Error: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleLinkedSISubmit = async (data, action) => {
+    setSubmitting(true);
+    try {
+      await drsiApi.updateSI(linkedSI._id, data);
+      if (action === 'issue') await drsiApi.issueSI(linkedSI._id);
+      setLinkedSI(null);
+      toast.success(action === 'issue' ? 'Sales invoice issued' : 'Sales invoice updated');
+      fetchDRs();
+    } catch (err) {
+      toast.error('Error: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -245,6 +295,24 @@ const DeliveryReceipts = ({ user }) => {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => openPreview(dr, 'DR')}
+                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 touch-manipulation min-h-[44px] transition-colors"
+                        title="Preview document"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span className="text-sm font-medium">View</span>
+                      </button>
+                      {(dr.status === 'issued' || dr.status === 'cancelled') && (
+                        <button
+                          onClick={() => handleOpenLinkedSI(dr)}
+                          className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 touch-manipulation min-h-[44px] transition-colors"
+                          title="Open linked sales invoice"
+                        >
+                          <FileOutput className="w-4 h-4" />
+                          <span className="text-sm font-medium">SI</span>
+                        </button>
+                      )}
                       {user?.role === 'Admin' && dr.status === 'issued' && (
                         <button
                           onClick={() => handleCancel(dr._id)}
@@ -340,6 +408,22 @@ const DeliveryReceipts = ({ user }) => {
                       <td className="px-4 py-3 text-sm text-gray-500">{formatDate(dr.createdAt)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center space-x-1 justify-end">
+                          <button
+                            onClick={() => openPreview(dr, 'DR')}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded touch-manipulation min-h-[44px] min-w-[44px]"
+                            title="Preview document"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          {(dr.status === 'issued' || dr.status === 'cancelled') && (
+                            <button
+                              onClick={() => handleOpenLinkedSI(dr)}
+                              className="p-2 text-indigo-600 hover:bg-indigo-50 rounded touch-manipulation min-h-[44px] min-w-[44px]"
+                              title="Open linked sales invoice"
+                            >
+                              <FileOutput className="w-4 h-4" />
+                            </button>
+                          )}
                           {user?.role === 'Admin' && dr.status === 'issued' && (
                             <button
                               onClick={() => handleCancel(dr._id)}
@@ -434,6 +518,27 @@ const DeliveryReceipts = ({ user }) => {
           onClose={() => { setFormOpen(false); setEditingDR(null); }}
           loading={submitting}
           exporting={exporting}
+        />
+      )}
+
+      {/* Linked Sales Invoice Form Modal */}
+      {linkedSI && (
+        <DocumentForm
+          documentType="SI"
+          initialData={linkedSI}
+          onSubmit={handleLinkedSISubmit}
+          onClose={() => setLinkedSI(null)}
+          loading={submitting}
+          exporting={exporting}
+        />
+      )}
+
+      {/* Document Preview Modal */}
+      {previewDoc && (
+        <DocumentPreview
+          document={previewDoc.doc}
+          documentType={previewDoc.type}
+          onClose={() => setPreviewDoc(null)}
         />
       )}
     </div>

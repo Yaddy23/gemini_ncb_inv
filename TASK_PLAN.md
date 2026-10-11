@@ -78,23 +78,23 @@ Each task lists priority, estimated effort, and the files it touches.
   - Files: `backend/models/{DeliveryReceipt,SalesInvoice,EvaluationForm}.js`, `backend/routes/drsi.js`, `backend/routes/ef.js`, three list pages
   - Effort: medium
 
-- [ ] **2.2 Transactional + idempotent DR issue**
+- [x] **2.2 Transactional + idempotent DR issue**
   - DR issue decrements stock in a loop with no DB session (partial failure = inconsistent stock) and no idempotency guard (double-click = double decrement).
   - Fix: Mongoose session + `findOneAndUpdate({_id, status: 'draft'})`.
   - Files: `backend/routes/drsi.js`
   - Effort: medium
 
-- [ ] **2.3 EF → DR → SI conversion buttons in UI**
+- [x] **2.3 EF → DR → SI conversion buttons in UI**
   - Backend already auto-creates linked DR/SI on issue, but frontend has no "Generate DR from EF" / "Generate SI from DR" action (page subtitles promise it).
   - Files: three list pages, `frontend/src/api/drsi.js`, `frontend/src/api/ef.js`
   - Effort: medium
 
-- [ ] **2.4 Read-only document preview modal**
+- [x] **2.4 Read-only document preview modal**
   - Issued docs can only be exported, never inspected in-app (`Eye` icon imported but unused).
   - Files: three list pages, `DocumentForm.jsx`
   - Effort: small–medium
 
-- [ ] **2.5 Draft autosave + unsaved-changes guard**
+- [x] **2.5 Draft autosave + unsaved-changes guard**
   - Long form sessions lost on overlay click / refresh; save drafts to localStorage keyed by doc type; confirm before closing.
   - Files: `frontend/src/components/drsi/DocumentForm.jsx`
   - Effort: medium

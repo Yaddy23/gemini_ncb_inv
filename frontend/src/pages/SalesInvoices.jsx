@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Loader, FileText, Edit, Trash2, Eye, User, ChevronLeft, ChevronRight, XCircle } from 'lucide-react';
 import { drsiApi } from '../api/drsi';
 import DocumentForm from '../components/drsi/DocumentForm';
+import DocumentPreview from '../components/drsi/DocumentPreview';
 import { formatDate, formatCurrency } from '../utils/numberToWords';
 import { useToast } from '../components/Toast';
 
@@ -18,6 +19,7 @@ const SalesInvoices = ({ user }) => {
   const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(null);
   const [cancelling, setCancelling] = useState(null);
+  const [previewDoc, setPreviewDoc] = useState(null);
 
   const { toast, confirmDialog, promptDialog } = useToast();
 
@@ -71,13 +73,21 @@ const SalesInvoices = ({ user }) => {
   };
 
   const handleEdit = (si) => {
+    setPreviewDoc(null);
     setEditingSI(si);
     setFormOpen(true);
   };
 
   const handleNew = () => {
+    setPreviewDoc(null);
     setEditingSI(null);
     setFormOpen(true);
+  };
+
+  const openPreview = (doc, type) => {
+    setFormOpen(false);
+    setEditingSI(null);
+    setPreviewDoc({ doc, type });
   };
 
   const handleDelete = async (id) => {
@@ -249,6 +259,14 @@ const SalesInvoices = ({ user }) => {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => openPreview(si, 'SI')}
+                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 touch-manipulation min-h-[44px] transition-colors"
+                        title="Preview document"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span className="text-sm font-medium">View</span>
+                      </button>
                       {user?.role === 'Admin' && si.status === 'issued' && (
                         <button
                           onClick={() => handleCancel(si._id)}
@@ -346,6 +364,13 @@ const SalesInvoices = ({ user }) => {
                       <td className="px-4 py-3 text-sm text-gray-500">{formatDate(si.createdAt)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center space-x-1 justify-end">
+                          <button
+                            onClick={() => openPreview(si, 'SI')}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded touch-manipulation min-h-[44px] min-w-[44px]"
+                            title="Preview document"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
                           {user?.role === 'Admin' && si.status === 'issued' && (
                             <button
                               onClick={() => handleCancel(si._id)}
@@ -440,6 +465,15 @@ const SalesInvoices = ({ user }) => {
           onClose={() => { setFormOpen(false); setEditingSI(null); }}
           loading={submitting}
           exporting={exporting}
+        />
+      )}
+
+      {/* Document Preview Modal */}
+      {previewDoc && (
+        <DocumentPreview
+          document={previewDoc.doc}
+          documentType={previewDoc.type}
+          onClose={() => setPreviewDoc(null)}
         />
       )}
     </div>

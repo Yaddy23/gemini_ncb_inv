@@ -46,6 +46,7 @@ router.get('/dr', async (req, res) => {
       ];
     }
     if (status) query.status = status;
+    if (req.query.efRef) query.efRef = req.query.efRef;
 
     const [drs, total] = await Promise.all([
       DeliveryReceipt.find(query)
@@ -226,57 +227,94 @@ router.delete('/dr/:id', async (req, res) => {
 // Issue DR - decrement stock & create linked SI draft
 router.post('/dr/:id/issue', async (req, res) => {
   try {
-    const dr = await DeliveryReceipt.findById(req.params.id);
-    if (!dr) return res.status(404).json({ message: 'Delivery Receipt not found' });
-    if (dr.status !== 'draft') return res.status(400).json({ message: 'DR already issued or cancelled' });
+    // Pre-validate all items before mutating anything
+    const existing = await DeliveryReceipt.findById(req.params.id);
+    if (!existing) return res.status(404).json({ message: 'Delivery Receipt not found' });
 
-    // Decrement stock for each item
-    for (const item of dr.items) {
+    for (const item of existing.items) {
       const book = await Book.findOne({ ISBN: item.isbn });
       if (!book) {
         return res.status(400).json({ message: `Book not found: ${item.isbn}` });
       }
-
-      const newQty = book.QTY - item.qty;
-      if (newQty < 0) {
+      if (book.QTY < item.qty) {
         return res.status(400).json({ message: `Insufficient stock for ${item.isbn} (${book.TITLE}). Available: ${book.QTY}, Requested: ${item.qty}` });
       }
-
-      const previousQty = book.QTY;
-      book.QTY = newQty;
-      await book.save();
-
-      // Create stock transaction record
-      await StockTransaction.create({
-        ISBN: book.ISBN,
-        action: 'OUTBOUND',
-        qtyChanged: -item.qty,
-        previousQty,
-        newQty: book.QTY,
-        performedBy: req.user._id,
-      });
     }
 
-    // Create linked SI draft
-    const si = new SalesInvoice({
-      siNumber: `SI-${dr.drNumber.replace('DR-', '')}`, // Derive from DR number
-      drRef: dr._id,
-      date: new Date(),
-      customerName: dr.customerName,
-      customerAddress: dr.customerAddress,
-      poNumber: '',
-      items: dr.items.map(item => ({ ...item.toObject() })),
-      createdBy: req.user._id
-    });
-    await si.save();
+    // Atomic claim (guards double-click): flip draft -> issued
+    const dr = await DeliveryReceipt.findOneAndUpdate(
+      { _id: req.params.id, status: 'draft' },
+      { status: 'issued' },
+      { new: true }
+    );
+    if (!dr) return res.status(400).json({ message: 'DR already issued or cancelled' });
 
-    // Mark DR as issued
-    dr.status = 'issued';
-    await dr.save();
+    // Track every stock mutation so we can roll back on partial failure
+    const mutations = [];
 
-    await logUserActivity(req.user._id, 'ISSUE_DR', `Issued DR ${dr.drNumber} for ${dr.customerName}`, req);
+    try {
+      // Decrement stock for each item
+      for (const item of dr.items) {
+        const book = await Book.findOne({ ISBN: item.isbn });
+        if (!book) {
+          throw new Error(`Book not found: ${item.isbn}`);
+        }
 
-    res.json({ dr, si });
+        // Re-check at mutation time: stock may have changed since pre-validation
+        if (book.QTY < item.qty) {
+          throw new Error(`Insufficient stock for ${item.isbn} (${book.TITLE}). Available: ${book.QTY}, Requested: ${item.qty}`);
+        }
+
+        const previousQty = book.QTY;
+        book.QTY = previousQty - item.qty;
+        await book.save();
+        const mutation = { book, previousQty, qtyTaken: item.qty, transactionRecord: null };
+        mutations.push(mutation);
+
+        // Create stock transaction record
+        mutation.transactionRecord = await StockTransaction.create({
+          ISBN: book.ISBN,
+          action: 'OUTBOUND',
+          qtyChanged: -item.qty,
+          previousQty,
+          newQty: book.QTY,
+          performedBy: req.user._id,
+        });
+      }
+
+      // Create linked SI draft
+      const si = new SalesInvoice({
+        siNumber: `SI-${dr.drNumber.replace('DR-', '')}`, // Derive from DR number
+        drRef: dr._id,
+        date: new Date(),
+        customerName: dr.customerName,
+        customerAddress: dr.customerAddress,
+        poNumber: '',
+        items: dr.items.map(item => ({ ...item.toObject() })),
+        createdBy: req.user._id
+      });
+      await si.save();
+
+      await logUserActivity(req.user._id, 'ISSUE_DR', `Issued DR ${dr.drNumber} for ${dr.customerName}`, req);
+
+      res.json({ dr, si });
+    } catch (err) {
+      // Roll back: restore stock, remove transaction records, revert DR to draft
+      for (const mutation of mutations) {
+        try {
+          mutation.book.QTY = mutation.previousQty;
+          await mutation.book.save();
+          if (mutation.transactionRecord) {
+            await StockTransaction.deleteOne({ _id: mutation.transactionRecord._id });
+          }
+        } catch (rollbackErr) {
+          console.error(`Rollback failed for ISBN ${mutation.book.ISBN}:`, rollbackErr);
+        }
+      }
+      await DeliveryReceipt.findOneAndUpdate({ _id: dr._id, status: 'issued' }, { status: 'draft' });
+      console.error('Issue DR failed, rolled back:', err);
+      return res.status(500).json({ message: err.message });
+    }
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -321,8 +359,13 @@ router.post('/dr/:id/cancel', async (req, res) => {
     // Restore stock for each item (reverse of issue)
     const missingBooks = [];
     for (const item of dr.items) {
-      const book = await Book.findOne({ ISBN: item.isbn });
-      if (book) {
+      try {
+        const book = await Book.findOne({ ISBN: item.isbn });
+        if (!book) {
+          missingBooks.push(item.isbn);
+          continue;
+        }
+
         const previousQty = book.QTY;
         book.QTY += item.qty;
         await book.save();
@@ -336,7 +379,8 @@ router.post('/dr/:id/cancel', async (req, res) => {
           newQty: book.QTY,
           performedBy: req.user._id,
         });
-      } else {
+      } catch (err) {
+        console.error(`Failed to restore stock for ISBN ${item.isbn}:`, err);
         missingBooks.push(item.isbn);
       }
     }
@@ -386,6 +430,7 @@ router.get('/si', async (req, res) => {
       ];
     }
     if (status) query.status = status;
+    if (req.query.drRef) query.drRef = req.query.drRef;
 
     const [sis, total] = await Promise.all([
       SalesInvoice.find(query)
@@ -539,12 +584,13 @@ router.delete('/si/:id', async (req, res) => {
 // Issue SI
 router.post('/si/:id/issue', async (req, res) => {
   try {
-    const si = await SalesInvoice.findById(req.params.id);
-    if (!si) return res.status(404).json({ message: 'Sales Invoice not found' });
-    if (si.status !== 'draft') return res.status(400).json({ message: 'SI already issued or cancelled' });
-
-    si.status = 'issued';
-    await si.save();
+    // Atomic claim (guards double-click): flip draft -> issued
+    const si = await SalesInvoice.findOneAndUpdate(
+      { _id: req.params.id, status: 'draft' },
+      { status: 'issued' },
+      { new: true }
+    );
+    if (!si) return res.status(400).json({ message: 'SI already issued or cancelled' });
 
     await logUserActivity(req.user._id, 'ISSUE_SI', `Issued SI ${si.siNumber} for ${si.customerName}`, req);
 

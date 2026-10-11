@@ -226,30 +226,37 @@ router.delete('/:id', async (req, res) => {
 // Issue EF - create linked DR draft (does NOT decrement stock)
 router.post('/:id/issue', async (req, res) => {
   try {
-    const ef = await EvaluationForm.findById(req.params.id);
-    if (!ef) return res.status(404).json({ message: 'Evaluation Form not found' });
-    if (ef.status !== 'draft') return res.status(400).json({ message: 'EF already issued or cancelled' });
+    // Atomic claim (guards double-click): flip draft -> issued BEFORE creating the linked DR
+    const ef = await EvaluationForm.findOneAndUpdate(
+      { _id: req.params.id, status: 'draft' },
+      { status: 'issued' },
+      { new: true }
+    );
+    if (!ef) return res.status(400).json({ message: 'EF already issued or cancelled' });
 
-    // Create linked DR draft from EF data
-    const dr = new DeliveryReceipt({
-      drNumber: `DR-${ef.efNumber.replace('EF-', '')}`, // Derive from EF number
-      efRef: ef._id, // Reference back to EF
-      date: new Date(),
-      customerName: ef.customerName,
-      customerAddress: ef.customerAddress,
-      marketingExecutive: ef.marketingExecutive,
-      items: ef.items.map(item => ({ ...item.toObject() })),
-      createdBy: req.user._id
-    });
-    await dr.save();
+    try {
+      // Create linked DR draft from EF data
+      const dr = new DeliveryReceipt({
+        drNumber: `DR-${ef.efNumber.replace('EF-', '')}`, // Derive from EF number
+        efRef: ef._id, // Reference back to EF
+        date: new Date(),
+        customerName: ef.customerName,
+        customerAddress: ef.customerAddress,
+        marketingExecutive: ef.marketingExecutive,
+        items: ef.items.map(item => ({ ...item.toObject() })),
+        createdBy: req.user._id
+      });
+      await dr.save();
 
-    // Mark EF as issued
-    ef.status = 'issued';
-    await ef.save();
+      await logUserActivity(req.user._id, 'ISSUE_EF', `Issued EF ${ef.efNumber} for ${ef.customerName}`, req);
 
-    await logUserActivity(req.user._id, 'ISSUE_EF', `Issued EF ${ef.efNumber} for ${ef.customerName}`, req);
-
-    res.json({ ef, dr });
+      res.json({ ef, dr });
+    } catch (err) {
+      // Roll back the EF claim so a retry can issue it again
+      await EvaluationForm.findOneAndUpdate({ _id: ef._id, status: 'issued' }, { status: 'draft' });
+      console.error('Issue EF failed, rolled back:', err);
+      return res.status(500).json({ message: err.message });
+    }
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
