@@ -72,7 +72,7 @@ const DocumentForm = ({
     if (initialData) {
       const mapped = {
         documentNumber: initialData.drNumber || initialData.siNumber || initialData.efNumber || '',
-        date: initialData.date ? formatDateInput(initialData.date) : formatDateInput(new Date()),
+        date: initialData.date ? formatDateInput(initialData.date) : '',
         customerName: initialData.customerName || '',
         customerAddress: initialData.customerAddress || '',
         marketingExecutive: initialData.marketingExecutive?._id || initialData.marketingExecutive || '',
@@ -407,7 +407,7 @@ const DocumentForm = ({
               {errors.documentNumber && <p className="mt-1 text-sm text-red-500">{errors.documentNumber}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
               <input
                 type="date"
                 value={formData.date}

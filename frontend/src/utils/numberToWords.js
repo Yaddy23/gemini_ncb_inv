@@ -50,6 +50,7 @@ export function numberToWords(num) {
 }
 
 export function formatDate(date) {
+  if (!date) return '—'; // documents can have no date
   const d = new Date(date);
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -58,6 +59,7 @@ export function formatDate(date) {
 }
 
 export function formatDateInput(date) {
+  if (!date) return '';
   const d = new Date(date);
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');

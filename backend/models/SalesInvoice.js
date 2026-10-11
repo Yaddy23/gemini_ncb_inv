@@ -11,7 +11,7 @@ const lineItemSchema = new mongoose.Schema({
 const salesInvoiceSchema = new mongoose.Schema({
   siNumber: { type: String, required: true, unique: true, trim: true },
   drRef: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryReceipt' },
-  date: { type: Date, required: true, default: Date.now },
+  date: { type: Date, default: null }, // optional - some clients don't want a date on the document
   customerName: { type: String, required: true, trim: true },
   customerAddress: { type: String, trim: true },
   marketingExecutive: { type: mongoose.Schema.Types.ObjectId, ref: 'MarketingExecutive' },

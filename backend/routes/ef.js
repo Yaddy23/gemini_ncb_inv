@@ -124,7 +124,7 @@ router.post('/', async (req, res) => {
 
     const ef = new EvaluationForm({
       efNumber,
-      date: date ? new Date(date) : new Date(),
+      date: date ? new Date(date) : null,
       customerName,
       customerAddress,
       marketingExecutive: marketingExecutive || null,
@@ -173,7 +173,7 @@ router.put('/:id', async (req, res) => {
       ef.efNumber = efNumber;
     }
 
-    if (date) ef.date = new Date(date);
+    if (date !== undefined) ef.date = date ? new Date(date) : null;
     if (customerName) ef.customerName = customerName;
     if (customerAddress !== undefined) ef.customerAddress = customerAddress;
     if (marketingExecutive !== undefined) ef.marketingExecutive = marketingExecutive || null;
@@ -239,7 +239,7 @@ router.post('/:id/issue', async (req, res) => {
       const dr = new DeliveryReceipt({
         drNumber: `DR-${ef.efNumber.replace('EF-', '')}`, // Derive from EF number
         efRef: ef._id, // Reference back to EF
-        date: new Date(),
+        date: ef.date || null, // inherit the EF's date (or its absence)
         customerName: ef.customerName,
         customerAddress: ef.customerAddress,
         marketingExecutive: ef.marketingExecutive,

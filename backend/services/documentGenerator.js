@@ -99,8 +99,9 @@ function numberToWords(num) {
   return words + ' Only';
 }
 
-// Helper: Format date as MM/DD/YYYY
+// Helper: Format date as MM/DD/YYYY (empty string when there is no date)
 function formatDate(date) {
+  if (!date) return '';
   const d = new Date(date);
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -165,8 +166,8 @@ async function fillEFSheet(workbook, data) {
     setCellValue(sheet, 'G4', meName);
   }
 
-  // Date in G5/H5 (overwrite TODAY() formula with actual EF date)
-  const dateValue = data.date ? formatDate(data.date) : formatDate(new Date());
+  // Date in G5/H5 (overwrite TODAY() formula with the EF's date - blank if none)
+  const dateValue = formatDate(data.date);
   const g5Cell = setCellValue(sheet, 'G5', dateValue);
   g5Cell.numFmt = 'mm/dd/yyyy';
   const h5Cell = setCellValue(sheet, 'H5', dateValue);

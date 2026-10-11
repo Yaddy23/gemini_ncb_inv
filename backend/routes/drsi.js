@@ -125,7 +125,7 @@ router.post('/dr', async (req, res) => {
 
     const dr = new DeliveryReceipt({
       drNumber,
-      date: date ? new Date(date) : new Date(),
+      date: date ? new Date(date) : null,
       customerName,
       customerAddress,
       marketingExecutive: marketingExecutive || null,
@@ -174,7 +174,7 @@ router.put('/dr/:id', async (req, res) => {
       dr.drNumber = drNumber;
     }
 
-    if (date) dr.date = new Date(date);
+    if (date !== undefined) dr.date = date ? new Date(date) : null;
     if (customerName) dr.customerName = customerName;
     if (customerAddress !== undefined) dr.customerAddress = customerAddress;
     if (marketingExecutive !== undefined) dr.marketingExecutive = marketingExecutive || null;
@@ -286,7 +286,7 @@ router.post('/dr/:id/issue', async (req, res) => {
       const si = new SalesInvoice({
         siNumber: `SI-${dr.drNumber.replace('DR-', '')}`, // Derive from DR number
         drRef: dr._id,
-        date: new Date(),
+        date: dr.date || null, // inherit the DR's date (or its absence)
         customerName: dr.customerName,
         customerAddress: dr.customerAddress,
         poNumber: '',
@@ -478,7 +478,7 @@ router.post('/si', async (req, res) => {
     const si = new SalesInvoice({
       siNumber,
       drRef: drRef || null,
-      date: date ? new Date(date) : new Date(),
+      date: date ? new Date(date) : null,
       customerName,
       customerAddress,
       marketingExecutive: marketingExecutive || null,
@@ -529,7 +529,7 @@ router.put('/si/:id', async (req, res) => {
       si.siNumber = siNumber;
     }
 
-    if (date) si.date = new Date(date);
+    if (date !== undefined) si.date = date ? new Date(date) : null;
     if (customerName) si.customerName = customerName;
     if (customerAddress !== undefined) si.customerAddress = customerAddress;
     if (marketingExecutive !== undefined) si.marketingExecutive = marketingExecutive || null;
