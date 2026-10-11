@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../api/axios';
 import { ShoppingBag, Search, Plus, Barcode, Trash, Edit, Loader, CheckCircle, AlertTriangle, History } from 'lucide-react';
+import { useToast } from '../components/Toast';
 
 const Books = ({ user }) => {
+  const { confirmDialog } = useToast();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
@@ -164,6 +166,12 @@ const Books = ({ user }) => {
 
   const handleDeleteBook = async (isbn) => {
     if (deleteMode) {
+      const book = books.find(b => b.ISBN === isbn);
+      const sure = await confirmDialog(
+        `Delete "${book?.TITLE || isbn}"? This book and its stock record will be removed. This cannot be undone.`,
+        { title: 'Delete Book', danger: true, confirmText: 'Delete' }
+      );
+      if (!sure) return;
       try {
         await api.delete(`/books/${isbn}`);
         setDeleteMode(false);
