@@ -601,7 +601,7 @@ const Books = ({ user }) => {
                     </>
                   ) : (
                     <>
-                      <span>{selectedBook.action === 'create' ? 'Add Book' : 'Update Book'}</span>
+                      <span>{selectedBook?.action === 'create' ? 'Add Book' : 'Update Book'}</span>
                     </>
                   )}
                 </button>
