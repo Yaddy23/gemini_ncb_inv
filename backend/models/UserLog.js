@@ -54,9 +54,10 @@ const userLogSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster querying
-userLogSchema.index({ userId: 1, timestamp: -1 });
+// Index for faster querying (createdAt is mongoose's timestamps field;
+// the old timestamp indexes pointed at a field that never existed)
+userLogSchema.index({ userId: 1, createdAt: -1 });
 userLogSchema.index({ action: 1 });
-userLogSchema.index({ timestamp: -1 });
+userLogSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('UserLog', userLogSchema);

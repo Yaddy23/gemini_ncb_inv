@@ -32,15 +32,15 @@ const getUserLogs = async (req, res) => {
     if (action) query.action = action;
     if (userId) query.userId = userId;
     if (startDate || endDate) {
-      query.timestamp = {};
-      if (startDate) query.timestamp.$gte = new Date(startDate);
-      if (endDate) query.timestamp.$lte = new Date(endDate);
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
     }
 
     // Execute query with pagination
     const logs = await UserLog.find(query)
       .populate('userId', 'username email role')
-      .sort({ timestamp: -1 })
+      .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
@@ -71,15 +71,15 @@ const exportUserLogs = async (req, res) => {
     if (action) query.action = action;
     if (userId) query.userId = userId;
     if (startDate || endDate) {
-      query.timestamp = {};
-      if (startDate) query.timestamp.$gte = new Date(startDate);
-      if (endDate) query.timestamp.$lte = new Date(endDate);
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
     }
 
     // Fetch logs
     const logs = await UserLog.find(query)
       .populate('userId', 'username email role')
-      .sort({ timestamp: -1 });
+      .sort({ createdAt: -1 });
 
     // If no logs found
     if (logs.length === 0) {
@@ -117,7 +117,7 @@ const exportUserLogs = async (req, res) => {
         details: log.details || '',
         ipAddress: log.ipAddress || '',
         userAgent: log.userAgent || '',
-        timestamp: log.timestamp.toLocaleString()
+        timestamp: log.createdAt.toLocaleString()
       });
     });
 
