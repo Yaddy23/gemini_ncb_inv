@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import api from '../api/axios';
 import * as XLSX from 'xlsx';
-import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Trash2, RotateCcw, Camera, X, Volume2, VolumeX, Upload, Download, FileText, PlusCircle, MinusCircle } from 'lucide-react';
+import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Trash2, RotateCcw, Camera, X, Volume2, VolumeX, Upload, Download, FileText, PlusCircle, MinusCircle, AlertCircle } from 'lucide-react';
+import { useToast } from '../components/Toast';
 
 const Scan = ({ user }) => {
+  const { toast } = useToast();
   const [mode, setMode] = useState(null); // 'inbound' | 'outbound' | null
   const [isbn, setIsbn] = useState('');
   const [bookInfo, setBookInfo] = useState(null);
@@ -217,6 +219,20 @@ const Scan = ({ user }) => {
           }
 
           const book = lookupResponse.data;
+
+          // Check for reserved or out of stock status and show warning toast
+          const reservedQty = book.reservedQty || 0;
+          const availableStock = book.QTY - reservedQty;
+
+          if (item.mode === 'outbound') {
+            if (book.QTY === 0) {
+              toast.error(`⚠️ "${book.TITLE}" is OUT OF STOCK (0 available)`);
+            } else if (reservedQty > 0 && availableStock <= 0) {
+              toast.error(`⚠️ "${book.TITLE}" is FULLY RESERVED (${reservedQty} reserved, 0 available)`);
+            } else if (reservedQty > 0) {
+              toast.info(`⚠️ "${book.TITLE}" has ${reservedQty} reserved (${availableStock} available)`);
+            }
+          }
 
           // Process stock action
           const stockResponse = await api.patch(`/stock/${book.ISBN}/stock`, {
@@ -1184,6 +1200,16 @@ const Scan = ({ user }) => {
                         <span className={`font-bold text-lg ${mode === 'inbound' ? 'text-green-600' : 'text-red-600'}`}>
                           Stock: {bookInfo.QTY}
                         </span>
+                        {(bookInfo.reservedQty && bookInfo.reservedQty > 0) && (
+                          <>
+                            <span className="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded text-xs">
+                              Reserved: {bookInfo.reservedQty}
+                            </span>
+                            <span className="font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs">
+                              Available: {bookInfo.QTY - bookInfo.reservedQty}
+                            </span>
+                          </>
+                        )}
                         {bookInfo.SUBJECT && <span className="text-gray-500">{bookInfo.SUBJECT}</span>}
                       </div>
                     </div>
