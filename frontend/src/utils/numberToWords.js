@@ -25,7 +25,7 @@ export function numberToWords(num) {
 
   if (num === 0) return 'Zero Pesos Only';
 
-  const pesos = Math.floor(num);
+  let pesos = Math.floor(num);
   const centavos = Math.round((num - pesos) * 100);
 
   let words = '';

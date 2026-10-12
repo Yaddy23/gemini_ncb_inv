@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect, admin } = require('../middleware/auth');
 const {
   getBooks,
+  getBookCatalog,
   lookupBookByISBN,
   createBook,
   updateBook,
@@ -16,6 +17,7 @@ const {
 router.get('/', protect, getBooks);
 router.get('/stats', protect, getStats);
 router.get('/out-of-stock', protect, getOutOfStockBooks);
+router.get('/catalog', protect, getBookCatalog);
 router.get('/lookup/:isbn', protect, lookupBookByISBN);
 router.get('/:isbn/transactions', protect, getBookTransactions);
 

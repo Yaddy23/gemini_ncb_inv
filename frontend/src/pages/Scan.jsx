@@ -1,12 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import api from '../api/axios';
 import * as XLSX from 'xlsx';
 import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Trash2, RotateCcw, Camera, X, Volume2, VolumeX, Upload, Download, FileText, PlusCircle, MinusCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { useOnline } from '../context/OnlineContext';
+import { enqueueScan, getPendingItems, drainQueue, registerBackgroundSync } from '../lib/offlineQueue';
+import { lookupLocal, adjustLocalStock, refreshCatalog } from '../lib/bookCatalog';
 
 const Scan = ({ user }) => {
   const { toast } = useToast();
+  const { isOnline, registerDrainHandler } = useOnline();
   const [mode, setMode] = useState(null); // 'inbound' | 'outbound' | null
   const [isbn, setIsbn] = useState('');
   const [bookInfo, setBookInfo] = useState(null);
@@ -25,14 +29,10 @@ const Scan = ({ user }) => {
   const [scanResult, setScanResult] = useState(null); // { type: 'success'|'error', book?, message? }
   const [isCameraPaused, setIsCameraPaused] = useState(false); // Camera pause after scan in fullscreen
 
-  // Offline queue state - persisted to localStorage
-  const [scanQueue, setScanQueue] = useState(() => {
-    try {
-      const saved = localStorage.getItem('scanQueue_v1');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-  const [isOnline, setIsOnline] = useState(true);
+  // Offline queue state - source of truth is IndexedDB (shared with the
+  // service worker); this list is the UI view of pending items.
+  // Online state comes from OnlineContext (shared with the global banner).
+  const [scanQueue, setScanQueue] = useState([]);
   const [flushing, setFlushing] = useState(false);
 
   // Import state
@@ -50,6 +50,7 @@ const Scan = ({ user }) => {
   const fullscreenContainerRef = useRef(null); // Ref for fullscreen parent container
   const scanQueueRef = useRef(scanQueue); // Latest queue, so stock checks see scans not yet flushed
   scanQueueRef.current = scanQueue;
+  const flushQueueRef = useRef(null); // Latest flushQueue, for the stable drain-handler registration
 
   // Mobile detection for responsive UI
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
@@ -102,38 +103,34 @@ const Scan = ({ user }) => {
     setScanResult(null);
   }, [mode, scanMethod]);
 
-  // Persist scan queue to localStorage
-  useEffect(() => {
+  // Load pending queue items from IndexedDB. Re-loaded whenever the queue
+  // changes anywhere (own enqueues, page drains, or service-worker
+  // Background Sync drains) via the 'offline-queue-changed' event.
+  const reloadQueueFromIdb = useCallback(async () => {
     try {
-      localStorage.setItem('scanQueue_v1', JSON.stringify(scanQueue));
+      const items = await getPendingItems();
+      setScanQueue(items.map(item => ({
+        id: item.id,
+        isbn: item.meta.isbn,
+        mode: item.meta.mode,
+        qty: item.meta.qty || 1,
+        timestamp: item.meta.timestamp
+      })));
     } catch (err) {
-      console.warn('Failed to persist scan queue:', err);
+      console.warn('Failed to load offline queue:', err);
     }
-  }, [scanQueue]);
-
-  // Online/offline detection
-  useEffect(() => {
-    const updateOnline = () => setIsOnline(navigator.onLine);
-    updateOnline();
-    window.addEventListener('online', updateOnline);
-    window.addEventListener('offline', updateOnline);
-    return () => {
-      window.removeEventListener('online', updateOnline);
-      window.removeEventListener('offline', updateOnline);
-    };
   }, []);
 
-  // Flush queue when coming online or queue changes
   useEffect(() => {
-    if (isOnline && scanQueue.length > 0 && !flushing) {
-      flushQueue();
-    }
-  }, [isOnline, scanQueue.length]);
+    reloadQueueFromIdb();
+    window.addEventListener('offline-queue-changed', reloadQueueFromIdb);
+    return () => window.removeEventListener('offline-queue-changed', reloadQueueFromIdb);
+  }, [reloadQueueFromIdb]);
 
   // Flush queue when mode is selected (in case queue has items from previous session)
   useEffect(() => {
-    if (mode && scanQueue.length > 0 && !flushing) {
-      flushQueue();
+    if (mode && scanQueue.length > 0 && !flushing && isOnline) {
+      flushQueueRef.current?.();
     }
   }, [mode]);
 
@@ -157,69 +154,102 @@ const Scan = ({ user }) => {
     // Clear ISBN immediately so camera can scan next barcode
     setIsbn('');
 
-    // First, look up the book to check stock status BEFORE adding to queue
+    // Look up the book to check stock status BEFORE adding to queue.
+    // Online: live lookup from the server. Offline: the locally cached
+    // catalog (synced whenever the app last had connectivity).
+    let book;
     try {
-      const lookupResponse = await api.get(`/books/lookup/${code}`);
+      if (isOnline) {
+        const lookupResponse = await api.get(`/books/lookup/${code}`);
 
-      if (!lookupResponse.data || !lookupResponse.data.ISBN) {
-        throw new Error('Book not found in inventory');
-      }
+        if (!lookupResponse.data || !lookupResponse.data.ISBN) {
+          throw new Error('Book not found in inventory');
+        }
 
-      const book = lookupResponse.data;
-
-      // For outbound scans, check if book is out of stock or fully reserved
-      if (mode === 'outbound') {
-        const reservedQty = book.reservedQty || 0;
-        const availableStock = book.QTY - reservedQty;
-        // Outbound scans still pending in the queue will also ship this book,
-        // so they reduce what is still available right now
-        const pendingOutQty = scanQueueRef.current
-          .filter(q => q.mode === 'outbound' && q.isbn === code)
-          .reduce((sum, q) => sum + (q.qty || 1), 0);
-        const remainingAvailable = availableStock - pendingOutQty;
-
-        if (book.QTY === 0) {
-          toast.error(`⛔ "${book.TITLE}" is OUT OF STOCK - cannot ship`);
-          setScanResult({
-            type: 'error',
-            message: `"${book.TITLE}" is OUT OF STOCK (0 available)`,
-            scannedIsbn: code
-          });
-          return; // Block the scan - don't add to queue
-        } else if (remainingAvailable <= 0) {
-          const reason = availableStock <= 0
-            ? `FULLY RESERVED (${reservedQty} reserved, 0 available)`
-            : `NO AVAILABLE STOCK LEFT (${reservedQty} reserved, ${pendingOutQty} already queued for shipping)`;
-          toast.error(`⛔ "${book.TITLE}" is ${reason} - cannot ship`);
-          setScanResult({
-            type: 'error',
-            message: `"${book.TITLE}" is ${reason}`,
-            scannedIsbn: code
-          });
-          return; // Block the scan - don't add to queue
-        } else if (reservedQty > 0) {
-          // Warn but allow (some stock available)
-          toast.info(`⚠️ "${book.TITLE}" has ${reservedQty} reserved (${remainingAvailable} available)`);
+        book = lookupResponse.data;
+      } else {
+        book = await lookupLocal(code);
+        if (!book) {
+          throw new Error('Not found in offline catalog - connect once to sync the book catalog');
         }
       }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message;
+      toast.error(`⛔ ${msg}`);
+      setScanResult({
+        type: 'error',
+        message: msg,
+        scannedIsbn: code
+      });
+      return; // Don't add to queue on error
+    }
 
-      // Create queue item with unique ID (only if not blocked)
-      const queueItem = {
-        id: Date.now() + Math.random(),
+    // For outbound scans, check if book is out of stock or fully reserved
+    if (mode === 'outbound') {
+      const reservedQty = book.reservedQty || 0;
+      const availableStock = book.QTY - reservedQty;
+      // Outbound scans still pending in the queue will also ship this book,
+      // so they reduce what is still available right now
+      const pendingOutQty = scanQueueRef.current
+        .filter(q => q.mode === 'outbound' && q.isbn === code)
+        .reduce((sum, q) => sum + (q.qty || 1), 0);
+      const remainingAvailable = availableStock - pendingOutQty;
+
+      if (book.QTY === 0) {
+        toast.error(`⛔ "${book.TITLE}" is OUT OF STOCK - cannot ship`);
+        setScanResult({
+          type: 'error',
+          message: `"${book.TITLE}" is OUT OF STOCK (0 available)`,
+          scannedIsbn: code
+        });
+        return; // Block the scan - don't add to queue
+      } else if (remainingAvailable <= 0) {
+        const reason = availableStock <= 0
+          ? `FULLY RESERVED (${reservedQty} reserved, 0 available)`
+          : `NO AVAILABLE STOCK LEFT (${reservedQty} reserved, ${pendingOutQty} already queued for shipping)`;
+        toast.error(`⛔ "${book.TITLE}" is ${reason} - cannot ship`);
+        setScanResult({
+          type: 'error',
+          message: `"${book.TITLE}" is ${reason}`,
+          scannedIsbn: code
+        });
+        return; // Block the scan - don't add to queue
+      } else if (reservedQty > 0) {
+        // Warn but allow (some stock available)
+        toast.info(`⚠️ "${book.TITLE}" has ${reservedQty} reserved (${remainingAvailable} available)`);
+      }
+    }
+
+      // Enqueue the scan for sync (persisted to IndexedDB; drained by the
+      // page flush or the service worker's Background Sync)
+      const queued = await enqueueScan({
+        apiBase: api.defaults.baseURL || '/api',
+        token: localStorage.getItem('token'),
         isbn: code,
-        mode: mode,
+        title: book.TITLE,
+        mode,
+        qty: 1
+      });
+      setScanQueue(prev => [...prev, {
+        id: queued.id,
+        isbn: code,
+        mode,
         qty: 1,
-        timestamp: new Date().toLocaleTimeString(),
-        pending: true
-      };
+        timestamp: queued.meta.timestamp
+      }]);
 
-      // Add to queue (persisted to localStorage via effect)
-      setScanQueue(prev => [...prev, queueItem]);
+      // Keep the offline catalog in step so repeated offline scans still
+      // hit the stock validation
+      adjustLocalStock(code, mode === 'inbound' ? 1 : -1).catch(() => {});
 
       // Optimistically add to recent scans with 'pending' flag
       setRecentScans(prev => [
         {
-          ...queueItem,
+          id: queued.id,
+          isbn: code,
+          mode,
+          qty: 1,
+          timestamp: queued.meta.timestamp,
           title: book.TITLE,
           action: mode === 'inbound' ? 'IN' : 'OUT',
           newStock: mode === 'inbound' ? (book.QTY + 1) : (book.QTY - 1),
@@ -235,17 +265,6 @@ const Scan = ({ user }) => {
         bookTitle: book.TITLE
       });
 
-    } catch (err) {
-      const msg = err.response?.data?.message || err.message;
-      toast.error(`⛔ ${msg}`);
-      setScanResult({
-        type: 'error',
-        message: msg,
-        scannedIsbn: code
-      });
-      return; // Don't add to queue on error
-    }
-
     // Re-focus input for next scan
     setTimeout(() => {
       if (isbnInputRef.current) {
@@ -253,93 +272,82 @@ const Scan = ({ user }) => {
       }
     }, 50);
 
-    // If online, try to flush immediately
+    // If online, try to flush immediately. Offline: ask the service worker
+    // to sync when connectivity returns, even if the page is closed by
+    // then (Chromium browsers; elsewhere it syncs on next app open).
     if (isOnline && !flushing) {
       flushQueue();
+    } else {
+      registerBackgroundSync();
     }
   };
 
-  // Flush offline scan queue to server
+  // Flush offline scan queue to server.
+  // The queue itself lives in IndexedDB and the drain logic is shared with
+  // the service worker (offlineQueue.drainQueue) - this adds the per-item
+  // UI updates on top (recent scans, book info, toasts).
   const flushQueue = async () => {
-    if (flushing || scanQueue.length === 0 || !isOnline) return;
+    if (flushing || !isOnline) return;
 
     setFlushing(true);
 
     try {
-      // Process queue items sequentially
-      for (const item of scanQueue) {
-        if (!isOnline) break; // Stop if went offline mid-flush
+      const summary = await drainQueue(async (result) => {
+        const { status, item, book, message } = result;
+        const meta = item.meta;
 
-        try {
-          // Lookup book
-          const lookupResponse = await api.get(`/books/lookup/${item.isbn}`);
-
-          if (!lookupResponse.data || !lookupResponse.data.ISBN) {
-            throw new Error('Book not found in inventory');
-          }
-
-          const book = lookupResponse.data;
-
-          // Process stock action
-          const stockResponse = await api.patch(`/stock/${book.ISBN}/stock`, {
-            action: item.mode === 'inbound' ? 'INBOUND' : 'OUTBOUND',
-            qtyChanged: item.qty || 1
-          });
-
-          const updatedBook = stockResponse.data;
-
-          // Add to recent scans (remove from queue on success)
+        if (status === 'ok') {
+          // Add to recent scans (queue item already removed by the drain)
           setRecentScans(prev => [
             {
-              isbn: book.ISBN,
-              title: book.TITLE,
-              action: item.mode === 'inbound' ? 'IN' : 'OUT',
-              qty: item.qty || 1,
-              newStock: updatedBook.QTY,
+              isbn: meta.isbn,
+              title: book?.TITLE || meta.title,
+              action: meta.mode === 'inbound' ? 'IN' : 'OUT',
+              qty: meta.qty || 1,
+              newStock: book?.QTY,
               timestamp: new Date().toLocaleTimeString()
             },
             ...prev.slice(0, 19)
           ]);
-
           // Update book info display for the last successful scan
-          setBookInfo(updatedBook);
-
-          // Remove this item from queue
-          setScanQueue(prev => prev.filter(q => q.id !== item.id));
-
-          // Small delay to avoid overwhelming server
-          await new Promise(resolve => setTimeout(resolve, 100));
-        } catch (err) {
-          const msg = err.response?.data?.message || err.message;
-          // If book not found, remove this item from queue (don't retry)
-          if (msg.includes('not found') || msg.includes('404')) {
-            setScanQueue(prev => prev.filter(q => q.id !== item.id));
-            // Also remove from recent scans optimistic entry
-            setRecentScans(prev => prev.filter(s => !(s.isbn === item.isbn && s.pending)));
-            console.warn('Removed not-found ISBN from queue:', item.isbn);
-            // Continue with next item
-            await new Promise(resolve => setTimeout(resolve, 100));
-            continue;
+          if (book) setBookInfo(book);
+        } else {
+          // Dropped (not found / rejected / auth) - remove the optimistic
+          // pending entry so it doesn't linger
+          setRecentScans(prev => prev.filter(s => !(s.isbn === meta.isbn && s.pending)));
+          if (status === 'not-found') {
+            toast.error(`⛔ Queued scan dropped for ${meta.isbn}: ${message}`);
+          } else if (status === 'rejected') {
+            toast.error(`⛔ Scan rejected for ${meta.isbn}: ${message}`);
+          } else if (status === 'auth') {
+            toast.error('⛔ Session expired - queued scan dropped, please log in again');
           }
-          // Stock rejected (insufficient/reserved) - remove and surface why (don't retry)
-          if (err.response?.status === 400) {
-            setScanQueue(prev => prev.filter(q => q.id !== item.id));
-            setRecentScans(prev => prev.filter(s => !(s.isbn === item.isbn && s.pending)));
-            toast.error(`⛔ Scan rejected for ${item.isbn}: ${msg}`);
-            console.warn('Removed rejected scan from queue:', item.isbn, msg);
-            // Continue with next item
-            await new Promise(resolve => setTimeout(resolve, 100));
-            continue;
-          }
-          // For other errors (network, server), stop flushing and keep remaining in queue
-          console.warn('Queue flush failed for item:', item.isbn, err);
-          break;
         }
+      });
+
+      // Server stock moved - refresh the offline catalog so subsequent
+      // offline scans validate against current numbers
+      if (summary.ok > 0) {
+        refreshCatalog().catch(() => {});
+      }
+
+      // If items remain (server/network error mid-flush), ask the service
+      // worker to retry when connectivity next changes
+      if (summary.remaining > 0) {
+        await registerBackgroundSync();
       }
     } finally {
       setFlushing(false);
     }
   };
+
+  // While this page is mounted it owns queue draining (OnlineContext
+  // delegates to this so per-item UI updates happen)
+  useEffect(() => {
+    const unregister = registerDrainHandler(() => flushQueueRef.current?.());
+    return unregister;
+  }, [registerDrainHandler]);
+  flushQueueRef.current = flushQueue;
 
   const setModeAndFocus = (newMode) => {
     setMode(newMode);

@@ -17,6 +17,7 @@ import EvaluationForms from './pages/EvaluationForms';
 import NavBar from './components/NavBar';
 import PrivateRoute from './components/PrivateRoute';
 import { ToastProvider } from './components/Toast';
+import { OnlineProvider, OnlineBanner } from './context/OnlineContext';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -79,7 +80,8 @@ function App() {
 
   return (
     <ToastProvider>
-      <Router>
+      <OnlineProvider>
+        <Router>
         <div className="min-h-screen bg-gray-50">
           {/* Mobile Top Bar */}
           {user && isMobile && (
@@ -130,6 +132,7 @@ function App() {
             }
             style={{ transition: 'margin-left 0.3s ease' }}
           >
+            <OnlineBanner />
             <Routes>
               <Route
                 path="/login"
@@ -211,7 +214,8 @@ function App() {
             </Routes>
           </main>
         </div>
-      </Router>
+        </Router>
+      </OnlineProvider>
     </ToastProvider>
   );
 }

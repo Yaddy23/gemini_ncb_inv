@@ -154,8 +154,7 @@ Each task lists priority, estimated effort, and the files it touches.
   - Files: `Book.js`, `StockTransaction.js`, `backend/routes/drsi.js`, `backend/routes/stock.js`
 - [ ] **5.2 Email document to customer** — "Send PDF" action on DR/SI/EF (nodemailer + existing puppeteer PDF generation).
   - Files: `backend/services/documentGenerator.js`, new mail service, list pages
-- [ ] **5.3 PWA + global offline indicator** — manifest/service worker for installability; extend Scan page's localStorage queue pattern app-wide with background sync.
-  - Files: new `frontend/public/manifest.json`, service worker, `App.jsx`
+- [x] **5.3 PWA + global offline indicator** — vite-plugin-pwa (injectManifest, custom `src/sw.js`): precached app shell, installable, Background Sync replay of queued stock scans (Chromium; page-driven flush elsewhere). Scan queue moved to IndexedDB with claim-guarded drain (no double-replay); offline scans validate against a cached book catalog (`GET /api/books/catalog`); global online/offline banner via `OnlineContext`. Placeholder icons via `scripts/generate-icons.cjs`; nginx `sw.js`/manifest no-cache. Also fixed `numberToWords` const-reassignment crash.
 
 ---
 

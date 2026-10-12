@@ -20,6 +20,18 @@ const logUserActivity = async (userId, action, details = '', req = null) => {
   }
 };
 
+// @desc    Get minimal catalog of all books for offline cache (PWA)
+// @route   GET /api/books/catalog
+// @access  Private
+const getBookCatalog = async (req, res) => {
+  try {
+    const books = await Book.find({}, { ISBN: 1, TITLE: 1, QTY: 1, reservedQty: 1, _id: 0 });
+    res.json(books);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Get all books with pagination and search
 // @route   GET /api/books
 // @access  Private
@@ -353,6 +365,7 @@ const getOutOfStockBooks = async (req, res) => {
 
 module.exports = {
   getBooks,
+  getBookCatalog,
   lookupBookByISBN,
   createBook,
   updateBook,
