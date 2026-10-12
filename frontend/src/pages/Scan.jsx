@@ -155,36 +155,85 @@ const Scan = ({ user }) => {
     // Clear ISBN immediately so camera can scan next barcode
     setIsbn('');
 
-    // Create queue item with unique ID
-    const queueItem = {
-      id: Date.now() + Math.random(),
-      isbn: code,
-      mode: mode,
-      qty: 1,
-      timestamp: new Date().toLocaleTimeString(),
-      pending: true
-    };
+    // First, look up the book to check stock status BEFORE adding to queue
+    try {
+      const lookupResponse = await api.get(`/books/lookup/${code}`);
 
-    // Add to queue (persisted to localStorage via effect)
-    setScanQueue(prev => [...prev, queueItem]);
+      if (!lookupResponse.data || !lookupResponse.data.ISBN) {
+        throw new Error('Book not found in inventory');
+      }
 
-    // Optimistically add to recent scans with 'pending' flag
-    setRecentScans(prev => [
-      {
-        ...queueItem,
-        title: 'Looking up...',
-        action: mode === 'inbound' ? 'IN' : 'OUT',
-        newStock: '—',
+      const book = lookupResponse.data;
+
+      // For outbound scans, check if book is out of stock or fully reserved
+      if (mode === 'outbound') {
+        const reservedQty = book.reservedQty || 0;
+        const availableStock = book.QTY - reservedQty;
+
+        if (book.QTY === 0) {
+          toast.error(`⛔ "${book.TITLE}" is OUT OF STOCK - cannot ship`);
+          setScanResult({
+            type: 'error',
+            message: `"${book.TITLE}" is OUT OF STOCK (0 available)`,
+            scannedIsbn: code
+          });
+          return; // Block the scan - don't add to queue
+        } else if (reservedQty > 0 && availableStock <= 0) {
+          toast.error(`⛔ "${book.TITLE}" is FULLY RESERVED (${reservedQty} reserved, 0 available) - cannot ship`);
+          setScanResult({
+            type: 'error',
+            message: `"${book.TITLE}" is FULLY RESERVED (${reservedQty} reserved, 0 available)`,
+            scannedIsbn: code
+          });
+          return; // Block the scan - don't add to queue
+        } else if (reservedQty > 0) {
+          // Warn but allow (some stock available)
+          toast.info(`⚠️ "${book.TITLE}" has ${reservedQty} reserved (${availableStock} available)`);
+        }
+      }
+
+      // Create queue item with unique ID (only if not blocked)
+      const queueItem = {
+        id: Date.now() + Math.random(),
+        isbn: code,
+        mode: mode,
+        qty: 1,
+        timestamp: new Date().toLocaleTimeString(),
         pending: true
-      },
-      ...prev.slice(0, 19)
-    ]);
+      };
 
-    // Set scan result for camera view display (pending)
-    setScanResult({
-      type: 'pending',
-      scannedIsbn: code
-    });
+      // Add to queue (persisted to localStorage via effect)
+      setScanQueue(prev => [...prev, queueItem]);
+
+      // Optimistically add to recent scans with 'pending' flag
+      setRecentScans(prev => [
+        {
+          ...queueItem,
+          title: book.TITLE,
+          action: mode === 'inbound' ? 'IN' : 'OUT',
+          newStock: mode === 'inbound' ? (book.QTY + 1) : (book.QTY - 1),
+          pending: true
+        },
+        ...prev.slice(0, 19)
+      ]);
+
+      // Set scan result for camera view display (pending)
+      setScanResult({
+        type: 'pending',
+        scannedIsbn: code,
+        bookTitle: book.TITLE
+      });
+
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message;
+      toast.error(`⛔ ${msg}`);
+      setScanResult({
+        type: 'error',
+        message: msg,
+        scannedIsbn: code
+      });
+      return; // Don't add to queue on error
+    }
 
     // Re-focus input for next scan
     setTimeout(() => {
@@ -219,20 +268,6 @@ const Scan = ({ user }) => {
           }
 
           const book = lookupResponse.data;
-
-          // Check for reserved or out of stock status and show warning toast
-          const reservedQty = book.reservedQty || 0;
-          const availableStock = book.QTY - reservedQty;
-
-          if (item.mode === 'outbound') {
-            if (book.QTY === 0) {
-              toast.error(`⚠️ "${book.TITLE}" is OUT OF STOCK (0 available)`);
-            } else if (reservedQty > 0 && availableStock <= 0) {
-              toast.error(`⚠️ "${book.TITLE}" is FULLY RESERVED (${reservedQty} reserved, 0 available)`);
-            } else if (reservedQty > 0) {
-              toast.info(`⚠️ "${book.TITLE}" has ${reservedQty} reserved (${availableStock} available)`);
-            }
-          }
 
           // Process stock action
           const stockResponse = await api.patch(`/stock/${book.ISBN}/stock`, {
