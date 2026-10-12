@@ -285,7 +285,6 @@ const Dashboard = ({ user }) => {
           )}
         </div>
       </div>
-    </div>
           {/* Low Stock Modal */}
           {showLowStockModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-500 bg-opacity-50">
@@ -326,6 +325,7 @@ const Dashboard = ({ user }) => {
               </div>
             </div>
           )}
+    </div>
   );
 };
 
