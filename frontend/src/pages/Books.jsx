@@ -34,6 +34,8 @@ const Books = ({ user }) => {
   });
   const [formError, setFormError] = useState(null);
 
+  const debouncedSearch = useDebounce(search, 300);
+
   // Per-book transaction history modal state
   const [historyBook, setHistoryBook] = useState(null);
   const [historyData, setHistoryData] = useState({ transactions: [], page: 1, pages: 0, total: 0 });
@@ -104,8 +106,6 @@ const Books = ({ user }) => {
     setSearch(value);
     setPage(1); // Reset to first page when searching
   };
-
-  const debouncedSearch = useDebounce(search, 300);
 
   // Single effect for all data fetching
   useEffect(() => {

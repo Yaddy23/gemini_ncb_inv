@@ -31,7 +31,7 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
   }
 
   const sidebarClasses = isMobile
-    ? 'fixed left-0 topbar-height h-[calc(100vh-4rem-env(safe-area-inset-top,0px))] w-64 bg-white border-r shadow-xl z-50 transform transition-transform duration-300 ease-in-out pt-safe'
+    ? 'fixed left-0 top-[calc(4rem_+_env(safe-area-inset-top,0px))] h-[calc(100vh_-_4rem_-_env(safe-area-inset-top,0px))] w-64 bg-white border-r shadow-xl z-50 transform transition-transform duration-300 ease-in-out'
     : `fixed left-0 top-0 h-screen bg-white border-r shadow-lg z-50 transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`;
 
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || user.role === 'Admin');

@@ -76,7 +76,13 @@ const Scan = ({ user }) => {
       setIsCameraActive(false);
 
       if (cameraScannerRef.current) {
-        cameraScannerRef.current.stop().catch(() => {});
+        // try/catch, not just .catch() — stop() throws synchronously when
+        // the scanner is already stopped
+        try {
+          cameraScannerRef.current.stop().catch(() => {});
+        } catch {
+          /* scanner already stopped */
+        }
         // Also force-stop any active media streams
         navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
           stream.getTracks().forEach(track => track.stop());
@@ -88,7 +94,15 @@ const Scan = ({ user }) => {
   // Clean up camera when method changes or mode changes
   useEffect(() => {
     if (scanMethod !== 'camera' && cameraScannerRef.current) {
-      cameraScannerRef.current.stop().catch(() => {});
+      // html5-qrcode's stop() throws synchronously (not a rejected promise)
+      // when the scanner already stopped — the race with stopCameraScanner
+      // below would otherwise crash the whole tree (white screen)
+      try {
+        cameraScannerRef.current.stop().catch(() => {});
+      } catch {
+        /* scanner already stopped */
+      }
+      cameraScannerRef.current = null;
       setCameraScanner(null);
       setIsCameraActive(false);
       setIsFullscreen(false);
@@ -510,7 +524,9 @@ const Scan = ({ user }) => {
     }
 
     setCameraScanner(null);
+    cameraScannerRef.current = null; // Prevent the method-change effect double-stopping it
     setIsCameraActive(false);
+    setIsFullscreen(false);
   };
 
   // Beep sound using Web Audio API
