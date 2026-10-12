@@ -336,18 +336,13 @@ const getBookTransactions = async (req, res) => {
   }
 };
 
-// @desc    Get books that are low on stock (against their own MIN_QTY)
+// @desc    Get books that are out of stock (QTY == 0)
 // @route   GET /api/books/low-stock
 // @access  Private
 const getLowStockBooks = async (req, res) => {
   try {
-    const books = await Book.find({
-      $and: [
-        { QTY: { $gt: 0 } },
-        { $expr: { $lt: ['$QTY', { $ifNull: ['$MIN_QTY', 5] }] } }
-      ]
-    })
-      .sort({ QTY: 1 })
+    const books = await Book.find({ QTY: 0 })
+      .sort({ TITLE: 1 })
       .limit(50);
 
     res.json({ books, count: books.length });

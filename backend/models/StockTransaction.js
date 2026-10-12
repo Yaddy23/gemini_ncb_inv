@@ -9,7 +9,7 @@ const stockTransactionSchema = new mongoose.Schema({
   action: {
     type: String,
     required: true,
-    enum: ['INBOUND', 'OUTBOUND', 'ADJUSTMENT', 'BULK_IMPORT']
+    enum: ['INBOUND', 'OUTBOUND', 'ADJUSTMENT', 'BULK_IMPORT', 'RESERVE', 'RELEASE']
   },
   qtyChanged: {
     type: Number,

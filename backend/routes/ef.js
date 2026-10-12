@@ -123,6 +123,18 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Validate stock availability for each item
+    for (const item of items) {
+      const book = await Book.findOne({ ISBN: item.isbn });
+      if (!book) {
+        return res.status(400).json({ message: `Book not found: ${item.isbn}` });
+      }
+      const availableStock = book.QTY - book.reservedQty;
+      if (availableStock < item.qty) {
+        return res.status(400).json({ message: `Insufficient available stock for ${item.isbn} (${book.TITLE}). Available: ${availableStock}, Requested: ${item.qty}` });
+      }
+    }
+
     const ef = new EvaluationForm({
       efNumber,
       date: date ? new Date(date) : null,
@@ -194,6 +206,18 @@ router.put('/:id', async (req, res) => {
         });
       }
 
+      // Validate stock availability for each item
+      for (const item of items) {
+        const book = await Book.findOne({ ISBN: item.isbn });
+        if (!book) {
+          return res.status(400).json({ message: `Book not found: ${item.isbn}` });
+        }
+        const availableStock = book.QTY - book.reservedQty;
+        if (availableStock < item.qty) {
+          return res.status(400).json({ message: `Insufficient available stock for ${item.isbn} (${book.TITLE}). Available: ${availableStock}, Requested: ${item.qty}` });
+        }
+      }
+
       ef.items = items.map(item => ({
         ...item,
         amount: item.qty * item.unitPrice
@@ -226,10 +250,25 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Issue EF - create linked DR draft (does NOT decrement stock)
+// Issue EF - decrement stock and create linked DR draft
 router.post('/:id/issue', async (req, res) => {
   try {
-    // Atomic claim (guards double-click): flip draft -> issued BEFORE creating the linked DR
+    // Load EF draft for validation
+    const efDraft = await EvaluationForm.findById(req.params.id);
+    if (!efDraft) return res.status(404).json({ message: 'EF not found' });
+    if (efDraft.status !== 'draft') return res.status(400).json({ message: 'EF is not in draft status' });
+
+    // Pre-validate stock availability
+    const validationPromises = efDraft.items.map(async (item) => {
+      const book = await Book.findOne({ ISBN: item.isbn });
+      if (!book) throw new Error(`Book not found: ${item.isbn}`);
+      const availableStock = book.QTY - book.reservedQty;
+      if (availableStock < item.qty) throw new Error(`Insufficient available stock for ${item.isbn} (${book.TITLE}). Available: ${availableStock}, Requested: ${item.qty}`);
+      return { book, item };
+    });
+    const validationResults = await Promise.all(validationPromises);
+
+    // Atomic claim: flip draft -> issued
     const ef = await EvaluationForm.findOneAndUpdate(
       { _id: req.params.id, status: 'draft' },
       { status: 'issued' },
@@ -237,12 +276,41 @@ router.post('/:id/issue', async (req, res) => {
     );
     if (!ef) return res.status(400).json({ message: 'EF already issued or cancelled' });
 
+    // Track mutations for rollback
+    const mutations = [];
+    let drCreated = null;
+
     try {
-      // Create linked DR draft from EF data
+      // Decrement stock and create transactions
+      for (const { book, item } of validationResults) {
+        // Re-fetch book to ensure stock hasn't changed (optional but safe)
+        const currentBook = await Book.findOne({ ISBN: book.ISBN });
+        if (!currentBook) throw new Error(`Book not found: ${book.ISBN}`);
+        // Re-check availability
+        const availableStock = currentBook.QTY - currentBook.reservedQty;
+        if (availableStock < item.qty) throw new Error(`Insufficient available stock for ${item.isbn} (${currentBook.TITLE}). Available: ${availableStock}, Requested: ${item.qty}`);
+
+        const previousQty = currentBook.QTY;
+        currentBook.QTY = previousQty - item.qty;
+        await currentBook.save();
+
+        const transactionRecord = await StockTransaction.create({
+          ISBN: currentBook.ISBN,
+          action: 'OUTBOUND',
+          qtyChanged: -item.qty,
+          previousQty,
+          newQty: currentBook.QTY,
+          performedBy: req.user._id,
+        });
+
+        mutations.push({ book: currentBook, previousQty, qtyTaken: item.qty, transactionRecord });
+      }
+
+      // Create linked DR draft
       const dr = new DeliveryReceipt({
-        drNumber: `DR-${ef.efNumber.replace('EF-', '')}`, // Derive from EF number
-        efRef: ef._id, // Reference back to EF
-        date: ef.date || null, // inherit the EF's date (or its absence)
+        drNumber: `DR-${ef.efNumber.replace('EF-', '')}`,
+        efRef: ef._id,
+        date: ef.date || null,
         customerName: ef.customerName,
         customerAddress: ef.customerAddress,
         marketingExecutive: ef.marketingExecutive,
@@ -250,13 +318,30 @@ router.post('/:id/issue', async (req, res) => {
         createdBy: req.user._id
       });
       await dr.save();
+      drCreated = dr;
 
       await logUserActivity(req.user._id, 'ISSUE_EF', `Issued EF ${ef.efNumber} for ${ef.customerName}`, req);
 
       res.json({ ef, dr });
     } catch (err) {
-      // Roll back the EF claim so a retry can issue it again
+      // Roll back: restore stock, delete transactions, revert EF status, delete DR if created
+      for (const mutation of mutations) {
+        try {
+          mutation.book.QTY = mutation.previousQty;
+          await mutation.book.save();
+          if (mutation.transactionRecord) {
+            await StockTransaction.deleteOne({ _id: mutation.transactionRecord._id });
+          }
+        } catch (rollbackErr) {
+          console.error(`Rollback failed for ISBN ${mutation.book.ISBN}:`, rollbackErr);
+        }
+      }
+      // Revert EF status to draft
       await EvaluationForm.findOneAndUpdate({ _id: ef._id, status: 'issued' }, { status: 'draft' });
+      // Delete DR draft if created
+      if (drCreated) {
+        await DeliveryReceipt.deleteOne({ _id: drCreated._id });
+      }
       console.error('Issue EF failed, rolled back:', err);
       return res.status(500).json({ message: err.message });
     }

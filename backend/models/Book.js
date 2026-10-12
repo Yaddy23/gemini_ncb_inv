@@ -38,6 +38,11 @@ const bookSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  reservedQty: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   PRICE: {
     type: Number,
     required: true,

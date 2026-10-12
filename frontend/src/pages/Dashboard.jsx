@@ -86,6 +86,7 @@ const Dashboard = ({ user }) => {
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showLowStockModal, setShowLowStockModal] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {

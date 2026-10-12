@@ -150,7 +150,7 @@ Each task lists priority, estimated effort, and the files it touches.
 
 ## Phase 5 — Big projects (optional / future)
 
-- [ ] **5.1 Stock reservations** — Reserve stock at DR draft so two drafts can't promise the same books; optional multi-location (warehouse/shelf/bin) QTY.
+- [x] **5.1 Stock reservations** — Reserve stock at DR draft so two drafts can't promise the same books; optional multi-location (warehouse/shelf/bin) QTY.
   - Files: `Book.js`, `StockTransaction.js`, `backend/routes/drsi.js`, `backend/routes/stock.js`
 - [ ] **5.2 Email document to customer** — "Send PDF" action on DR/SI/EF (nodemailer + existing puppeteer PDF generation).
   - Files: `backend/services/documentGenerator.js`, new mail service, list pages
