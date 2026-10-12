@@ -125,7 +125,10 @@ const DocumentForm = ({
         setFormData(prev => ({
           ...prev,
           ...storedDraft,
-          items: Array.isArray(storedDraft.items) ? storedDraft.items : prev.items
+          // Stock blocks are re-checked live on lookup, so don't restore stale flags
+          items: Array.isArray(storedDraft.items)
+            ? storedDraft.items.map(({ stockBlocked, ...item }) => item)
+            : prev.items
         }));
       } else {
         try {
@@ -188,10 +191,16 @@ const DocumentForm = ({
     if (!formData.customerName.trim()) newErrors.customerName = 'Customer Name is required';
     if (!formData.items.some(item => item.isbn.trim())) newErrors.items = 'At least one item with ISBN is required';
 
-    // Check for items without title (failed lookup)
-    const itemsWithoutTitle = formData.items.filter(item => item.isbn.trim() && !item.title.trim());
-    if (itemsWithoutTitle.length > 0) {
-      newErrors.items = 'Some items have invalid ISBNs (book not found)';
+    // Block items flagged as out of stock or fully reserved during lookup
+    const blockedItems = formData.items.filter(item => item.isbn.trim() && item.stockBlocked);
+    if (blockedItems.length > 0) {
+      newErrors.items = 'Some items are out of stock or fully reserved and cannot be added';
+    } else {
+      // Check for items without title (failed lookup)
+      const itemsWithoutTitle = formData.items.filter(item => item.isbn.trim() && !item.title.trim());
+      if (itemsWithoutTitle.length > 0) {
+        newErrors.items = 'Some items have invalid ISBNs (book not found)';
+      }
     }
 
     setErrors(newErrors);
@@ -201,8 +210,8 @@ const DocumentForm = ({
   const handleSubmit = (action) => {
     if (!validateForm()) return;
 
-    // Filter items with ISBN
-    const validItems = formData.items.filter(item => item.isbn.trim());
+    // Filter items with ISBN (blocked items already fail validation, this is a safety net)
+    const validItems = formData.items.filter(item => item.isbn.trim() && !item.stockBlocked);
 
     // Check for duplicate ISBNs
     const duplicates = checkDuplicateISBNs(validItems);

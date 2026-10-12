@@ -48,6 +48,8 @@ const Scan = ({ user }) => {
   const audioContextRef = useRef(null);
   const cameraScannerRef = useRef(null); // Ref for live scanner instance
   const fullscreenContainerRef = useRef(null); // Ref for fullscreen parent container
+  const scanQueueRef = useRef(scanQueue); // Latest queue, so stock checks see scans not yet flushed
+  scanQueueRef.current = scanQueue;
 
   // Mobile detection for responsive UI
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
@@ -169,6 +171,12 @@ const Scan = ({ user }) => {
       if (mode === 'outbound') {
         const reservedQty = book.reservedQty || 0;
         const availableStock = book.QTY - reservedQty;
+        // Outbound scans still pending in the queue will also ship this book,
+        // so they reduce what is still available right now
+        const pendingOutQty = scanQueueRef.current
+          .filter(q => q.mode === 'outbound' && q.isbn === code)
+          .reduce((sum, q) => sum + (q.qty || 1), 0);
+        const remainingAvailable = availableStock - pendingOutQty;
 
         if (book.QTY === 0) {
           toast.error(`⛔ "${book.TITLE}" is OUT OF STOCK - cannot ship`);
@@ -178,17 +186,20 @@ const Scan = ({ user }) => {
             scannedIsbn: code
           });
           return; // Block the scan - don't add to queue
-        } else if (reservedQty > 0 && availableStock <= 0) {
-          toast.error(`⛔ "${book.TITLE}" is FULLY RESERVED (${reservedQty} reserved, 0 available) - cannot ship`);
+        } else if (remainingAvailable <= 0) {
+          const reason = availableStock <= 0
+            ? `FULLY RESERVED (${reservedQty} reserved, 0 available)`
+            : `NO AVAILABLE STOCK LEFT (${reservedQty} reserved, ${pendingOutQty} already queued for shipping)`;
+          toast.error(`⛔ "${book.TITLE}" is ${reason} - cannot ship`);
           setScanResult({
             type: 'error',
-            message: `"${book.TITLE}" is FULLY RESERVED (${reservedQty} reserved, 0 available)`,
+            message: `"${book.TITLE}" is ${reason}`,
             scannedIsbn: code
           });
           return; // Block the scan - don't add to queue
         } else if (reservedQty > 0) {
           // Warn but allow (some stock available)
-          toast.info(`⚠️ "${book.TITLE}" has ${reservedQty} reserved (${availableStock} available)`);
+          toast.info(`⚠️ "${book.TITLE}" has ${reservedQty} reserved (${remainingAvailable} available)`);
         }
       }
 
@@ -306,6 +317,16 @@ const Scan = ({ user }) => {
             // Also remove from recent scans optimistic entry
             setRecentScans(prev => prev.filter(s => !(s.isbn === item.isbn && s.pending)));
             console.warn('Removed not-found ISBN from queue:', item.isbn);
+            // Continue with next item
+            await new Promise(resolve => setTimeout(resolve, 100));
+            continue;
+          }
+          // Stock rejected (insufficient/reserved) - remove and surface why (don't retry)
+          if (err.response?.status === 400) {
+            setScanQueue(prev => prev.filter(q => q.id !== item.id));
+            setRecentScans(prev => prev.filter(s => !(s.isbn === item.isbn && s.pending)));
+            toast.error(`⛔ Scan rejected for ${item.isbn}: ${msg}`);
+            console.warn('Removed rejected scan from queue:', item.isbn, msg);
             // Continue with next item
             await new Promise(resolve => setTimeout(resolve, 100));
             continue;

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Plus, Trash2, Loader, CheckCircle, AlertTriangle, Copy, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Loader, CheckCircle, AlertTriangle, Copy, AlertCircle, Ban } from 'lucide-react';
 import { drsiApi } from '../../api/drsi';
 import { formatCurrency } from '../../utils/numberToWords';
+import { useToast } from '../Toast';
 
 const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage = 0, maxRows = 39 }) => {
+  const { toast } = useToast();
   const [lookupLoading, setLookupLoading] = useState({});
   const [lookupErrors, setLookupErrors] = useState({});
   const [focusNextInput, setFocusNextInput] = useState(false);
@@ -78,12 +80,52 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
       if (lookupSeqRef.current[index] !== seq) return;
 
       if (book && book.ISBN) {
-        const description = formatDescription(book);
+        // Block outbound documents for out-of-stock or fully reserved books
+        // (same rules as the Scan page). Books from the Open Library fallback
+        // have no QTY, so there is nothing to block on for those.
+        const reservedQty = book.reservedQty || 0;
+        const availableStock = (book.QTY || 0) - reservedQty;
+        let stockBlocked = false;
+        if (book.QTY !== undefined) {
+          if (book.QTY === 0) {
+            toast.error(`⛔ "${book.TITLE}" is OUT OF STOCK (0 available) - cannot be added`);
+            stockBlocked = true;
+          } else if (availableStock <= 0) {
+            toast.error(`⛔ "${book.TITLE}" is FULLY RESERVED (${reservedQty} reserved, 0 available) - cannot be added`);
+            stockBlocked = true;
+          } else if (reservedQty > 0) {
+            // Warn but allow (some stock available)
+            toast.info(`⚠️ "${book.TITLE}" has ${reservedQty} reserved (${availableStock} available)`);
+          }
+        }
+
         // Read the latest items from the ref so edits made to other rows
         // during the debounce window are not overwritten
         const updatedItems = [...itemsRef.current];
+
+        if (stockBlocked) {
+          // Keep the row empty (no title/price) and flag it so the item
+          // cannot be added or submitted
+          updatedItems[index] = {
+            ...updatedItems[index],
+            stockBlocked: true,
+            title: '',
+            rawTitle: '',
+            edition: '',
+            bind: '',
+            year: '',
+            author: '',
+            unitPrice: 0,
+            amount: 0
+          };
+          onItemsChange(updatedItems);
+          return;
+        }
+
+        const description = formatDescription(book);
         updatedItems[index] = {
           ...updatedItems[index],
+          stockBlocked: false,
           title: description, // Store formatted description
           // Keep raw fields for export
           rawTitle: book.TITLE,
@@ -130,7 +172,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
   const handleISBNChange = (index, isbn) => {
     const cleanISBN = isbn.trim();
     const newItems = [...items];
-    newItems[index] = { ...newItems[index], isbn: cleanISBN };
+    newItems[index] = { ...newItems[index], isbn: cleanISBN, stockBlocked: false };
 
     // Cancel any pending debounced lookup for this row and invalidate
     // any lookup already in flight (stale responses will be discarded)
@@ -286,7 +328,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {items.map((item, index) => (
-              <tr key={index} className={`hover:bg-gray-50 ${duplicateISBNs[index] ? 'bg-yellow-50' : ''}`}>
+              <tr key={index} className={`hover:bg-gray-50 ${item.stockBlocked ? 'bg-red-50' : duplicateISBNs[index] ? 'bg-yellow-50' : ''}`}>
                 <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
                 <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                   {item.isbn?.substring(0, 8) || ''}
@@ -309,10 +351,19 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
                       onChange={(e) => handleISBNChange(index, e.target.value)}
                       placeholder="Scan or type ISBN"
                       className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-primary pr-12 ${
-                        duplicateISBNs[index] ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'
+                        item.stockBlocked
+                          ? 'border-red-400 bg-red-50'
+                          : duplicateISBNs[index]
+                            ? 'border-yellow-400 bg-yellow-50'
+                            : 'border-gray-300'
                       }`}
                       autoComplete="off"
                     />
+                    {item.stockBlocked && !lookupLoading[index] && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                        <Ban className="w-4 h-4 text-red-500" title="Out of stock or fully reserved - cannot be added" />
+                      </div>
+                    )}
                     {lookupLoading[index] && (
                       <div className="absolute right-2 top-1/2 -translate-y-1/2">
                         <Loader className="w-4 h-4 animate-spin text-primary" />
@@ -328,7 +379,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
                         <AlertCircle className="w-4 h-4 text-yellow-500" title={`Duplicate ISBN (${duplicateISBNs[index].count} occurrences)`} />
                       </div>
                     )}
-                    {item.title && !lookupLoading[index] && !lookupErrors[index] && !duplicateISBNs[index] && (
+                    {item.title && !item.stockBlocked && !lookupLoading[index] && !lookupErrors[index] && !duplicateISBNs[index] && (
                       <div className="absolute right-2 top-1/2 -translate-y-1/2">
                         <CheckCircle className="w-4 h-4 text-green-500" />
                       </div>

@@ -47,6 +47,13 @@ const updateStock = async (req, res) => {
         statusCode = 400;
         throw new Error('Insufficient stock');
       }
+      // Never ship stock already reserved for customers - only unreserved
+      // copies can be scanned/bulk-imported out
+      if (newQty < book.reservedQty) {
+        statusCode = 400;
+        const availableStock = book.QTY - book.reservedQty;
+        throw new Error(`Only ${availableStock} unreserved (available) - ${book.reservedQty} reserved for customers`);
+      }
     } else {
       statusCode = 400;
       throw new Error('Invalid action. Use INBOUND or OUTBOUND');
