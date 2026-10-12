@@ -337,9 +337,9 @@ const getBookTransactions = async (req, res) => {
 };
 
 // @desc    Get books that are out of stock (QTY == 0)
-// @route   GET /api/books/low-stock
+// @route   GET /api/books/out-of-stock
 // @access  Private
-const getLowStockBooks = async (req, res) => {
+const getOutOfStockBooks = async (req, res) => {
   try {
     const books = await Book.find({ QTY: 0 })
       .sort({ TITLE: 1 })
@@ -359,5 +359,5 @@ module.exports = {
   deleteBook,
   getStats,
   getBookTransactions,
-  getLowStockBooks,
+  getOutOfStockBooks,
 };

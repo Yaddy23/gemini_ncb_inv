@@ -81,20 +81,20 @@ const Dashboard = ({ user }) => {
     totalQuantity: 0,
     todayTransactions: 0
   });
-  const [lowStock, setLowStock] = useState({ books: [], count: 0 });
+  const [outOfStock, setOutOfStock] = useState({ books: [], count: 0 });
   const [movement, setMovement] = useState([]);
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showLowStockModal, setShowLowStockModal] = useState(false);
+  const [showOutOfStockModal, setShowOutOfStockModal] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
         setLoading(true);
-        const [statsResponse, lowStockResponse, summaryResponse, recentResponse] = await Promise.all([
+        const [statsResponse, outOfStockResponse, summaryResponse, recentResponse] = await Promise.all([
           api.get('/books/stats'),
-          api.get('/books/low-stock'),
+          api.get('/books/out-of-stock'),
           api.get('/stock/summary', { params: { days: 14 } }),
           api.get('/stock/recent', { params: { limit: 12 } })
         ]);
@@ -104,9 +104,9 @@ const Dashboard = ({ user }) => {
           totalQuantity: statsResponse.data.totalQuantity,
           todayTransactions: statsResponse.data.todayTransactions
         });
-        setLowStock({
-          books: lowStockResponse.data.books || [],
-          count: lowStockResponse.data.count || 0
+        setOutOfStock({
+          books: outOfStockResponse.data.books || [],
+          count: outOfStockResponse.data.count || 0
         });
         setMovement(summaryResponse.data.perDay || []);
         setRecent(recentResponse.data.transactions || []);
@@ -205,12 +205,12 @@ const Dashboard = ({ user }) => {
           <div className="flex items-start justify-between">
             <div className="min-w-0">
               <p className="text-sm sm:text-base font-medium text-gray-500 truncate">Out of Stock Titles</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{lowStock.count}</p>
-              {lowStock.count === 0 ? (
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{outOfStock.count}</p>
+              {outOfStock.count === 0 ? (
                 <p className="text-xs sm:text-sm text-green-600 mt-1">No out of stock items</p>
               ) : (
                 <button
-                  onClick={() => setShowLowStockModal(true)}
+                  onClick={() => setShowOutOfStockModal(true)}
                   className="mt-2 px-3 py-1 bg-primary text-white rounded text-sm hover:bg-primary/90"
                 >
                   View Details
@@ -285,14 +285,14 @@ const Dashboard = ({ user }) => {
           )}
         </div>
       </div>
-          {/* Low Stock Modal */}
-          {showLowStockModal && (
+          {/* Out of Stock Modal */}
+          {showOutOfStockModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-500 bg-opacity-50">
               <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold text-gray-900">Out of Stock Books</h3>
                   <button
-                    onClick={() => setShowLowStockModal(false)}
+                    onClick={() => setShowOutOfStockModal(false)}
                     className="text-gray-500 hover:text-gray-700"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -300,9 +300,9 @@ const Dashboard = ({ user }) => {
                     </svg>
                   </button>
                 </div>
-                {lowStock.books.length > 0 ? (
+                {outOfStock.books.length > 0 ? (
                   <ul className="divide-y divide-gray-100">
-                    {lowStock.books.map((book) => (
+                    {outOfStock.books.map((book) => (
                       <li key={book.ISBN} className="flex items-start space-x-3 py-2">
                         <div className="flex-shrink-0">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"

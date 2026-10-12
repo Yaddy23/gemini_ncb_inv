@@ -121,8 +121,6 @@ const Books = ({ user }) => {
     setPage(newPage);
   };
 
-  const isLowStock = (book) => book.QTY > 0 && book.QTY <= (book.MIN_QTY ?? 5);
-
   const getActionBadgeClass = (action) => {
     if (action === 'INBOUND') return 'bg-green-100 text-green-700';
     if (action === 'OUTBOUND') return 'bg-red-100 text-red-700';
@@ -285,13 +283,8 @@ const Books = ({ user }) => {
                       <span className={`px-2 py-1 text-xs font-bold rounded-full ${
                         book.QTY > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                       }`}>
-                        {book.QTY} in stock
+                        {book.QTY > 0 ? `${book.QTY} in stock` : 'Out of stock'}
                       </span>
-                      {isLowStock(book) && (
-                        <span className="px-2 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800">
-                          Low stock
-                        </span>
-                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm mb-3">
@@ -390,10 +383,7 @@ const Books = ({ user }) => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.YEAR || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.PUBLISHER || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      {book.QTY}
-                      {isLowStock(book) && (
-                        <span className="ml-1 px-1.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800">Low</span>
-                      )}
+                      {book.QTY > 0 ? book.QTY : <span className="text-red-600">Out of stock</span>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{book.PRICE.toFixed(2)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2">

@@ -9,13 +9,13 @@ const {
   deleteBook,
   getStats,
   getBookTransactions,
-  getLowStockBooks,
+  getOutOfStockBooks,
 } = require('../controllers/bookController');
 
 // Public routes (protected but accessible to both roles)
 router.get('/', protect, getBooks);
 router.get('/stats', protect, getStats);
-router.get('/low-stock', protect, getLowStockBooks);
+router.get('/out-of-stock', protect, getOutOfStockBooks);
 router.get('/lookup/:isbn', protect, lookupBookByISBN);
 router.get('/:isbn/transactions', protect, getBookTransactions);
 
