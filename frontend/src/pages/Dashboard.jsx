@@ -6,12 +6,13 @@ import {
   ArrowDownCircle, ArrowUpCircle, Package, SlidersHorizontal, Activity
 } from 'lucide-react';
 import StockMovementChart from '../components/dashboard/StockMovementChart';
+import { Modal } from '../components/ui';
 
 // Feed icon + tint per action; inbound/outbound reuse the chart's series
 // colors so the two views read as the same entities
 const ACTION_STYLES = {
-  INBOUND: { icon: ArrowDownCircle, color: '#2a78d6' },
-  OUTBOUND: { icon: ArrowUpCircle, color: '#eb6834' },
+  INBOUND: { icon: ArrowDownCircle, color: '#2563eb' },
+  OUTBOUND: { icon: ArrowUpCircle, color: '#f59e0b' },
   ADJUSTMENT: { icon: SlidersHorizontal, color: '#6b7280' },
   BULK_IMPORT: { icon: Package, color: '#6b7280' },
 };
@@ -286,45 +287,30 @@ const Dashboard = ({ user }) => {
         </div>
       </div>
           {/* Out of Stock Modal */}
-          {showOutOfStockModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-500 bg-opacity-50">
-              <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-900">Out of Stock Books</h3>
-                  <button
-                    onClick={() => setShowOutOfStockModal(false)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
-                {outOfStock.books.length > 0 ? (
-                  <ul className="divide-y divide-gray-100">
-                    {outOfStock.books.map((book) => (
-                      <li key={book.ISBN} className="flex items-start space-x-3 py-2">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                            style={{ backgroundColor: '#eb68341A' }}>
-                            <AlertTriangle className="w-4 h-4 text-amber-600" />
-                          </div>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm text-gray-900 truncate">
-                            <span className="font-medium">{book.TITLE}</span>
-                            <span className="ml-2 text-gray-500">ISBN: {book.ISBN}</span>
-                          </p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-gray-500">No out of stock books</p>
-                )}
-              </div>
-            </div>
-          )}
+          <Modal open={showOutOfStockModal} onClose={() => setShowOutOfStockModal(false)} title="Out of Stock Books" size="sm">
+            {outOfStock.books.length > 0 ? (
+              <ul className="divide-y divide-gray-100">
+                {outOfStock.books.map((book) => (
+                  <li key={book.ISBN} className="flex items-start space-x-3 py-2">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: '#f59e0b1A' }}>
+                        <AlertTriangle className="w-4 h-4 text-amber-600" />
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-gray-900 truncate">
+                        <span className="font-medium">{book.TITLE}</span>
+                        <span className="ml-2 text-gray-500">ISBN: {book.ISBN}</span>
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500">No out of stock books</p>
+            )}
+          </Modal>
     </div>
   );
 };

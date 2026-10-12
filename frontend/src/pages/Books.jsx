@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { ShoppingBag, Search, Plus, Barcode, Trash, Edit, Loader, CheckCircle, AlertTriangle, History } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { Modal, Pagination, EmptyState, AlertBanner } from '../components/ui';
+import { useDebounce } from '../hooks/useDebounce';
 
 const Books = ({ user }) => {
+  const navigate = useNavigate();
   const { confirmDialog } = useToast();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
@@ -102,13 +105,7 @@ const Books = ({ user }) => {
     setPage(1); // Reset to first page when searching
   };
 
-  // Debounce search to avoid excessive API calls while typing
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search]);
+  const debouncedSearch = useDebounce(search, 300);
 
   // Single effect for all data fetching
   useEffect(() => {
@@ -202,16 +199,7 @@ const Books = ({ user }) => {
   if (error) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertTriangle className="w-5 h-5 text-red-400" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        </div>
+        <AlertBanner tone="error">{error}</AlertBanner>
       </div>
     );
   }
@@ -252,7 +240,7 @@ const Books = ({ user }) => {
             </button>
           )}
           <button
-            onClick={() => window.location.href = '/scan'}
+            onClick={() => navigate('/scan')}
             className="flex items-center justify-center space-x-2 px-4 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors touch-manipulation min-h-[44px] min-w-[140px]"
           >
             <Barcode className="w-5 h-5" />
@@ -266,10 +254,7 @@ const Books = ({ user }) => {
         {/* Mobile Card Layout */}
         <div className="block md:hidden">
           {books.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">
-              <ShoppingBag className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-              <p>No books found. Try searching or adding new books.</p>
-            </div>
+            <EmptyState icon={ShoppingBag} title="No books found" message="Try searching or adding new books." />
           ) : (
             <div className="divide-y divide-gray-200">
               {books.map((book) => (
@@ -369,11 +354,7 @@ const Books = ({ user }) => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {books.length === 0 ? (
-                <tr>
-                  <td className="px-6 py-4 text-center text-gray-500" colSpan="6">
-                    No books found. Try searching or adding new books.
-                  </td>
-                </tr>
+                <EmptyState colSpan={8} icon={ShoppingBag} title="No books found" message="Try searching or adding new books." />
               ) : (
                 books.map((book) => (
                   <tr key={book.ISBN} className="hover:bg-gray-50">
@@ -386,40 +367,39 @@ const Books = ({ user }) => {
                       {book.QTY > 0 ? book.QTY : <span className="text-red-600">Out of stock</span>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{book.PRICE.toFixed(2)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2">
-                      <button
-                        onClick={() => openHistory(book)}
-                        className="flex items-center justify-center px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
-                        disabled={deleteMode}
-                        title="Transaction history"
-                      >
-                        <History className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setSelectedBook({ action: 'edit', book })}
-                        className="flex items-center justify-center px-3 py-1 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50"
-                        disabled={deleteMode && selectedBook?.action !== 'delete'}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteBook(book.ISBN)}
-                        className={`flex items-center justify-center px-3 py-1 ${
-                          deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN
-                            ? 'bg-red-500 text-white'
-                            : 'bg-gray-200 text-gray-800'
-                        } text-xs rounded-md hover:${deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN
-                            ? 'bg-red-600'
-                            : 'bg-gray-300'
-                        } transition-colors disabled:opacity-50`}
-                        disabled={deleteMode && selectedBook?.action !== 'delete' && selectedBook?.action !== undefined}
-                      >
-                        {deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN ? (
-                          <CheckCircle className="w-4 h-4" />
-                        ) : (
-                          <Trash className="w-4 h-4" />
-                        )}
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => openHistory(book)}
+                          className="flex items-center justify-center px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
+                          disabled={deleteMode}
+                          title="Transaction history"
+                        >
+                          <History className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setSelectedBook({ action: 'edit', book })}
+                          className="flex items-center justify-center px-3 py-1 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50"
+                          disabled={deleteMode && selectedBook?.action !== 'delete'}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBook(book.ISBN)}
+                          className={
+                            deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN
+                              ? 'flex items-center justify-center px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600 transition-colors disabled:opacity-50'
+                              : 'flex items-center justify-center px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50'
+                          }
+                          disabled={deleteMode && selectedBook?.action !== 'delete' && selectedBook?.action !== undefined}
+                        >
+                          {deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN ? (
+                            <CheckCircle className="w-4 h-4" />
+                          ) : (
+                            <Trash className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -430,59 +410,22 @@ const Books = ({ user }) => {
       </div>
 
       {/* Pagination */}
-      {totalBooks > limit && (
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-gray-50">
-          <p className="text-sm text-gray-500 text-center sm:text-left">
-            Showing {(page - 1) * limit + 1}-{Math.min(page * limit, totalBooks)} of {totalBooks} books
-          </p>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => handlePageChange(Math.max(1, page - 1))}
-              disabled={page === 1}
-              className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
-                page === 1 ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-              }`}
-              aria-label="Previous page"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <span className="px-3 py-1 text-sm font-medium flex items-center justify-center w-10">{page}</span>
-            <button
-              onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
-                page === totalPages ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-              }`}
-              aria-label="Next page"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        total={totalBooks}
+        limit={limit}
+        onPageChange={handlePageChange}
+        label="books"
+      />
 
       {/* Add/Edit Book Modal - Full-screen on mobile, centered on desktop */}
-      {selectedBook && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md sm:max-w-lg p-4 sm:p-6 md:rounded-lg md:shadow-xl md:my-8 md:max-h-[90vh] md:overflow-y-auto">
-            <div className="flex items-center justify-between mb-4 md:mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                {selectedBook.action === 'create' ? 'Add New Book' : 'Edit Book'}
-              </h2>
-              <button
-                onClick={() => setSelectedBook(null)}
-                className="text-gray-400 hover:text-gray-600 md:hidden p-2"
-                aria-label="Close modal"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+      <Modal
+        open={!!selectedBook}
+        onClose={() => setSelectedBook(null)}
+        title={selectedBook?.action === 'create' ? 'Add New Book' : 'Edit Book'}
+        size="md"
+      >
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -664,31 +607,21 @@ const Books = ({ user }) => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* Transaction History Modal */}
-      {historyBook && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md sm:max-w-lg p-4 sm:p-6 md:max-h-[90vh] md:overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <div className="min-w-0">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Stock History</h2>
-                <p className="text-sm text-gray-500 truncate">{historyBook.TITLE} · {historyBook.ISBN}</p>
-              </div>
-              <button
-                onClick={() => setHistoryBook(null)}
-                className="text-gray-400 hover:text-gray-600 p-2"
-                aria-label="Close modal"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {historyLoading ? (
+      <Modal
+        open={!!historyBook}
+        onClose={() => setHistoryBook(null)}
+        title={
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Stock History</h2>
+            <p className="text-sm text-gray-500 truncate font-normal">{historyBook?.TITLE} · {historyBook?.ISBN}</p>
+          </div>
+        }
+        size="md"
+      >
+        {historyLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader className="w-6 h-6 text-primary animate-spin" />
                 <span className="ml-2 text-primary">Loading history...</span>
@@ -737,9 +670,7 @@ const Books = ({ user }) => {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 };

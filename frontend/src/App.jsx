@@ -18,26 +18,21 @@ import NavBar from './components/NavBar';
 import PrivateRoute from './components/PrivateRoute';
 import { ToastProvider } from './components/Toast';
 import { OnlineProvider, OnlineBanner } from './context/OnlineContext';
+import { useIsMobile } from './hooks/useMediaQuery';
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Detect mobile on mount and resize
+  // Close the mobile menu when leaving mobile
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth >= 768) {
-        setMobileMenuOpen(false);
-      }
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+    if (!isMobile) {
+      setMobileMenuOpen(false);
+    }
+  }, [isMobile]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -85,7 +80,7 @@ function App() {
         <div className="min-h-screen bg-gray-50">
           {/* Mobile Top Bar */}
           {user && isMobile && (
-            <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b shadow-sm z-40 flex items-center px-4">
+            <header className="fixed top-0 left-0 right-0 topbar-height pt-safe bg-white border-b shadow-sm z-40 flex items-center px-4">
               <button
                 onClick={() => setMobileMenuOpen(true)}
                 className="p-2 rounded-lg hover:bg-gray-100"
@@ -124,7 +119,7 @@ function App() {
           <main
             className={user
               ? isMobile
-                ? 'pt-16'
+                ? 'topbar-offset'
                 : sidebarCollapsed
                   ? 'ml-16'
                   : 'ml-64'
@@ -174,7 +169,7 @@ function App() {
                 path="/profile"
                 element={
                   <PrivateRoute isAuthenticated={!!user}>
-                    <Profile user={user} onLogin={login} />
+                    <Profile user={user} onLogin={login} onLogout={logout} />
                   </PrivateRoute>
                 }
               />

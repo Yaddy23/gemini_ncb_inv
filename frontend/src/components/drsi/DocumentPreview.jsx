@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileText, X } from 'lucide-react';
 import { formatDate, formatCurrency } from '../../utils/numberToWords';
+import { StatusBadge } from '../ui';
 
 const TYPE_NAMES = {
   DR: 'Delivery Receipt',
@@ -22,15 +23,7 @@ const DocumentPreview = ({ document, documentType, onClose }) => {
   const discount = isSI ? subtotal * discountPercentage / 100 : 0;
   const total = isSI ? subtotal - discount : subtotal;
 
-  const getStatusBadge = (status) => {
-    if (status === 'issued') {
-      return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Issued</span>;
-    }
-    if (status === 'cancelled') {
-      return <span className="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">Cancelled</span>;
-    }
-    return <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">Draft</span>;
-  };
+  const getStatusBadge = (status) => <StatusBadge status={status} />;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">

@@ -3,8 +3,8 @@ import { Table, BarChart3 } from 'lucide-react';
 
 // Two-series grouped bar chart: daily inbound vs outbound units.
 // Colors validated for CVD safety + contrast on white (dataviz palette slots 1-2).
-const INBOUND_COLOR = '#2a78d6';
-const OUTBOUND_COLOR = '#eb6834';
+const INBOUND_COLOR = '#2563eb';
+const OUTBOUND_COLOR = '#f59e0b';
 const GRID_COLOR = '#e1e0d9';
 const AXIS_COLOR = '#c3c2b7';
 const TICK_TEXT = '#898781';

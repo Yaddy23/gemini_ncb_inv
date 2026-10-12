@@ -339,7 +339,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
                     value={item.qty || 1}
                     onChange={(e) => handleQtyChange(index, e.target.value)}
                     min="1"
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-right focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full px-2 py-2.5 min-h-[44px] text-base border border-gray-300 rounded text-right focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </td>
                 <td className="px-3 py-2">
@@ -350,7 +350,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
                       value={item.isbn || ''}
                       onChange={(e) => handleISBNChange(index, e.target.value)}
                       placeholder="Scan or type ISBN"
-                      className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-primary pr-12 ${
+                      className={`w-full px-2 py-2.5 min-h-[44px] text-base border rounded focus:outline-none focus:ring-1 focus:ring-primary pr-12 ${
                         item.stockBlocked
                           ? 'border-red-400 bg-red-50'
                           : duplicateISBNs[index]
@@ -393,7 +393,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
                     readOnly={!!lookupErrors[index] && !lookupLoading[index] ? false : true}
                     onChange={(e) => handleTitleChange(index, e.target.value)}
                     placeholder={lookupErrors[index] ? 'Enter title manually' : ''}
-                    className={`w-full px-2 py-1 text-sm border rounded ${
+                    className={`w-full px-2 py-2.5 min-h-[44px] text-base border rounded ${
                       lookupErrors[index] && !lookupLoading[index]
                         ? 'border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary'
                         : 'border-gray-200 bg-gray-50 text-gray-700'
@@ -407,7 +407,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
                     onChange={(e) => handlePriceChange(index, e.target.value)}
                     min="0"
                     step="0.01"
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-right focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full px-2 py-2.5 min-h-[44px] text-base border border-gray-300 rounded text-right focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
@@ -417,7 +417,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
                   <button
                     onClick={() => removeRow(index)}
                     disabled={items.length <= 1}
-                    className="text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="w-11 h-11 -my-2 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
                     title="Remove item"
                   >
                     <Trash2 className="w-5 h-5" />

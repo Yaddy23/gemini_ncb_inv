@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { Plus, X, Edit as EditIcon, Trash2, CheckCircle } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { Pagination, AlertBanner, EmptyState } from '../components/ui';
+import { useDebounce } from '../hooks/useDebounce';
 
 const AdminPanel = ({ user }) => {
   const [users, setUsers] = useState([]);
@@ -345,22 +347,26 @@ const AdminPanel = ({ user }) => {
     fetchExecutives();
   }, []);
 
-  // Refetch when page changes
+  // Debounce search inputs so typing doesn't fire a request per keystroke
+  const debouncedFiltersSearch = useDebounce(filters.search, 400);
+  const debouncedExecSearch = useDebounce(execSearch, 400);
+
+  // Refetch when page or debounced search changes
   useEffect(() => {
     if (users.length > 0) {
-      fetchUsers(currentPage, filters.search);
+      fetchUsers(currentPage, debouncedFiltersSearch);
     }
     if (userLogs.length > 0) {
       fetchUserLogs(currentPage);
     }
-  }, [currentPage, filters]);
+  }, [currentPage, debouncedFiltersSearch]);
 
   // Refetch executives when page, search, or filter changes
   useEffect(() => {
-    if (executives.length > 0 || execSearch !== undefined || execIsActiveFilter !== undefined) {
-      fetchExecutives(execCurrentPage, execSearch, execIsActiveFilter);
+    if (executives.length > 0 || debouncedExecSearch !== undefined || execIsActiveFilter !== undefined) {
+      fetchExecutives(execCurrentPage, debouncedExecSearch, execIsActiveFilter);
     }
-  }, [execCurrentPage, execSearch, execIsActiveFilter]);
+  }, [execCurrentPage, debouncedExecSearch, execIsActiveFilter]);
 
   if (!user || user.role !== 'Admin') {
     return <div className="p-4 sm:p-6">Access denied. Admin privileges required.</div>;
@@ -375,16 +381,8 @@ const AdminPanel = ({ user }) => {
       </div>
 
       {/* Status Messages */}
-      {error && (
-        <div className="mb-4 p-3 sm:p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="mb-4 p-3 sm:p-4 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm">
-          {success}
-        </div>
-      )}
+      {error && <AlertBanner tone="error">{error}</AlertBanner>}
+      {success && <AlertBanner tone="success">{success}</AlertBanner>}
 
       {/* Tabs - scrollable on mobile */}
       <div className="mb-4 sm:mb-6 overflow-x-auto pb-2">
@@ -576,38 +574,14 @@ const AdminPanel = ({ user }) => {
 
           {/* Pagination for Users */}
           {totalUsers > 0 && (
-            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500 text-center sm:text-left">
-                Showing {((currentPage - 1) * usersPerPage) + 1}-{Math.min(currentPage * usersPerPage, totalUsers)} of {totalUsers} users
-              </p>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => currentPage > 1 && fetchUsers(currentPage - 1, filters.search)}
-                  disabled={loading || currentPage === 1}
-                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
-                    currentPage === 1 ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                  }`}
-                  aria-label="Previous page"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <span className="px-3 py-1 text-sm font-medium flex items-center justify-center w-10">{currentPage}</span>
-                <button
-                  onClick={() => currentPage < totalPages && fetchUsers(currentPage + 1, filters.search)}
-                  disabled={loading || currentPage === totalPages}
-                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
-                    currentPage === totalPages ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                  }`}
-                  aria-label="Next page"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <Pagination
+              page={currentPage}
+              totalPages={totalPages}
+              total={totalUsers}
+              limit={usersPerPage}
+              onPageChange={(p) => fetchUsers(p, filters.search)}
+              label="users"
+            />
           )}
         </div>
       )}
@@ -755,7 +729,9 @@ const AdminPanel = ({ user }) => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {log.details || '-'}
+                        <div className="max-w-[240px] truncate" title={log.details || '-'}>
+                          {log.details || '-'}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(log.createdAt).toLocaleString()}
@@ -769,38 +745,14 @@ const AdminPanel = ({ user }) => {
 
           {/* Pagination for Logs */}
           {totalLogs > 0 && (
-            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500 text-center sm:text-left">
-                Showing {((currentPage - 1) * logsPerPage) + 1}-{Math.min(currentPage * logsPerPage, totalLogs)} of {totalLogs} logs
-              </p>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => currentPage > 1 && fetchUserLogs(currentPage - 1)}
-                  disabled={loading || currentPage === 1}
-                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
-                    currentPage === 1 ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                  }`}
-                  aria-label="Previous page"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <span className="px-3 py-1 text-sm font-medium flex items-center justify-center w-10">{currentPage}</span>
-                <button
-                  onClick={() => currentPage < totalPages && fetchUserLogs(currentPage + 1)}
-                  disabled={loading || currentPage === totalPages}
-                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
-                    currentPage === totalPages ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                  }`}
-                  aria-label="Next page"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <Pagination
+              page={currentPage}
+              totalPages={totalPages}
+              total={totalLogs}
+              limit={logsPerPage}
+              onPageChange={fetchUserLogs}
+              label="logs"
+            />
           )}
         </div>
       )}
@@ -967,38 +919,14 @@ const AdminPanel = ({ user }) => {
 
           {/* Pagination for Executives */}
           {execTotal > 0 && (
-            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500 text-center sm:text-left">
-                Showing {((execCurrentPage - 1) * 20) + 1}-{Math.min(execCurrentPage * 20, execTotal)} of {execTotal} executives
-              </p>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => execCurrentPage > 1 && fetchExecutives(execCurrentPage - 1, execSearch, execIsActiveFilter)}
-                  disabled={loading || execCurrentPage === 1}
-                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
-                    execCurrentPage === 1 ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                  }`}
-                  aria-label="Previous page"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <span className="px-3 py-1 text-sm font-medium flex items-center justify-center w-10">{execCurrentPage}</span>
-                <button
-                  onClick={() => execCurrentPage < execTotalPages && fetchExecutives(execCurrentPage + 1, execSearch, execIsActiveFilter)}
-                  disabled={loading || execCurrentPage === execTotalPages}
-                  className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
-                    execCurrentPage === execTotalPages ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                  }`}
-                  aria-label="Next page"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <Pagination
+              page={execCurrentPage}
+              totalPages={execTotalPages}
+              total={execTotal}
+              limit={20}
+              onPageChange={(p) => fetchExecutives(p, execSearch, execIsActiveFilter)}
+              label="executives"
+            />
           )}
         </div>
       )}

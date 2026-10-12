@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Loader, FileText, Download, Printer, Edit, Trash2, Eye, AlertTriangle, CheckCircle, User, ChevronLeft, ChevronRight, XCircle, FileOutput } from 'lucide-react';
+import { Plus, Search, Loader, FileText, Download, Printer, Edit, Trash2, Eye, AlertTriangle, CheckCircle, User, XCircle, FileOutput } from 'lucide-react';
 import { drsiApi } from '../api/drsi';
 import DocumentForm from '../components/drsi/DocumentForm';
 import DocumentPreview from '../components/drsi/DocumentPreview';
 import { formatDate, formatCurrency, numberToWords } from '../utils/numberToWords';
 import { useToast } from '../components/Toast';
+import { Pagination, StatusBadge, EmptyState } from '../components/ui';
+import { useDebounce } from '../hooks/useDebounce';
 
 const DeliveryReceipts = ({ user }) => {
   const [drs, setDRs] = useState([]);
@@ -24,11 +26,13 @@ const DeliveryReceipts = ({ user }) => {
 
   const { toast, confirmDialog, promptDialog } = useToast();
 
+  const debouncedSearch = useDebounce(search, 400);
+
   const fetchDRs = async () => {
     setLoading(true);
     try {
       const response = await drsiApi.getDRs({
-        search,
+        search: debouncedSearch,
         status: statusFilter,
         page,
         limit: 20
@@ -45,7 +49,7 @@ const DeliveryReceipts = ({ user }) => {
 
   useEffect(() => {
     fetchDRs();
-  }, [search, statusFilter, page]);
+  }, [debouncedSearch, statusFilter, page]);
 
   const handleSubmit = async (data, action) => {
     setSubmitting(true);
@@ -178,15 +182,7 @@ const DeliveryReceipts = ({ user }) => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    if (status === 'issued') {
-      return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Issued</span>;
-    }
-    if (status === 'cancelled') {
-      return <span className="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">Cancelled</span>;
-    }
-    return <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">Draft</span>;
-  };
+  const getStatusBadge = (status) => <StatusBadge status={status} />;
 
   return (
     <div className="p-4 sm:p-6">
@@ -238,11 +234,13 @@ const DeliveryReceipts = ({ user }) => {
             <p className="text-gray-500">Loading delivery receipts...</p>
           </div>
         ) : drs.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <FileText className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-            <p>No delivery receipts found</p>
-            <button onClick={handleNew} className="mt-4 text-primary hover:underline touch-manipulation min-h-[44px]">Create your first DR</button>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="No delivery receipts found"
+            action={
+              <button onClick={handleNew} className="text-primary hover:underline touch-manipulation min-h-[44px]">Create your first DR</button>
+            }
+          />
         ) : (
           <>
             {/* Mobile Card Layout */}
@@ -475,36 +473,14 @@ const DeliveryReceipts = ({ user }) => {
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="px-4 py-3 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <p className="text-sm text-gray-500 text-center sm:text-left">
-                  Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, total)} of {total} DRs
-                </p>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
-                      page === 1 ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                    }`}
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <span className="px-3 py-1 text-sm font-medium flex items-center justify-center w-10">{page}</span>
-                  <button
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
-                      page === totalPages ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                    }`}
-                    aria-label="Next page"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            )}
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              limit={20}
+              onPageChange={setPage}
+              label="DRs"
+            />
           </>
         )}
       </div>

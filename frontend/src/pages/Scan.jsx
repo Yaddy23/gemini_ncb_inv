@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import api from '../api/axios';
 import * as XLSX from 'xlsx';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Trash2, RotateCcw, Camera, X, Volume2, VolumeX, Upload, Download, FileText, PlusCircle, MinusCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useOnline } from '../context/OnlineContext';
@@ -52,9 +53,8 @@ const Scan = ({ user }) => {
   scanQueueRef.current = scanQueue;
   const flushQueueRef = useRef(null); // Latest flushQueue, for the stable drain-handler registration
 
-  // Mobile detection for responsive UI
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                   window.innerWidth <= 768;
+  // Mobile detection for responsive UI (resize-reactive; see hooks/useMediaQuery)
+  const isMobile = useIsMobile();
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -1105,7 +1105,7 @@ const Scan = ({ user }) => {
                       {isCameraActive && (
                         <button
                           onClick={() => handleScanMethodChange('manual')}
-                          className={`absolute top-3 right-3 z-60 p-2.5 bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center shadow-lg ${
+                          className={`absolute top-3 right-3 z-[60] p-2.5 bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center shadow-lg ${
                             isFullscreen ? 'top-4 right-4' : 'top-3 right-3'
                           }`}
                           aria-label="Close camera"
@@ -1129,7 +1129,7 @@ const Scan = ({ user }) => {
                         className={`w-full overflow-hidden ${isFullscreen ? 'flex-1 flex items-center justify-center rounded-none' : 'rounded-lg'}`}
                         style={{
                           aspectRatio: isFullscreen ? undefined : '16/9',
-                          maxHeight: isFullscreen ? 'calc(100vh - 260px)' : '500px',
+                          maxHeight: isFullscreen ? 'calc(100vh - 4rem - env(safe-area-inset-top, 0px))' : '500px',
                           backgroundColor: '#000'
                         }}
                       />

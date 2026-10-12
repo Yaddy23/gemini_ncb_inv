@@ -5,6 +5,7 @@ import CustomerAutocomplete from './CustomerAutocomplete';
 import { formatDate, formatDateInput } from '../../utils/numberToWords';
 import api from '../../api/axios';
 import { useToast } from '../Toast';
+import { Modal, Button } from '../ui';
 
 // A draft is only worth keeping if it has meaningful content
 // (avoids junk drafts from casually opening the modal)
@@ -327,81 +328,73 @@ const DocumentForm = ({
 
   // Render duplicate ISBN confirmation dialog
   const DuplicateDialog = () => {
-    if (!duplicateDialog.open) return null;
-
     return (
-      <div className="fixed inset-0 z-50 overflow-y-auto" onClick={() => setDuplicateDialog({ open: false, duplicates: [], action: null, payload: null })}>
-        <div className="fixed inset-0 bg-black/50" />
-        <div className="relative mx-auto mt-20 w-full max-w-md bg-white rounded-xl shadow-xl p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+      <Modal
+        open={duplicateDialog.open}
+        onClose={() => setDuplicateDialog({ open: false, duplicates: [], action: null, payload: null })}
+        title={
+          <span className="flex items-center space-x-3">
+            <span className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
               <AlertTriangle className="w-6 h-6 text-yellow-600" />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900">Duplicate ISBNs Detected</h3>
-          </div>
-
-          <p className="text-gray-600 mb-4">The following ISBNs appear multiple times in your line items:</p>
-
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 max-h-48 overflow-y-auto">
-            {duplicateDialog.duplicates.map((dup, index) => (
-              <div key={index} className="mb-3 last:mb-0">
-                <p className="font-medium text-gray-900">ISBN: {dup.isbn}</p>
-                <p className="text-sm text-gray-600">
-                  Appears {dup.count} time{dup.count > 1 ? 's' : ''} (line{dup.count > 1 ? 's' : ''}: {dup.lineNumbers.join(', ')})
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <p className="text-sm text-gray-600 mb-6">How would you like to proceed?</p>
-
-          <div className="flex space-x-3 justify-end">
-            <button
-              onClick={() => setDuplicateDialog({ open: false, duplicates: [], action: null, payload: null })}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
-            >
+            </span>
+            Duplicate ISBNs Detected
+          </span>
+        }
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" size="touch" onClick={() => setDuplicateDialog({ open: false, duplicates: [], action: null, payload: null })}>
               Cancel
-            </button>
-            <button
-              onClick={() => handleDuplicateConfirm(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              <Trash2 className="w-4 h-4 inline mr-1" />
+            </Button>
+            <Button variant="danger" size="touch" onClick={() => handleDuplicateConfirm(true)}>
+              <Trash2 className="w-4 h-4" />
               Remove Duplicates
-            </button>
-            <button
-              onClick={() => handleDuplicateConfirm(false)}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-            >
-              <CheckCircle className="w-4 h-4 inline mr-1" />
+            </Button>
+            <Button variant="primary" size="touch" onClick={() => handleDuplicateConfirm(false)}>
+              <CheckCircle className="w-4 h-4" />
               Proceed Anyway
-            </button>
-          </div>
+            </Button>
+          </>
+        }
+      >
+        <p className="text-gray-600 mb-4">The following ISBNs appear multiple times in your line items:</p>
+
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 max-h-48 overflow-y-auto">
+          {duplicateDialog.duplicates.map((dup, index) => (
+            <div key={index} className="mb-3 last:mb-0">
+              <p className="font-medium text-gray-900">ISBN: {dup.isbn}</p>
+              <p className="text-sm text-gray-600">
+                Appears {dup.count} time{dup.count > 1 ? 's' : ''} (line{dup.count > 1 ? 's' : ''}: {dup.lineNumbers.join(', ')})
+              </p>
+            </div>
+          ))}
         </div>
-      </div>
+
+        <p className="text-sm text-gray-600">How would you like to proceed?</p>
+      </Modal>
     );
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-50">
       {/* Overlay */}
       <div className="fixed inset-0 bg-black/50" onClick={handleClose} />
 
-      {/* Modal */}
-      <div className="relative mx-auto mt-10 w-full max-w-5xl bg-white rounded-xl shadow-xl">
+      {/* Modal - full-screen sheet on mobile, centered card on desktop */}
+      <div className="absolute inset-0 flex flex-col bg-white md:relative md:mx-auto md:my-8 md:w-full md:max-w-5xl md:max-h-[calc(100vh-4rem)] md:rounded-xl md:shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white flex-shrink-0 md:rounded-t-xl">
           <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
             <FileText className="w-6 h-6 text-primary" />
             <span>{title} {initialData ? 'Edit' : 'New'}</span>
           </h2>
-          <button onClick={handleClose} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+          <button onClick={handleClose} className="p-2 min-h-[44px] min-w-[44px] text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 flex items-center justify-center">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Form Content */}
-        <div className="p-4 space-y-6 max-h-[70vh] overflow-y-auto">
+        <div className="p-4 space-y-6 flex-1 min-h-0 overflow-y-auto">
           {/* Header Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -516,52 +509,50 @@ const DocumentForm = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-end space-x-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-          <div className="flex items-center space-x-2 ml-auto">
-            {initialData && !loading && !exporting && (
-              <>
-                <button
-                  onClick={() => handleExport('xlsx')}
-                  disabled={exporting}
-                  className="flex items-center space-x-1 px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
-                  title="Download Excel"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span className="text-sm font-medium">Excel</span>
-                </button>
-                <button
-                  onClick={() => handleExport('pdf')}
-                  disabled={exporting}
-                  className="flex items-center space-x-1 px-3 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
-                  title="Download PDF"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span className="text-sm font-medium">PDF</span>
-                </button>
-              </>
-            )}
-            <button
-              onClick={handleClose}
-              disabled={loading}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => handleSubmit('draft')}
-              disabled={loading}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
-            >
-              {loading ? <Loader className="w-4 h-4 animate-spin mx-auto" /> : 'Save Draft'}
-            </button>
-            <button
-              onClick={() => handleSubmit('issue')}
-              disabled={loading || formData.status === 'issued'}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
-            >
-              {loading ? <Loader className="w-4 h-4 animate-spin mx-auto" /> : 'Issue'}
-            </button>
-          </div>
+        <div className="flex flex-wrap items-center justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0 md:rounded-b-xl">
+          {initialData && !loading && !exporting && (
+            <>
+              <button
+                onClick={() => handleExport('xlsx')}
+                disabled={exporting}
+                className="flex items-center space-x-1 px-3 py-2 min-h-[44px] bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
+                title="Download Excel"
+              >
+                <FileText className="w-4 h-4" />
+                <span className="text-sm font-medium">Excel</span>
+              </button>
+              <button
+                onClick={() => handleExport('pdf')}
+                disabled={exporting}
+                className="flex items-center space-x-1 px-3 py-2 min-h-[44px] bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                title="Download PDF"
+              >
+                <FileText className="w-4 h-4" />
+                <span className="text-sm font-medium">PDF</span>
+              </button>
+            </>
+          )}
+          <button
+            onClick={handleClose}
+            disabled={loading}
+            className="px-4 py-2 min-h-[44px] bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => handleSubmit('draft')}
+            disabled={loading}
+            className="px-4 py-2 min-h-[44px] bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+          >
+            {loading ? <Loader className="w-4 h-4 animate-spin mx-auto" /> : 'Save Draft'}
+          </button>
+          <button
+            onClick={() => handleSubmit('issue')}
+            disabled={loading || formData.status === 'issued'}
+            className="px-4 py-2 min-h-[44px] bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+          >
+            {loading ? <Loader className="w-4 h-4 animate-spin mx-auto" /> : 'Issue'}
+          </button>
         </div>
       </div>
       {/* Duplicate ISBN Dialog */}

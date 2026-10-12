@@ -1,6 +1,17 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, LogIn, LogOut, User, Plus, Barcode, ShoppingBag, Settings, Loader, LayoutDashboard, X, FileText, Receipt, FilePlus } from 'lucide-react';
+import { Menu, LogOut, User, Plus, Barcode, ShoppingBag, Settings, X, FileText, Receipt, FilePlus } from 'lucide-react';
+
+const NAV_ITEMS = [
+  { to: '/', label: 'Scan Books', icon: Barcode },
+  { to: '/books', label: 'Book Catalog', icon: ShoppingBag },
+  { to: '/import-export', label: 'Import/Export', icon: Plus, adminOnly: true },
+  { to: '/evaluation-forms', label: 'Evaluation Forms', icon: FilePlus },
+  { to: '/delivery-receipts', label: 'Delivery Receipts', icon: Receipt },
+  { to: '/sales-invoices', label: 'Sales Invoices', icon: FileText },
+  { to: '/admin', label: 'Admin Panel', icon: Settings, adminOnly: true },
+  { to: '/profile', label: 'Profile', icon: User },
+];
 
 const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose }) => {
   const location = useLocation();
@@ -20,8 +31,10 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
   }
 
   const sidebarClasses = isMobile
-    ? 'fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r shadow-xl z-50 transform transition-transform duration-300 ease-in-out'
+    ? 'fixed left-0 topbar-height h-[calc(100vh-4rem-env(safe-area-inset-top,0px))] w-64 bg-white border-r shadow-xl z-50 transform transition-transform duration-300 ease-in-out pt-safe'
     : `fixed left-0 top-0 h-screen bg-white border-r shadow-lg z-50 transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`;
+
+  const items = NAV_ITEMS.filter((item) => !item.adminOnly || user.role === 'Admin');
 
   return (
     <nav className={sidebarClasses}>
@@ -69,99 +82,19 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
 
         <div className="flex-1 overflow-y-auto">
           <ul className="space-y-1">
-            <li>
-              <Link
-                to="/"
-                className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
-                onClick={isMobile ? onClose : undefined}
-              >
-                <Barcode className="w-5 h-5 flex-shrink-0" />
-                {!isMobile && !collapsed && <span className="transition-opacity duration-200">Scan Books</span>}
-                {isMobile && <span className="ml-3">Scan Books</span>}
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/books"
-                className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
-                onClick={isMobile ? onClose : undefined}
-              >
-                <ShoppingBag className="w-5 h-5 flex-shrink-0" />
-                {!isMobile && !collapsed && <span className="transition-opacity duration-200">Book Catalog</span>}
-                {isMobile && <span className="ml-3">Book Catalog</span>}
-              </Link>
-            </li>
-            {user.role === 'Admin' && (
-              <li>
+            {items.map(({ to, label, icon: Icon }) => (
+              <li key={to}>
                 <Link
-                  to="/import-export"
+                  to={to}
                   className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
                   onClick={isMobile ? onClose : undefined}
                 >
-                  <Plus className="w-5 h-5 flex-shrink-0" />
-                  {!isMobile && !collapsed && <span className="transition-opacity duration-200">Import/Export</span>}
-                  {isMobile && <span className="ml-3">Import/Export</span>}
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {!isMobile && !collapsed && <span className="transition-opacity duration-200">{label}</span>}
+                  {isMobile && <span className="ml-3">{label}</span>}
                 </Link>
               </li>
-            )}
-            <li>
-              <Link
-                to="/evaluation-forms"
-                className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
-                onClick={isMobile ? onClose : undefined}
-              >
-                <FilePlus className="w-5 h-5 flex-shrink-0" />
-                {!isMobile && !collapsed && <span className="transition-opacity duration-200">Evaluation Forms</span>}
-                {isMobile && <span className="ml-3">Evaluation Forms</span>}
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/delivery-receipts"
-                className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
-                onClick={isMobile ? onClose : undefined}
-              >
-                <Receipt className="w-5 h-5 flex-shrink-0" />
-                {!isMobile && !collapsed && <span className="transition-opacity duration-200">Delivery Receipts</span>}
-                {isMobile && <span className="ml-3">Delivery Receipts</span>}
-              </Link>
-            </li>
-            
-            <li>
-              <Link
-                to="/sales-invoices"
-                className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
-                onClick={isMobile ? onClose : undefined}
-              >
-                <FileText className="w-5 h-5 flex-shrink-0" />
-                {!isMobile && !collapsed && <span className="transition-opacity duration-200">Sales Invoices</span>}
-                {isMobile && <span className="ml-3">Sales Invoices</span>}
-              </Link>
-            </li>
-            {user.role === 'Admin' && (
-              <li>
-                <Link
-                  to="/admin"
-                  className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
-                  onClick={isMobile ? onClose : undefined}
-                >
-                  <Settings className="w-5 h-5 flex-shrink-0" />
-                  {!isMobile && !collapsed && <span className="transition-opacity duration-200">Admin Panel</span>}
-                  {isMobile && <span className="ml-3">Admin Panel</span>}
-                </Link>
-              </li>
-            )}
-            <li>
-              <Link
-                to="/profile"
-                className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
-                onClick={isMobile ? onClose : undefined}
-              >
-                <User className="w-5 h-5 flex-shrink-0" />
-                {!isMobile && !collapsed && <span className="transition-opacity duration-200">Profile</span>}
-                {isMobile && <span className="ml-3">Profile</span>}
-              </Link>
-            </li>
+            ))}
           </ul>
         </div>
 

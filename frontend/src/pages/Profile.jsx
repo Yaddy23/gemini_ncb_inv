@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { User, CheckCircle, AlertTriangle, Loader, Edit, Lock } from 'lucide-react';
+import { User, Loader, Edit, Lock } from 'lucide-react';
+import { AlertBanner } from '../components/ui';
 
-const Profile = ({ user, onLogin }) => {
+const Profile = ({ user, onLogin, onLogout }) => {
   const [profileData, setProfileData] = useState({
     username: user.username,
     email: user.email,
@@ -105,8 +106,7 @@ const Profile = ({ user, onLogin }) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    onLogin(null);
+    onLogout?.();
   };
 
   return (
@@ -235,31 +235,9 @@ const Profile = ({ user, onLogin }) => {
         )}
 
         {/* Success/Error Messages */}
-        {error && (
-          <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <AlertTriangle className="w-5 h-5 text-red-400" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            </div>
-          </div>
-        )}
+        {error && <div className="mt-4"><AlertBanner tone="error">{error}</AlertBanner></div>}
 
-        {success && (
-          <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-400 rounded-r-lg">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <CheckCircle className="w-5 h-5 text-green-400" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-green-700">{success}</p>
-              </div>
-            </div>
-          </div>
-        )}
+        {success && <div className="mt-4"><AlertBanner tone="success">{success}</AlertBanner></div>}
       </div>
 
       {/* Password Change Section */}
@@ -327,31 +305,9 @@ const Profile = ({ user, onLogin }) => {
           </form>
 
           {/* Password Change Messages */}
-          {error && (
-            <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <AlertTriangle className="w-5 h-5 text-red-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              </div>
-            </div>
-          )}
+          {error && <div className="mt-4"><AlertBanner tone="error">{error}</AlertBanner></div>}
 
-          {success && (
-            <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-400 rounded-r-lg">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <CheckCircle className="w-5 h-5 text-green-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-green-700">{success}</p>
-                </div>
-              </div>
-            </div>
-          )}
+          {success && <div className="mt-4"><AlertBanner tone="success">{success}</AlertBanner></div>}
         </div>
       )}
     </div>

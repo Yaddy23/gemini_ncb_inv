@@ -177,7 +177,7 @@ export const ToastProvider = ({ children }) => {
       {children}
 
       {/* Toasts - fixed top-right, stacked */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 w-full max-w-sm pointer-events-none">
+      <div className="fixed top-[calc(1rem+env(safe-area-inset-top,0px))] right-[calc(1rem+env(safe-area-inset-right,0px))] z-50 flex flex-col gap-2 w-full max-w-sm pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="pointer-events-auto">
             <ToastItem toast={t} onClose={removeToast} />

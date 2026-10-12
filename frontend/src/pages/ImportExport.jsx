@@ -346,9 +346,11 @@ const ImportExport = ({ user }) => {
           <button
             onClick={handleImport}
             disabled={!file || importing || previewData.length === 0}
-            className={`w-full sm:w-auto flex items-center justify-center px-6 py-3 ${
-              !file || previewData.length === 0 ? 'bg-gray-200 text-gray-500' : 'bg-primary text-white'
-            } hover:${!file || previewData.length === 0 ? 'bg-gray-300' : 'bg-primary/90'} rounded-lg transition-colors disabled:opacity-50 touch-manipulation min-h-[48px] min-w-[180px]`}
+            className={
+              !file || previewData.length === 0
+                ? 'w-full sm:w-auto flex items-center justify-center px-6 py-3 bg-gray-200 text-gray-500 hover:bg-gray-300 rounded-lg transition-colors disabled:opacity-50 touch-manipulation min-h-[48px] min-w-[180px]'
+                : 'w-full sm:w-auto flex items-center justify-center px-6 py-3 bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50 touch-manipulation min-h-[48px] min-w-[180px]'
+            }
           >
             {importing ? (
               <>
