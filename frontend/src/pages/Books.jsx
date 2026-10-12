@@ -287,7 +287,7 @@ const Books = ({ user }) => {
                     </div>
                     <div>
                       <span className="text-gray-500">Price:</span>
-                      <span className="font-medium text-gray-900 ml-1">₱{book.PRICE.toFixed(2)}</span>
+                      <span className="font-medium text-gray-900 ml-1">₱{Number(book.PRICE || 0).toFixed(2)}</span>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -366,7 +366,7 @@ const Books = ({ user }) => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                       {book.QTY > 0 ? book.QTY : <span className="text-red-600">Out of stock</span>}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{book.PRICE.toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{Number(book.PRICE || 0).toFixed(2)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
                         <button
