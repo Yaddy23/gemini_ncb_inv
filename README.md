@@ -1,44 +1,80 @@
 # Book Inventory Management System
 
-A full-stack web-based Book Inventory Management System with real-time barcode scanning, JWT authentication, role-based access control, and bulk import capabilities.
+A full-stack, installable (PWA) Book Inventory Management System with real-time barcode scanning (online and offline), JWT authentication with refresh tokens and session management, role-based access control, a full document lifecycle (Evaluation Forms → Delivery Receipts → Sales Invoices), and bulk import/export — built with React and Express on MongoDB. Deployed on Render.
 
 ## Features
 
-- **User Authentication**: Secure JWT-based authentication with role-based access control (Admin vs Staff)
-- **Barcode Scanning**: Dual-input scanning (hardware scanner & camera) with automatic book lookup
-- **Inventory Management**: Real-time stock updates with audit logging
-- **Bulk Operations**: Excel/CSV import with duplicate handling strategies (skip, update, merge)
-- **Export Functionality**: Export inventory to Excel format
-- **Responsive Design**: Modern UI built with React and Tailwind CSS
-- **Delivery Receipts & Sales Invoices**: Professional document generation with customizable Excel templates
-- **Evaluation Forms (EF)**: Evaluation form workflow linked to Delivery Receipts
-- **Marketing Executive Management**: Admin-only dropdown for "Requested By" field in EF/DR/SI creation, appears in exports
-- **Real-time Duplicate Detection**: Visual warnings and confirmation dialogs for duplicate ISBN entries
-- **Auto-scan Workflow**: Automatic row addition and focus after barcode scanning for continuous scanning
+### Authentication & Security
+- **JWT authentication** with short-lived access tokens and refresh tokens
+- **Session management**: users can view and revoke their own sessions; Admins can view all active sessions and revoke any user's sessions
+- **Role-based access control** (Admin vs Staff)
+- **Login rate limiting** and bcrypt password hashing
+- **Activity audit log** of security- and data-relevant actions (user logs, filterable and exportable by Admin)
+
+### Inventory
+- **Book catalog** with search, filters (subject, publisher, year, price range, in/low/out of stock), sorting and pagination
+- **Book lookup by ISBN** with Open Library API fallback for titles not yet in the catalog
+- **Stock movements**: inbound, outbound and adjustments — every change writes a stock transaction (previous/new quantity, performed by)
+- **Stock reservation**: DR drafts reserve stock (RESERVE/RELEASE transactions) so the same units can't be promised twice
+- **Per-book transaction history**
+- **Soft archive/restore** of books (Admin only) — archives keep the audit trail intact
+
+### Barcode Scanning (PWA)
+- **Dual input**: hardware scanner (keyboard wedge) and camera scanning (html5-qrcode)
+- **Auto-scan workflow**: rows auto-add and auto-focus for continuous scanning
+- **Offline scanning**: the app is an installable PWA with a precached app shell; scans made offline queue in IndexedDB and replay automatically via Background Sync when connectivity returns
+- **Offline book catalog cache** for ISBN/stock lookups without a network
+- **Real-time duplicate detection**: inline warnings, pre-submit confirmation, and backend 409 validation
+
+### Documents: EF → DR → SI Lifecycle
+- **Evaluation Forms (EF)** → **Delivery Receipts (DR)** → **Sales Invoices (SI)** with linked documents and full draft → issued → cancelled lifecycle
+- **Issue EF**: creates a linked DR draft; **Issue DR**: decrements stock and creates a linked SI draft; **Issue SI**: finalizes the invoice
+- **Cancellation with cascade and reason**: cancelling an EF cascades to its linked draft DR (and that DR's draft SI); cancelling an issued DR restores stock. Cancelled documents are stamped `*** CANCELLED ***` in exports
+- **Professional Excel exports** from templated workbooks (header images, formatted totals, amount-in-words)
+- **Document previews** before export
+- Staff can create, edit, issue and export all document types; cancelling issued documents is Admin-only
+
+### Dashboard
+- Stat cards: total titles, total units, today's transactions, accurate out-of-stock count
+- 14-day stock movement chart (inbound vs outbound)
+- Recent activity feed with per-action icons
+
+### Admin Panel
+- **Users** — create/manage users and roles, revoke a user's sessions
+- **Activity Logs** — paginated, filterable audit log with export
+- **Marketing Executives** — CRUD for the "Requested By" dropdown used across EF/DR/SI
+- **Archived Books** — view and restore archived books
+- **Sessions** — all active sessions across users, with revocation
+
+### Bulk Operations (Admin only)
+- **Import** from `.xlsx` / `.xls` / `.csv` with three duplicate strategies (skip, update, merge/increment)
+- **Export** the full inventory to Excel
+- **Transaction history export**
 
 ## Tech Stack
 
 ### Frontend
-- React (Vite)
+- React 18 (Vite) + React Router
 - Tailwind CSS
 - Lucide Icons
 - html5-qrcode (camera scanning)
-- XLSX (SheetJS) for file handling
-- Axios for HTTP requests
+- XLSX (SheetJS) for client-side file handling
+- vite-plugin-pwa + Workbox (service worker, Background Sync)
+- Axios
 
 ### Backend
 - Node.js with Express.js
 - MongoDB with Mongoose ODM
-- JWT for authentication
+- JWT (access + refresh tokens)
 - bcryptjs for password hashing
+- express-rate-limit
 - Multer for file uploads
 - ExcelJS for Excel file generation
-- Puppeteer for PDF generation
 
 ## Setup Instructions
 
 ### Prerequisites
-- Node.js (v16+)
+- Node.js (v18+)
 - MongoDB (v4+)
 - Git
 
@@ -47,7 +83,7 @@ A full-stack web-based Book Inventory Management System with real-time barcode s
 1. **Clone the repository**
 ```bash
 git clone <repository-url>
-cd book-inventory-system
+cd gemini_ncb_inv
 ```
 
 2. **Install backend dependencies**
@@ -66,10 +102,12 @@ npm install
    - Create a `.env` file in the backend directory based on the example below:
    ```
    MONGODB_URI=mongodb://localhost:27017/book-inventory
-   PORT=5000
+   PORT=8080
    JWT_SECRET=your_jwt_secret_key_here_change_in_production
    NODE_ENV=development
+   CLIENT_URL=http://localhost:3000
    ```
+   - `CLIENT_URL` is added to the CORS allowlist (production); localhost origins are always allowed in development.
 
 5. **Seed the Database (Optional)**
 ```bash
@@ -87,110 +125,131 @@ node seed.js
 cd backend
 npm run dev
 ```
-   Server will run on http://localhost:5000
+   Server will run on http://localhost:8080
 
 2. **Start the frontend development server**
 ```bash
 cd ../frontend
 npm run dev
 ```
-   Application will be available at http://localhost:3000
+   Application will be available at http://localhost:3000 (the Vite dev server proxies `/api` to the backend).
+
+### Production
+- Dockerfiles and a `docker-compose.yml` are provided for both apps as a containerized deployment option.
+- The production instance is deployed on Render.
 
 ## API Endpoints
 
-### Authentication
-- `POST /api/auth/login` - Login and receive JWT token
-- `GET /api/auth/me` - Get current user profile
-- `POST /api/auth/register` - Register new user (Admin only)
+### Authentication (`/api/auth`)
+- `POST /login` — Login (rate limited); returns access + refresh tokens
+- `POST /refresh` — Rotate refresh token
+- `GET /me` — Current user profile
+- `PUT /profile` — Update profile
+- `PUT /change-password` — Change password
+- `POST /logout` — Logout (revokes refresh token)
+- `GET /sessions` — List own sessions
+- `DELETE /sessions` / `DELETE /sessions/:sessionId` — Revoke sessions
+- `POST /register` — Register user (Admin only)
+- `GET /users` — List users (Admin only)
+- `PUT /users/:id` — Update user role/status (Admin only)
+- `DELETE /users/:id` — Delete user (Admin only)
+- `DELETE /users/:id/sessions` — Revoke a user's sessions (Admin only)
+- `GET /admin/sessions` — All active sessions (Admin only)
 
-### Books
-- `GET /api/books` - Get paginated list of books with search
-- `GET /api/books/lookup/:isbn` - Lookup book by ISBN (with Open Library fallback)
-- `POST /api/books` - Create new book (Admin only)
-- `PATCH /api/books/:isbn/stock` - Update book stock (inbound/outbound)
+### Books (`/api/books`)
+- `GET /` — Paginated list with search, filters, sorting
+- `GET /stats` — Dashboard stats (totals, low/out-of-stock counts, today's transactions)
+- `GET /out-of-stock` — Accurate out-of-stock count + list
+- `GET /catalog` — Minimal catalog for the offline PWA cache
+- `GET /lookup/:isbn` — ISBN lookup (Open Library fallback)
+- `GET /:isbn/transactions` — Per-book transaction history
+- `POST /` — Create book (Admin only)
+- `PUT /:isbn` — Update book (Admin only)
+- `DELETE /:isbn` — Archive book (Admin only)
+- `PUT /:isbn/restore` — Restore archived book (Admin only)
 
-### Marketing Executives (Admin Only)
-- `GET /api/marketing-executives` - List all with pagination, search, status filter
-- `GET /api/marketing-executives/active` - Get active executives for dropdown
-- `POST /api/marketing-executives` - Create new marketing executive
-- `PUT /api/marketing-executives/:id` - Update marketing executive
-- `DELETE /api/marketing-executives/:id` - Delete marketing executive
+### Stock (`/api/stock`)
+- `PATCH /:isbn/stock` — Stock movement (INBOUND / OUTBOUND)
+- `GET /summary` — Movement summary per day (drives the dashboard chart)
+- `GET /recent` — Recent transactions (dashboard activity feed)
+- `POST /bulk-import` — Excel/CSV import (Admin only)
+- `GET /export` — Inventory export (Admin only)
+- `GET /transactions` — Transaction history with filters (Admin only)
+- `GET /transactions/export` — Transaction export (Admin only)
 
 ### Delivery Receipts (`/api/drsi/dr`)
-- `GET /` - Paginated DR list with filters
-- `POST /` - Create DR draft (includes marketingExecutive)
-- `GET /:id` - Get DR by ID
-- `PUT /:id` - Update DR draft
-- `DELETE /:id` - Delete DR draft
-- `POST /:id/issue` - Issue DR (decrement stock, create SI)
-- `GET /:id/export` - Export DR (PDF/XLSX)
+- `GET /` — Paginated DR list with filters
+- `POST /` — Create DR draft (reserves stock)
+- `GET /:id` / `PUT /:id` / `DELETE /:id` — Draft management
+- `POST /:id/issue` — Issue DR (decrement stock, create linked SI draft)
+- `POST /:id/cancel` — Cancel issued DR (restores stock) — Admin only
+- `GET /:id/export` — Export DR to Excel
 
 ### Sales Invoices (`/api/drsi/si`)
-- `GET /` - Paginated SI list with filters
-- `POST /` - Create SI draft (includes marketingExecutive)
-- `GET /:id` - Get SI by ID
-- `PUT /:id` - Update SI draft
-- `DELETE /:id` - Delete SI draft
-- `POST /:id/issue` - Issue SI
-- `GET /:id/export` - Export SI (PDF/XLSX)
+- `GET /` — Paginated SI list with filters
+- `POST /` — Create SI draft
+- `GET /:id` / `PUT /:id` / `DELETE /:id` — Draft management
+- `POST /:id/issue` — Issue SI
+- `POST /:id/cancel` — Cancel issued SI — Admin only
+- `GET /:id/export` — Export SI to Excel
 
 ### Evaluation Forms (`/api/ef`)
-- `GET /` - Paginated EF list with filters
-- `POST /` - Create EF draft (includes marketingExecutive)
-- `GET /:id` - Get EF by ID
-- `PUT /:id` - Update EF draft
-- `DELETE /:id` - Delete EF draft
-- `POST /:id/issue` - Issue EF (creates linked DR draft)
-- `GET /:id/export` - Export EF (PDF/XLSX)
+- `GET /` — Paginated EF list with filters
+- `POST /` — Create EF draft
+- `GET /:id` / `PUT /:id` / `DELETE /:id` — Draft management
+- `POST /:id/issue` — Issue EF (creates linked DR draft)
+- `POST /:id/cancel` — Cancel issued EF (cascades to linked drafts) — Admin only
+- `GET /:id/export` — Export EF to Excel
 
-### Bulk Operations
-- `POST /api/books/bulk-import` - Import books from Excel/CSV (Admin only)
-- `GET /api/books/export` - Export inventory to Excel (Admin only)
+### Marketing Executives (`/api/marketing-executives`)
+- `GET /` — List with pagination, search, status filter
+- `GET /active` — Active executives (for document dropdowns)
+- `GET /:id` — Get by ID
+- `POST /` / `PUT /:id` / `DELETE /:id` — Create/update/deactivate (Admin only)
 
-### Stock Transactions (`/api/stock`)
-- `GET /transactions` - Transaction history with filters
-- `GET /transactions/:isbn` - Transactions for specific ISBN
+### Customers (`/api/customers`)
+- `GET /` — Paginated list with search
+- `GET /:id` — Customer detail
+- `GET /:id/documents` — All EF/DR/SI documents for a customer
+- `POST /` / `PUT /:id` / `DELETE /:id` — Manage customers (Admin only)
 
-### User Logs (`/api/logs`)
-- `GET /` - Paginated activity logs (Admin only)
+### User Logs (`/api/user-logs`) — Admin only
+- `GET /` — Paginated activity logs with filters
+- `GET /export` — Export logs
+- `GET /actions` / `GET /users` — Filter option lists
 
-### Admin User Management (`/api/auth/users`)
-- `GET /users` - List users with pagination/search (Admin only)
-- `PUT /users/:id` - Update user role/status (Admin only)
-- `DELETE /users/:id` - Delete user (Admin only)
+### Health
+- `GET /health` — Health check
 
-## Usage Guide
+## Role Permissions
 
-### For Staff Users
-1. Login with staff credentials
-2. Use the scanner to scan book barcodes
-3. View current inventory in the Books section
-4. Perform stock in/out operations
-
-### For Admin Users
-1. All staff capabilities plus:
-2. Manage users and roles
-3. Manage Marketing Executives (Admin Panel)
-4. Perform bulk imports/exports
-5. Create new book records
-6. Create and manage Evaluation Forms, Delivery Receipts, Sales Invoices
-7. View complete audit logs
+| Capability | Staff | Admin |
+|---|---|---|
+| Dashboard, Books (view), Scanning (incl. offline) | ✓ | ✓ |
+| EF/DR/SI: create, edit drafts, issue, delete drafts, preview, Excel export | ✓ | ✓ |
+| Cancel issued documents | — | ✓ |
+| Create/edit book records, archive/restore | — | ✓ |
+| Stock movements (inbound/outbound) | ✓ | ✓ |
+| Import/Export page (bulk import, inventory & transaction exports) | — | ✓ |
+| Admin Panel (users, logs, executives, archived books, sessions) | — | ✓ |
+| Manage customers & marketing executives | — | ✓ |
+| View/revoke own sessions | ✓ | ✓ |
+| View/revoke all users' sessions | — | ✓ |
 
 ## Document Workflows
 
 ### Evaluation Form → Delivery Receipt → Sales Invoice
-1. **Create EF**: Fill evaluation form with line items, select "Requested By" (Marketing Executive)
-2. **Issue EF**: Creates a linked DR draft with same data, marks EF as issued
-3. **Issue DR**: Decrements stock, creates linked SI draft
-4. **Issue SI**: Finalizes the sales invoice
+1. **Create EF**: fill the evaluation form with line items, select "Requested By" (Marketing Executive)
+2. **Issue EF**: creates a linked DR draft with the same data, marks the EF as issued
+3. **Issue DR**: decrements stock (including the draft's reservation) and creates a linked SI draft
+4. **Issue SI**: finalizes the sales invoice
+5. **Cancel** (Admin only): an EF cancel cascades to its linked draft DR/SI; cancelling an issued DR restores stock; cancelled documents are stamped in exports
 
 ### Export Templates
-- **EF**: Uses `EF_FORM.xlsx` template with header image, EF Number in G3 (28pt bold), date in G5, Marketing Executive in G4
-- **DR**: Uses `DR_SI_NEW_TEMPLATE.xlsx` (DR1 sheet), Marketing Executive in G4, date in H5 (MM/DD/YYYY)
-- **SI**: Uses `DR_SI_NEW_TEMPLATE.xlsx` (INV1 sheet), Marketing Executive in H14, date in H15 (MM/DD/YYYY), Customer in E15, Address in E17, P.O.# in E19
-
-### Row Hiding
-All templates support up to 648 rows with automatic hiding of empty rows after the last item entry.
+- **EF**: `EF_FORM.xlsx` — header image, EF number in G3 (28pt bold), Marketing Executive in G4, date in G5
+- **DR**: `DR_SI_NEW_TEMPLATE.xlsx` (DR1 sheet) — customer in E5/E6, Marketing Executive in G4, date in H5 (MM/DD/YYYY)
+- **SI**: `DR_SI_NEW_TEMPLATE.xlsx` (INV1 sheet) — customer in E15, address in E17, P.O.# in E19, Marketing Executive in H14, date in H15, discount in K677, total in B3
+- Empty rows after the last item are hidden automatically in all templates
 
 ## Bulk Import Format
 
@@ -203,33 +262,28 @@ Required columns:
 - PRICE (number)
 
 Optional columns:
-- SUBJECT (string)
-- EDITION (string)
-- YEAR (string)
-- AUTHOR (string)
-- BIND (string)
-- PUBLISHER (string)
+- SUBJECT, EDITION, YEAR, AUTHOR, BIND, PUBLISHER
 
 Import Modes:
-- **Skip Duplicates**: Skip rows where ISBN already exists
-- **Update Existing**: Update book metadata and set QTY to imported value
-- **Merge / Increment Stock**: Update metadata and increment existing QTY by imported QTY
+- **Skip Duplicates**: skip rows whose ISBN already exists
+- **Update Existing**: update metadata and set QTY to the imported value
+- **Merge / Increment Stock**: update metadata and increment existing QTY by the imported QTY
 
-## Barcode Scanning
+## Offline Scanning
 
-The system supports two input methods:
+The app is an installable PWA (Add to Home Screen). Offline behavior:
 
-1. **Hardware Scanner**: Treated as keyboard input. Scan a barcode and press Enter to submit.
-2. **Camera Scanner**: Click the "Start Scan" button to activate your device's camera for scanning.
-
-**Auto-scan workflow**: After scanning an ISBN, a new row is automatically added and focused for continuous scanning without mouse interaction.
+1. The app shell is precached, so it opens without a network
+2. Scans made offline are queued in IndexedDB and marked pending
+3. When connectivity returns, the queue drains automatically (Background Sync where supported — works even if the page is closed; page-driven flush on the `online` event as fallback)
+4. The book catalog is cached locally for offline ISBN/stock lookups
 
 ## Duplicate ISBN Handling
 
 Three-layer duplicate protection:
-1. **Real-time visual warnings** in the line items table (yellow highlight)
-2. **Pre-submit confirmation dialog** asking to proceed or remove duplicates
-3. **Backend validation** with 409 response on duplicate submission
+1. Real-time visual warnings in the line items table
+2. Pre-submit confirmation dialog asking to proceed or remove duplicates
+3. Backend validation with 409 response on duplicate submission
 
 ## License
 
@@ -238,5 +292,6 @@ MIT License
 ## Acknowledgments
 
 - Open Library API for book data fallback
-- Lucide Icons for beautiful icon set
-- Tailwind CSS for utility-first CSS framework
+- Lucide Icons for the icon set
+- Tailwind CSS for utility-first CSS
+- Workbox / vite-plugin-pwa for offline support
