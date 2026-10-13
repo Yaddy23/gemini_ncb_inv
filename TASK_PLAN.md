@@ -114,7 +114,7 @@ Each task lists priority, estimated effort, and the files it touches.
   - Files: `frontend/src/pages/Dashboard.jsx`
   - Effort: medium
 
-- [ ] **3.3 Advanced book filtering + sortable columns**
+- [x] **3.3 Advanced book filtering + sortable columns**
   - Subject/publisher/year/price-range/in-stock filters; backend supports `sortBy/sortOrder` but UI never uses it.
   - Files: `frontend/src/pages/Books.jsx`, `backend/controllers/bookController.js`
   - Effort: medium

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { ShoppingBag, Search, Plus, Barcode, Trash, Edit, Loader, CheckCircle, AlertTriangle, History } from 'lucide-react';
+import { ShoppingBag, Search, Plus, Barcode, Trash, Edit, Loader, CheckCircle, AlertTriangle, History, Filter, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { Modal, Pagination, EmptyState, AlertBanner } from '../components/ui';
 import { useDebounce } from '../hooks/useDebounce';
@@ -14,6 +14,10 @@ const Books = ({ user }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState({ subject: '', publisher: '', year: '', minPrice: '', maxPrice: '', stock: '' });
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
@@ -35,6 +39,7 @@ const Books = ({ user }) => {
   const [formError, setFormError] = useState(null);
 
   const debouncedSearch = useDebounce(search, 300);
+  const debouncedFilters = useDebounce(filters, 300);
 
   // Per-book transaction history modal state
   const [historyBook, setHistoryBook] = useState(null);
@@ -83,7 +88,15 @@ const Books = ({ user }) => {
       } else {
         setLoading(true);
       }
-      const response = await api.get(`/books?page=${page}&limit=${limit}&search=${debouncedSearch}`);
+      const params = { page, limit, search: debouncedSearch, sortBy, sortOrder };
+      if (debouncedFilters.subject) params.subject = debouncedFilters.subject;
+      if (debouncedFilters.publisher) params.publisher = debouncedFilters.publisher;
+      if (debouncedFilters.year) params.year = debouncedFilters.year;
+      if (debouncedFilters.minPrice !== '') params.minPrice = debouncedFilters.minPrice;
+      if (debouncedFilters.maxPrice !== '') params.maxPrice = debouncedFilters.maxPrice;
+      if (debouncedFilters.stock) params.stock = debouncedFilters.stock;
+
+      const response = await api.get('/books', { params });
 
       setBooks(response.data.books);
       setTotalPages(response.data.pages);
@@ -97,7 +110,7 @@ const Books = ({ user }) => {
         setLoading(false);
       }
     }
-  }, [page, limit, debouncedSearch]);
+  }, [page, limit, debouncedSearch, debouncedFilters, sortBy, sortOrder]);
 
   const isInitialLoad = useRef(true);
 
@@ -106,6 +119,49 @@ const Books = ({ user }) => {
     setSearch(value);
     setPage(1); // Reset to first page when searching
   };
+
+  const activeFilterCount = Object.values(filters).filter(v => v !== '').length;
+
+  const handleFilterChange = (field, value) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+    setPage(1); // Reset to first page when filtering
+  };
+
+  const clearFilters = () => {
+    setFilters({ subject: '', publisher: '', year: '', minPrice: '', maxPrice: '', stock: '' });
+    setPage(1);
+  };
+
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+    setPage(1);
+  };
+
+  // Sortable <th> for the desktop table; first click sorts A-Z, second Z-A
+  const sortHeader = (label, field, widthClass, extra = null) => (
+    <th className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider truncate ${widthClass || ''}`}>
+      <button
+        type="button"
+        onClick={() => handleSort(field)}
+        className="group inline-flex items-center space-x-1 hover:text-gray-700"
+      >
+        <span className="truncate">{label}</span>
+        {sortBy === field ? (
+          sortOrder === 'asc'
+            ? <ArrowUp className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            : <ArrowDown className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+        ) : (
+          <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-400 flex-shrink-0" />
+        )}
+        {extra}
+      </button>
+    </th>
+  );
 
   // Single effect for all data fetching
   useEffect(() => {
@@ -170,11 +226,8 @@ const Books = ({ user }) => {
       try {
         await api.delete(`/books/${isbn}`);
         setDeleteMode(false);
-        // Refresh books list
-        const response = await api.get(`/books?page=${page}&limit=${limit}&search=${debouncedSearch}`);
-        setBooks(response.data.books);
-        setTotalPages(response.data.pages);
-        setTotalBooks(response.data.total);
+        // Refresh books list (fetchBooks applies current page/search/filters/sort)
+        await fetchBooks(false);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to delete book');
       }
@@ -230,6 +283,22 @@ const Books = ({ user }) => {
         </div>
 
         <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2 justify-end">
+          <button
+            onClick={() => setShowFilters(prev => !prev)}
+            className={`relative flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[140px] ${
+              showFilters || activeFilterCount > 0
+                ? 'bg-primary text-white hover:bg-primary/90'
+                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+            }`}
+          >
+            <Filter className="w-5 h-5" />
+            <span className="hidden sm:inline">Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
           {user.role === 'Admin' && (
             <button
               onClick={() => setSelectedBook({ action: 'create' })}
@@ -249,12 +318,121 @@ const Books = ({ user }) => {
         </div>
       </div>
 
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="mb-6 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Subject</label>
+              <input
+                type="text"
+                placeholder="e.g. Mathematics"
+                value={filters.subject}
+                onChange={(e) => handleFilterChange('subject', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Publisher</label>
+              <input
+                type="text"
+                placeholder="e.g. Pearson"
+                value={filters.publisher}
+                onChange={(e) => handleFilterChange('publisher', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Year</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="e.g. 2018"
+                value={filters.year}
+                onChange={(e) => handleFilterChange('year', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Stock</label>
+              <select
+                value={filters.stock}
+                onChange={(e) => handleFilterChange('stock', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation bg-white"
+              >
+                <option value="">All</option>
+                <option value="in">In stock</option>
+                <option value="low">Low stock</option>
+                <option value="out">Out of stock</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Min Price (₱)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0"
+                value={filters.minPrice}
+                onChange={(e) => handleFilterChange('minPrice', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Max Price (₱)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Any"
+                value={filters.maxPrice}
+                onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation"
+              />
+            </div>
+          </div>
+
+          {/* Mobile sorting - desktop sorts by clicking table headers */}
+          <div className="mt-3 md:hidden">
+            <label className="block text-xs font-medium text-gray-500 mb-1">Sort by</label>
+            <select
+              value={`${sortBy}:${sortOrder}`}
+              onChange={(e) => {
+                const [field, order] = e.target.value.split(':');
+                setSortBy(field);
+                setSortOrder(order);
+                setPage(1);
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation bg-white"
+            >
+              <option value="createdAt:desc">Newest first</option>
+              <option value="TITLE:asc">Title (A–Z)</option>
+              <option value="TITLE:desc">Title (Z–A)</option>
+              <option value="AUTHOR:asc">Author (A–Z)</option>
+              <option value="QTY:desc">Quantity (high–low)</option>
+              <option value="PRICE:asc">Price (low–high)</option>
+              <option value="PRICE:desc">Price (high–low)</option>
+            </select>
+          </div>
+
+          <div className="mt-3 flex justify-end">
+            <button
+              onClick={clearFilters}
+              disabled={activeFilterCount === 0}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 underline disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed touch-manipulation min-h-[44px]"
+            >
+              Clear filters
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Books Table - Responsive: Cards on mobile, Table on desktop */}
       <div className="bg-white rounded-lg shadow">
         {/* Mobile Card Layout */}
         <div className="block md:hidden">
           {books.length === 0 ? (
-            <EmptyState icon={ShoppingBag} title="No books found" message="Try searching or adding new books." />
+            <EmptyState icon={ShoppingBag} title="No books found" message={activeFilterCount > 0 ? 'No books match your filters. Try clearing them.' : 'Try searching or adding new books.'} />
           ) : (
             <div className="divide-y divide-gray-200">
               {books.map((book) => (
@@ -340,15 +518,13 @@ const Books = ({ user }) => {
           <table className="min-w-full divide-y divide-gray-200 table-fixed">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px] truncate">ISBN</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[300px] truncate">
-                  Title {isSearching && <Loader className="w-4 h-4 text-primary animate-spin ml-2 inline" />}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[200px] truncate">Author</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[200px] truncate">Year</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[200px] truncate">Publisher</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[80px] truncate">Qty</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px] truncate">Price</th>
+                {sortHeader('ISBN', 'ISBN', 'w-[120px]')}
+                {sortHeader('Title', 'TITLE', 'w-[300px]', isSearching && <Loader className="w-4 h-4 text-primary animate-spin flex-shrink-0" />)}
+                {sortHeader('Author', 'AUTHOR', 'w-[200px]')}
+                {sortHeader('Year', 'YEAR', 'w-[200px]')}
+                {sortHeader('Publisher', 'PUBLISHER', 'w-[200px]')}
+                {sortHeader('Qty', 'QTY', 'w-[80px]')}
+                {sortHeader('Price', 'PRICE', 'w-[100px]')}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider truncate">Actions</th>
               </tr>
             </thead>
@@ -440,11 +616,8 @@ const Books = ({ user }) => {
                   }
 
                   setSelectedBook(null);
-                  // Refresh books list
-                  const booksResponse = await api.get(`/books?page=${page}&limit=${limit}&search=${debouncedSearch}`);
-                  setBooks(booksResponse.data.books);
-                  setTotalPages(booksResponse.data.pages);
-                  setTotalBooks(booksResponse.data.total);
+                  // Refresh books list (fetchBooks applies current page/search/filters/sort)
+                  await fetchBooks(false);
                 } catch (err) {
                   setFormError(err.response?.data?.message || 'Failed to save book');
                 } finally {

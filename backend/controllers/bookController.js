@@ -32,7 +32,10 @@ const getBookCatalog = async (req, res) => {
   }
 };
 
-// @desc    Get all books with pagination and search
+// Columns the list can be sorted by (anything else falls back to createdAt)
+const SORTABLE_FIELDS = ['createdAt', 'ISBN', 'TITLE', 'AUTHOR', 'SUBJECT', 'YEAR', 'PUBLISHER', 'QTY', 'PRICE'];
+
+// @desc    Get all books with pagination, search, filtering and sorting
 // @route   GET /api/books
 // @access  Private
 const getBooks = async (req, res) => {
@@ -40,24 +43,52 @@ const getBooks = async (req, res) => {
     const pageSize = parseInt(req.query.limit) || 10;
     const page = parseInt(req.query.page) || 1;
     const search = req.query.search || '';
-    const sortBy = req.query.sortBy || 'createdAt';
+    const sortBy = SORTABLE_FIELDS.includes(req.query.sortBy) ? req.query.sortBy : 'createdAt';
     const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
+    const { subject, publisher, year, minPrice, maxPrice, stock } = req.query;
 
-    // Build search query
-    const searchQuery = search
-      ? {
-          $or: [
-            { TITLE: { $regex: search, $options: 'i' } },
-            { AUTHOR: { $regex: search, $options: 'i' } },
-            { ISBN: { $regex: search, $options: 'i' } },
-            { SUBJECT: { $regex: search, $options: 'i' } },
-            { PUBLISHER: { $regex: search, $options: 'i' } },
-          ],
-        }
-      : {};
+    // Search + filters coexist in one query object ($or and field
+    // conditions at the top level are an implicit AND)
+    const query = {};
 
-    const count = await Book.countDocuments(searchQuery);
-    const books = await Book.find(searchQuery)
+    if (search) {
+      query.$or = [
+        { TITLE: { $regex: search, $options: 'i' } },
+        { AUTHOR: { $regex: search, $options: 'i' } },
+        { ISBN: { $regex: search, $options: 'i' } },
+        { SUBJECT: { $regex: search, $options: 'i' } },
+        { PUBLISHER: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (subject) query.SUBJECT = { $regex: subject, $options: 'i' };
+    if (publisher) query.PUBLISHER = { $regex: publisher, $options: 'i' };
+    if (year) query.YEAR = { $regex: year, $options: 'i' };
+
+    const min = parseFloat(minPrice);
+    const max = parseFloat(maxPrice);
+    if (!Number.isNaN(min) || !Number.isNaN(max)) {
+      query.PRICE = {};
+      if (!Number.isNaN(min)) query.PRICE.$gte = min;
+      if (!Number.isNaN(max)) query.PRICE.$lte = max;
+    }
+
+    if (stock === 'in') {
+      query.QTY = { $gt: 0 };
+    } else if (stock === 'out') {
+      query.QTY = 0;
+    } else if (stock === 'low') {
+      // Low = in stock but below the book's own MIN_QTY threshold
+      query.$expr = {
+        $and: [
+          { $gt: ['$QTY', 0] },
+          { $lt: ['$QTY', { $ifNull: ['$MIN_QTY', 5] }] },
+        ],
+      };
+    }
+
+    const count = await Book.countDocuments(query);
+    const books = await Book.find(query)
       .sort({ [sortBy]: sortOrder })
       .limit(pageSize)
       .skip(pageSize * (page - 1));
