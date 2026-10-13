@@ -1,7 +1,7 @@
 import React from 'react';
-import { FileText, X } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { formatDate, formatCurrency } from '../../utils/numberToWords';
-import { StatusBadge } from '../ui';
+import { StatusBadge, Modal } from '../ui';
 
 const TYPE_NAMES = {
   DR: 'Delivery Receipt',
@@ -26,25 +26,26 @@ const DocumentPreview = ({ document, documentType, onClose }) => {
   const getStatusBadge = (status) => <StatusBadge status={status} />;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Overlay */}
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative mx-auto mt-10 w-full max-w-5xl bg-white rounded-xl shadow-xl">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl z-10">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
-            <FileText className="w-6 h-6 text-primary" />
-            <span>{title}</span>
-          </h2>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100" title="Close">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="p-4 max-h-[70vh] overflow-y-auto">
+    <Modal
+      open
+      onClose={onClose}
+      size="2xl"
+      title={
+        <span className="flex items-center space-x-2">
+          <FileText className="w-6 h-6 text-primary" />
+          <span>{title}</span>
+        </span>
+      }
+      footer={
+        <button
+          onClick={onClose}
+          className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px]"
+        >
+          Close
+        </button>
+      }
+    >
+      <div>
           {doc.status === 'cancelled' && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm font-bold text-red-800">CANCELLED</p>
@@ -143,21 +144,10 @@ const DocumentPreview = ({ document, documentType, onClose }) => {
             </table>
           </div>
 
-          {/* Created by */}
-          <p className="mt-4 text-xs text-gray-400">Created by {doc.createdBy?.username || '—'} on {formatDate(doc.createdAt)}</p>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end p-4 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px]"
-          >
-            Close
-          </button>
-        </div>
+        {/* Created by */}
+        <p className="mt-4 text-xs text-gray-400">Created by {doc.createdBy?.username || '—'} on {formatDate(doc.createdAt)}</p>
       </div>
-    </div>
+    </Modal>
   );
 };
 

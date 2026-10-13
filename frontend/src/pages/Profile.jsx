@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useToast } from '../components/Toast';
 import { User, Loader, Edit, Lock } from 'lucide-react';
-import { AlertBanner } from '../components/ui';
+import { AlertBanner, Button } from '../components/ui';
 
 const Profile = ({ user, onLogin, onLogout }) => {
   const [profileData, setProfileData] = useState({
@@ -174,20 +174,24 @@ const Profile = ({ user, onLogin, onLogout }) => {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200">
-              <button
+              <Button
+                variant="secondary"
+                size="touch"
                 type="button"
                 onClick={() => setEditMode(false)}
-                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors touch-manipulation min-h-[44px]"
+                className="flex-1 sm:flex-none"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
+                size="touch"
                 type="submit"
-                disabled={loading}
-                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors touch-manipulation min-h-[44px]"
+                loading={loading}
+                className="flex-1 sm:flex-none"
               >
                 {loading ? 'Saving...' : 'Save Changes'}
-              </button>
+              </Button>
             </div>
           </form>
         ) : (
@@ -227,21 +231,25 @@ const Profile = ({ user, onLogin, onLogout }) => {
             </div>
 
             <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <button
+              <Button
+                variant="primary"
+                size="touch"
                 onClick={() => setEditMode(true)}
-                className="flex-1 flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors touch-manipulation min-h-[48px]"
+                className="flex-1"
               >
                 <Edit className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
                 Edit Profile
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="secondary"
+                size="touch"
                 onClick={() => setShowPasswordChange(!showPasswordChange)}
-                className="flex-1 flex items-center justify-center px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors touch-manipulation min-h-[48px]"
+                className="flex-1"
               >
                 <Lock className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
                 Change Password
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -299,20 +307,24 @@ const Profile = ({ user, onLogin, onLogout }) => {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200">
-              <button
+              <Button
+                variant="secondary"
+                size="touch"
                 type="button"
                 onClick={() => setShowPasswordChange(false)}
-                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors touch-manipulation min-h-[44px]"
+                className="flex-1 sm:flex-none"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
+                size="touch"
                 type="submit"
-                disabled={loading}
-                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors touch-manipulation min-h-[44px]"
+                loading={loading}
+                className="flex-1 sm:flex-none"
               >
                 {loading ? 'Changing...' : 'Change Password'}
-              </button>
+              </Button>
             </div>
           </form>
 

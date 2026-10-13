@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Loader, FileText, Edit, Trash2, Eye, User, XCircle } from 'lucide-react';
+import { Plus, Loader, FileText, Edit, Trash2, Eye, User, XCircle } from 'lucide-react';
 import { drsiApi } from '../api/drsi';
 import DocumentForm from '../components/drsi/DocumentForm';
 import DocumentPreview from '../components/drsi/DocumentPreview';
 import { formatDate, formatCurrency } from '../utils/numberToWords';
 import { useToast } from '../components/Toast';
-import { Pagination, StatusBadge, EmptyState } from '../components/ui';
+import { Pagination, StatusBadge, EmptyState, ListToolbar } from '../components/ui';
 import { useDebounce } from '../hooks/useDebounce';
+
+const STATUS_OPTIONS = [
+  { value: '', label: 'All Status' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'issued', label: 'Issued' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
 
 const SalesInvoices = ({ user }) => {
   const [sis, setSIs] = useState([]);
@@ -157,30 +164,14 @@ const SalesInvoices = ({ user }) => {
       </div>
 
       {/* Search & Filter */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5 mb-4 sm:mb-6">
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Search by SI number or customer..."
-              className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
-            />
-          </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="w-full sm:w-48 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
-          >
-            <option value="">All Status</option>
-            <option value="draft">Draft</option>
-            <option value="issued">Issued</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </div>
-      </div>
+      <ListToolbar
+        search={search}
+        onSearchChange={(v) => { setSearch(v); setPage(1); }}
+        searchPlaceholder="Search by SI number or customer..."
+        status={statusFilter}
+        onStatusChange={(v) => { setStatusFilter(v); setPage(1); }}
+        statusOptions={STATUS_OPTIONS}
+      />
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

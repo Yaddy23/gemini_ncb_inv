@@ -375,25 +375,58 @@ const DocumentForm = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50">
-      {/* Overlay */}
-      <div className="fixed inset-0 bg-black/50" onClick={handleClose} />
+    <>
+      {/* Duplicate ISBN Dialog */}
+      <DuplicateDialog />
 
-      {/* Modal - full-screen sheet on mobile, centered card on desktop */}
-      <div className="absolute inset-0 flex flex-col bg-white md:relative md:mx-auto md:my-8 md:w-full md:max-w-5xl md:max-h-[calc(100vh-4rem)] md:rounded-xl md:shadow-xl">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white flex-shrink-0 md:rounded-t-xl">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
+      <Modal
+        open
+        onClose={handleClose}
+        size="sheet"
+        title={
+          <span className="flex items-center space-x-2">
             <FileText className="w-6 h-6 text-primary" />
             <span>{title} {initialData ? 'Edit' : 'New'}</span>
-          </h2>
-          <button onClick={handleClose} className="p-2 min-h-[44px] min-w-[44px] text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 flex items-center justify-center">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
+          </span>
+        }
+        footer={
+          <>
+            {initialData && !loading && (
+              <button
+                onClick={handleExport}
+                className="flex items-center space-x-1 px-3 py-2 min-h-[44px] bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                title="Download Excel"
+              >
+                <FileText className="w-4 h-4" />
+                <span className="text-sm font-medium">Excel</span>
+              </button>
+            )}
+            <button
+              onClick={handleClose}
+              disabled={loading}
+              className="px-4 py-2 min-h-[44px] bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleSubmit('draft')}
+              disabled={loading}
+              className="px-4 py-2 min-h-[44px] bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+            >
+              {loading ? <Loader className="w-4 h-4 animate-spin mx-auto" /> : 'Save Draft'}
+            </button>
+            <button
+              onClick={() => handleSubmit('issue')}
+              disabled={loading || formData.status === 'issued'}
+              className="px-4 py-2 min-h-[44px] bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+            >
+              {loading ? <Loader className="w-4 h-4 animate-spin mx-auto" /> : 'Issue'}
+            </button>
+          </>
+        }
+      >
         {/* Form Content */}
-        <div className="p-4 space-y-6 flex-1 min-h-0 overflow-y-auto">
+        <div className="space-y-6">
           {/* Header Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -506,45 +539,8 @@ const DocumentForm = ({
             maxRows={300}
           />
         </div>
-
-        {/* Footer Actions */}
-        <div className="flex flex-wrap items-center justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0 md:rounded-b-xl">
-          {initialData && !loading && (
-            <button
-              onClick={handleExport}
-              className="flex items-center space-x-1 px-3 py-2 min-h-[44px] bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
-              title="Download Excel"
-            >
-              <FileText className="w-4 h-4" />
-              <span className="text-sm font-medium">Excel</span>
-            </button>
-          )}
-          <button
-            onClick={handleClose}
-            disabled={loading}
-            className="px-4 py-2 min-h-[44px] bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => handleSubmit('draft')}
-            disabled={loading}
-            className="px-4 py-2 min-h-[44px] bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
-          >
-            {loading ? <Loader className="w-4 h-4 animate-spin mx-auto" /> : 'Save Draft'}
-          </button>
-          <button
-            onClick={() => handleSubmit('issue')}
-            disabled={loading || formData.status === 'issued'}
-            className="px-4 py-2 min-h-[44px] bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
-          >
-            {loading ? <Loader className="w-4 h-4 animate-spin mx-auto" /> : 'Issue'}
-          </button>
-        </div>
-      </div>
-      {/* Duplicate ISBN Dialog */}
-      <DuplicateDialog />
-    </div>
+      </Modal>
+    </>
   );
 };
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import api from '../api/axios';
 import { Upload, CheckCircle, AlertTriangle, Loader, Trash, Edit, Loader as LoaderIcon } from 'lucide-react';
+import { AlertBanner } from '../components/ui';
 import * as XLSX from 'xlsx';
 
 const ImportExport = ({ user }) => {
@@ -330,15 +331,8 @@ const ImportExport = ({ user }) => {
         )}
 
         {previewError && (
-          <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <AlertTriangle className="w-5 h-5 text-red-400" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{previewError}</p>
-              </div>
-            </div>
+          <div className="mt-4">
+            <AlertBanner tone="error">{previewError}</AlertBanner>
           </div>
         )}
 
@@ -372,16 +366,7 @@ const ImportExport = ({ user }) => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-4 sm:mb-6">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Import Results</h2>
           {importSuccess && (
-            <div className="mb-4 p-4 bg-green-50 border-l-4 border-green-400 rounded-r-lg">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-green-700">{importSuccess}</p>
-                </div>
-              </div>
-            </div>
+            <AlertBanner tone="success">{importSuccess}</AlertBanner>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="flex items-center space-x-3 p-3 sm:p-4 bg-primary/5 rounded-lg">
@@ -452,16 +437,7 @@ const ImportExport = ({ user }) => {
       {/* Import Error */}
       {importError && !importResults && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <AlertTriangle className="w-5 h-5 text-red-400" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{importError}</p>
-              </div>
-            </div>
-          </div>
+          <AlertBanner tone="error">{importError}</AlertBanner>
         </div>
       )}
 

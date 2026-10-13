@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { Barcode, ShoppingBag, Loader, CheckCircle, AlertTriangle, Trash2, RotateCcw, Camera, X, Volume2, VolumeX, Upload, Download, FileText, PlusCircle, MinusCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { AlertBanner } from '../components/ui';
 import { useOnline } from '../context/OnlineContext';
 import { enqueueScan, getPendingItems, drainQueue, registerBackgroundSync } from '../lib/offlineQueue';
 import { lookupLocal, adjustLocalStock, refreshCatalog } from '../lib/bookCatalog';
@@ -1299,33 +1300,11 @@ const Scan = ({ user }) => {
 
               {/* Error/Success Messages */}
               {error && (
-                <div className="bg-red-50 border-l-4 border-red-400 p-3 sm:p-4 rounded-r-lg">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-x-3 gap-2 sm:gap-0">
-                    <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                    <p className="text-sm text-red-700 flex-1">{error}</p>
-                    <button
-                      onClick={() => setError(null)}
-                      className="px-3 py-1.5 text-sm text-red-600 hover:text-red-800 bg-red-50 rounded-lg touch-manipulation min-h-[44px]"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
+                <AlertBanner tone="error" onClose={() => setError(null)}>{error}</AlertBanner>
               )}
 
               {success && (
-                <div className="bg-green-50 border-l-4 border-green-400 p-3 sm:p-4 rounded-r-lg">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-x-3 gap-2 sm:gap-0">
-                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                    <p className="text-sm text-green-700 flex-1">{success}</p>
-                    <button
-                      onClick={() => setSuccess(null)}
-                      className="px-3 py-1.5 text-sm text-green-600 hover:text-green-800 bg-green-50 rounded-lg touch-manipulation min-h-[44px]"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
+                <AlertBanner tone="success" onClose={() => setSuccess(null)}>{success}</AlertBanner>
               )}
 
               {/* Pending Queue - shows scans waiting to sync */}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Plus, X, Edit as EditIcon, Trash2, CheckCircle, RotateCcw, ShoppingBag } from 'lucide-react';
+import { Plus, Edit as EditIcon, Trash2, CheckCircle, RotateCcw, ShoppingBag } from 'lucide-react';
 import { useToast } from '../components/Toast';
-import { Pagination, AlertBanner, EmptyState } from '../components/ui';
+import { Modal, Pagination, AlertBanner, EmptyState } from '../components/ui';
 import { useDebounce } from '../hooks/useDebounce';
 
 const AdminPanel = ({ user }) => {
@@ -1347,185 +1347,179 @@ const AdminPanel = ({ user }) => {
 
     {/* Create User Modal */}
     {showCreateModal && (
-      <div className="fixed inset-0 z-50 overflow-y-auto">
-        <div className="fixed inset-0 bg-black/50" onClick={() => setShowCreateModal(false)} />
-        <div className="relative mx-auto my-8 sm:mt-10 w-full max-w-md sm:max-w-lg bg-white rounded-xl shadow-xl sm:rounded-2xl">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Create New User</h2>
-            <button onClick={() => setShowCreateModal(false)} className="p-2 text-gray-500 hover:text-gray-700 touch-manipulation min-h-[44px] min-w-[44px]">
-              <X className="w-5 h-5" />
+      <Modal
+        open
+        onClose={() => setShowCreateModal(false)}
+        title="Create New User"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(false)}
+              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors"
+            >
+              Cancel
             </button>
+            <button
+              type="submit"
+              form="create-user-form"
+              disabled={loading}
+              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 touch-manipulation min-h-[44px] transition-colors"
+            >
+              {loading ? 'Creating...' : 'Create User'}
+            </button>
+          </>
+        }
+      >
+        <form id="create-user-form" onSubmit={handleCreateUser} className="space-y-4 sm:space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Username <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={newUser.username}
+              onChange={(e) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              placeholder="Username"
+            />
           </div>
-          <form onSubmit={handleCreateUser} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={newUser.username}
-                onChange={(e) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
-                placeholder="Username"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
-              <input
-                type="email"
-                value={newUser.email}
-                onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
-                placeholder="user@example.com"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password <span className="text-red-500">*</span></label>
-              <input
-                type="password"
-                value={newUser.password}
-                onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
-                placeholder="Min 6 characters"
-                minLength="6"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-              <select
-                value={newUser.role}
-                onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
-              >
-                <option value="Staff">Staff</option>
-                <option value="Admin">Admin</option>
-              </select>
-            </div>
-            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={() => setShowCreateModal(false)}
-                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 touch-manipulation min-h-[44px] transition-colors"
-              >
-                {loading ? 'Creating...' : 'Create User'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+            <input
+              type="email"
+              value={newUser.email}
+              onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              placeholder="user@example.com"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password <span className="text-red-500">*</span></label>
+            <input
+              type="password"
+              value={newUser.password}
+              onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              placeholder="Min 6 characters"
+              minLength="6"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select
+              value={newUser.role}
+              onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+            >
+              <option value="Staff">Staff</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+        </form>
+      </Modal>
     )}
 
     {/* Create Marketing Executive Modal */}
     {showExecCreateModal && (
-      <div className="fixed inset-0 z-50 overflow-y-auto">
-        <div className="fixed inset-0 bg-black/50" onClick={() => setShowExecCreateModal(false)} />
-        <div className="relative mx-auto my-8 sm:mt-10 w-full max-w-md sm:max-w-lg bg-white rounded-xl shadow-xl sm:rounded-2xl">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Create Marketing Executive</h2>
-            <button onClick={() => setShowExecCreateModal(false)} className="p-2 text-gray-500 hover:text-gray-700 touch-manipulation min-h-[44px] min-w-[44px]">
-              <X className="w-5 h-5" />
+      <Modal
+        open
+        onClose={() => setShowExecCreateModal(false)}
+        title="Create Marketing Executive"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setShowExecCreateModal(false)}
+              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors"
+            >
+              Cancel
             </button>
+            <button
+              type="submit"
+              form="create-exec-form"
+              disabled={loading}
+              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 touch-manipulation min-h-[44px] transition-colors"
+            >
+              {loading ? 'Creating...' : 'Create Executive'}
+            </button>
+          </>
+        }
+      >
+        <form id="create-exec-form" onSubmit={handleCreateExecutive} className="space-y-4 sm:space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={newExecutive.name}
+              onChange={(e) => setNewExecutive(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              placeholder="Marketing Executive Name"
+            />
           </div>
-          <form onSubmit={handleCreateExecutive} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={newExecutive.name}
-                onChange={(e) => setNewExecutive(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
-                placeholder="Marketing Executive Name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={newExecutive.isActive ? 'true' : 'false'}
-                onChange={(e) => setNewExecutive(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
-              >
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
-            </div>
-            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={() => setShowExecCreateModal(false)}
-                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 touch-manipulation min-h-[44px] transition-colors"
-              >
-                {loading ? 'Creating...' : 'Create Executive'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              value={newExecutive.isActive ? 'true' : 'false'}
+              onChange={(e) => setNewExecutive(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+            >
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+        </form>
+      </Modal>
     )}
 
     {/* Edit Marketing Executive Modal */}
     {showExecEditModal && (
-      <div className="fixed inset-0 z-50 overflow-y-auto">
-        <div className="fixed inset-0 bg-black/50" onClick={() => { setShowExecEditModal(false); setEditingExecutive(null); setNewExecutive({ name: '', isActive: true }); }} />
-        <div className="relative mx-auto my-8 sm:mt-10 w-full max-w-md sm:max-w-lg bg-white rounded-xl shadow-xl sm:rounded-2xl">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Edit Marketing Executive</h2>
-            <button onClick={() => { setShowExecEditModal(false); setEditingExecutive(null); setNewExecutive({ name: '', isActive: true }); }} className="p-2 text-gray-500 hover:text-gray-700 touch-manipulation min-h-[44px] min-w-[44px]">
-              <X className="w-5 h-5" />
+      <Modal
+        open
+        onClose={() => { setShowExecEditModal(false); setEditingExecutive(null); setNewExecutive({ name: '', isActive: true }); }}
+        title="Edit Marketing Executive"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => { setShowExecEditModal(false); setEditingExecutive(null); setNewExecutive({ name: '', isActive: true }); }}
+              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors"
+            >
+              Cancel
             </button>
+            <button
+              type="submit"
+              form="edit-exec-form"
+              disabled={loading}
+              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 touch-manipulation min-h-[44px] transition-colors"
+            >
+              {loading ? 'Updating...' : 'Update Executive'}
+            </button>
+          </>
+        }
+      >
+        <form id="edit-exec-form" onSubmit={handleUpdateExecutive} className="space-y-4 sm:space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={newExecutive.name}
+              onChange={(e) => setNewExecutive(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              placeholder="Marketing Executive Name"
+            />
           </div>
-          <form onSubmit={handleUpdateExecutive} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={newExecutive.name}
-                onChange={(e) => setNewExecutive(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
-                placeholder="Marketing Executive Name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={newExecutive.isActive ? 'true' : 'false'}
-                onChange={(e) => setNewExecutive(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
-              >
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
-            </div>
-            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={() => { setShowExecEditModal(false); setEditingExecutive(null); setNewExecutive({ name: '', isActive: true }); }}
-                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 touch-manipulation min-h-[44px] transition-colors"
-              >
-                {loading ? 'Updating...' : 'Update Executive'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              value={newExecutive.isActive ? 'true' : 'false'}
+              onChange={(e) => setNewExecutive(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+            >
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+        </form>
+      </Modal>
     )}
     </>
   );

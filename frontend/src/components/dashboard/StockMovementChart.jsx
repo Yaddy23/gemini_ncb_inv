@@ -2,12 +2,15 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Table, BarChart3 } from 'lucide-react';
 
 // Two-series grouped bar chart: daily inbound vs outbound units.
-// Colors validated for CVD safety + contrast on white (dataviz palette slots 1-2).
-const INBOUND_COLOR = '#2563eb';
-const OUTBOUND_COLOR = '#f59e0b';
-const GRID_COLOR = '#e1e0d9';
-const AXIS_COLOR = '#c3c2b7';
-const TICK_TEXT = '#898781';
+// Colors come from CSS variables in index.css (validated for CVD safety +
+// contrast on white, dataviz palette slots 1-2) so the chart restyles with
+// the theme. SVG attributes can't parse var(), so these are only ever used
+// inside `style` props.
+const INBOUND_COLOR = 'var(--chart-inbound)';
+const OUTBOUND_COLOR = 'var(--chart-outbound)';
+const GRID_COLOR = 'var(--chart-grid)';
+const AXIS_COLOR = 'var(--chart-axis)';
+const TICK_TEXT = 'var(--chart-tick)';
 
 // Round a raw step to a clean 1 / 2 / 2.5 / 5 x 10^k value
 const niceStep = (raw) => {
@@ -220,7 +223,7 @@ const StockMovementSvg = ({ data, width, hoveredIndex, onHover }) => {
               x2={padLeft + plotW}
               y1={yFor(t)}
               y2={yFor(t)}
-              stroke={GRID_COLOR}
+              style={{ stroke: GRID_COLOR }}
               strokeWidth="1"
             />
           )
@@ -232,7 +235,7 @@ const StockMovementSvg = ({ data, width, hoveredIndex, onHover }) => {
           x2={padLeft + plotW}
           y1={padTop + plotH}
           y2={padTop + plotH}
-          stroke={AXIS_COLOR}
+          style={{ stroke: AXIS_COLOR }}
           strokeWidth="1"
         />
 
@@ -244,8 +247,7 @@ const StockMovementSvg = ({ data, width, hoveredIndex, onHover }) => {
             y={yFor(t) + 4}
             textAnchor="end"
             fontSize="11"
-            fill={TICK_TEXT}
-            style={{ fontVariantNumeric: 'tabular-nums' }}
+            style={{ fill: TICK_TEXT, fontVariantNumeric: 'tabular-nums' }}
           >
             {compactNumber(t)}
           </text>
@@ -258,7 +260,7 @@ const StockMovementSvg = ({ data, width, hoveredIndex, onHover }) => {
             y={padTop}
             width={bandW}
             height={plotH}
-            fill="#f5f5f4"
+            style={{ fill: 'var(--chart-hover-wash)' }}
             pointerEvents="none"
           />
         )}
@@ -273,13 +275,13 @@ const StockMovementSvg = ({ data, width, hoveredIndex, onHover }) => {
               {d.inbound > 0 && (
                 <path
                   d={topRoundedRect(groupX, yFor(d.inbound), barW, inboundH, 4)}
-                  fill={INBOUND_COLOR}
+                  style={{ fill: INBOUND_COLOR }}
                 />
               )}
               {d.outbound > 0 && (
                 <path
                   d={topRoundedRect(groupX + barW + gap, yFor(d.outbound), barW, outboundH, 4)}
-                  fill={OUTBOUND_COLOR}
+                  style={{ fill: OUTBOUND_COLOR }}
                 />
               )}
             </g>
@@ -295,8 +297,7 @@ const StockMovementSvg = ({ data, width, hoveredIndex, onHover }) => {
               y={padTop + plotH + 16}
               textAnchor="middle"
               fontSize="11"
-              fill={TICK_TEXT}
-              style={{ fontVariantNumeric: 'tabular-nums' }}
+              style={{ fill: TICK_TEXT, fontVariantNumeric: 'tabular-nums' }}
             >
               {dayLabel(d.date)}
             </text>
