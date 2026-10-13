@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import {
   ScanBarcode, ShoppingBag, Plus, Users, Loader, AlertTriangle,
-  ArrowDownCircle, ArrowUpCircle, Package, SlidersHorizontal, Activity
+  ArrowDownCircle, ArrowUpCircle, Package, SlidersHorizontal, Activity,
+  Bookmark, RotateCcw
 } from 'lucide-react';
 import StockMovementChart from '../components/dashboard/StockMovementChart';
 import { Modal } from '../components/ui';
@@ -15,6 +16,17 @@ const ACTION_STYLES = {
   OUTBOUND: { icon: ArrowUpCircle, color: '#f59e0b' },
   ADJUSTMENT: { icon: SlidersHorizontal, color: '#6b7280' },
   BULK_IMPORT: { icon: Package, color: '#6b7280' },
+  RESERVE: { icon: Bookmark, color: '#8b5cf6' },
+  RELEASE: { icon: RotateCcw, color: '#10b981' },
+};
+
+// Human labels for actions whose raw name doesn't read as a sentence
+// (RESERVE/RELEASE are DR-draft reservation holds - stock QTY doesn't move)
+const ACTION_LABELS = {
+  BULK_IMPORT: 'Bulk import',
+  ADJUSTMENT: 'Adjustment',
+  RESERVE: 'Book qty reserved',
+  RELEASE: 'Reserved book qty returned'
 };
 
 const timeAgo = (date) => {
@@ -43,6 +55,7 @@ const RecentActivity = ({ transactions }) => {
       {transactions.map(t => {
         const style = ACTION_STYLES[t.action] || ACTION_STYLES.ADJUSTMENT;
         const Icon = style.icon;
+        const isReservationHold = t.action === 'RESERVE' || t.action === 'RELEASE';
         const qty = t.qtyChanged > 0 ? `+${t.qtyChanged}` : `${t.qtyChanged}`;
         return (
           <li key={t._id} className="flex items-start space-x-3 py-2.5">
@@ -55,10 +68,10 @@ const RecentActivity = ({ transactions }) => {
             <div className="min-w-0 flex-1">
               <p className="text-sm text-gray-900 truncate">
                 <span className="font-medium">{t.title || t.ISBN}</span>
-                <span className="ml-2 font-semibold">{qty}</span>
+                {!isReservationHold && <span className="ml-2 font-semibold">{qty}</span>}
               </p>
               <p className="text-xs text-gray-500 truncate">
-                {t.action === 'BULK_IMPORT' ? 'Bulk import' : t.action === 'ADJUSTMENT' ? 'Adjustment' : t.action.charAt(0) + t.action.slice(1).toLowerCase()}
+                {ACTION_LABELS[t.action] || t.action.charAt(0) + t.action.slice(1).toLowerCase()}
                 {' · '}
                 {t.performedBy?.username || 'Unknown'}
                 {' · '}
