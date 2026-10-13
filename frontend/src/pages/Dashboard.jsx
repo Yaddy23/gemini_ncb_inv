@@ -25,8 +25,8 @@ const ACTION_STYLES = {
 const ACTION_LABELS = {
   BULK_IMPORT: 'Bulk import',
   ADJUSTMENT: 'Adjustment',
-  RESERVE: 'Book qty reserved',
-  RELEASE: 'Reserved book qty returned'
+  RESERVE: 'Book QTY reserved',
+  RELEASE: 'Reserved book QTY returned'
 };
 
 const timeAgo = (date) => {

@@ -8,6 +8,7 @@ const {
   createBook,
   updateBook,
   deleteBook,
+  restoreBook,
   getStats,
   getBookTransactions,
   getOutOfStockBooks,
@@ -25,5 +26,6 @@ router.get('/:isbn/transactions', protect, getBookTransactions);
 router.post('/', protect, admin, createBook);
 router.put('/:isbn', protect, admin, updateBook);
 router.delete('/:isbn', protect, admin, deleteBook);
+router.put('/:isbn/restore', protect, admin, restoreBook);
 
 module.exports = router;

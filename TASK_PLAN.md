@@ -129,12 +129,12 @@ Each task lists priority, estimated effort, and the files it touches.
 
 ## Phase 4 — Security & robustness
 
-- [ ] **4.1 Login rate limiting + account lockout**
+- [x] **4.1 Login rate limiting + account lockout**
   - No brute-force protection on `POST /api/auth/login`; add `express-rate-limit` + failed-attempt lockout + password-strength check.
   - Files: `backend/server.js`, `backend/routes/auth.js`, `backend/controllers/authController.js`
   - Effort: small–medium
 
-- [ ] **4.2 Soft delete / archive for books + executives**
+- [x] **4.2 Soft delete / archive for books + executives**
   - `deleteBook` hard-deletes and cascades transaction deletion (destroys audit trail); executive delete leaves dangling refs.
   - Add `isArchived` flags — hidden from lists, history preserved.
   - Files: `backend/models/Book.js`, `MarketingExecutive.js`, `bookController.js`, `backend/routes/marketingExecutive.js`

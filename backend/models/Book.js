@@ -57,6 +57,11 @@ const bookSchema = new mongoose.Schema({
   PUBLISHER: {
     type: String,
     trim: true
+  },
+  isArchived: {
+    type: Boolean,
+    default: false,
+    index: true
   }
 }, {
   timestamps: true

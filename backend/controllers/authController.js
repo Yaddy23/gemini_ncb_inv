@@ -26,6 +26,21 @@ const logUserActivity = async (userId, action, details = '', req = null) => {
   }
 };
 
+// Password strength validation
+const validatePasswordStrength = (password) => {
+  if (typeof password !== 'string' || password.length < 8) {
+    return 'Password must be at least 8 characters long';
+  }
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+    return 'Password must contain at least one letter and one number';
+  }
+  return null;
+};
+
+// Account lockout settings
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCK_TIME_MINUTES = 15;
+
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
 // @access  Public
@@ -35,26 +50,60 @@ const loginUser = async (req, res) => {
   try {
     const user = await User.findOne({ email });
 
-    if (user && (await user.comparePassword(password))) {
-      // Log successful login
-      await logUserActivity(user._id, 'LOGIN', `User logged in successfully`, req);
-
-      res.json({
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive,
-        token: generateToken(user._id),
-      });
-    } else {
-      // Log failed login attempt
-      if (user) {
-        await logUserActivity(user._id, 'LOGIN', `Failed login attempt - invalid password`, req);
-      }
-      res.status(401);
-      throw new Error('Invalid email or password');
+    if (!user) {
+      // Generic message to avoid user enumeration
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
+
+    // Check if account is locked
+    if (user.lockUntil && user.lockUntil > new Date()) {
+      const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
+      return res.status(423).json({
+        message: `Account temporarily locked due to failed attempts. Try again in ${minutesLeft} minute(s).`
+      });
+    }
+
+    // Check if account is active
+    if (!user.isActive) {
+      return res.status(403).json({ message: 'Account is deactivated. Contact an administrator.' });
+    }
+
+    const passwordOk = await user.comparePassword(password);
+
+    if (!passwordOk) {
+      // Increment failed attempts
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+
+      if (user.failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
+        user.lockUntil = new Date(Date.now() + LOCK_TIME_MINUTES * 60 * 1000);
+      }
+
+      await user.save();
+
+      // Log failed login attempt
+      await logUserActivity(user._id, 'LOGIN', `Failed login attempt - invalid password`, req);
+
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Successful login - reset failed attempts
+    if (user.failedLoginAttempts > 0 || user.lockUntil) {
+      user.failedLoginAttempts = 0;
+      user.lockUntil = undefined;
+      await user.save();
+    }
+
+    // Log successful login
+    await logUserActivity(user._id, 'LOGIN', `User logged in successfully`, req);
+
+    res.json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      token: generateToken(user._id),
+    });
   } catch (error) {
     res.status(401).json({ message: error.message });
   }
@@ -78,6 +127,12 @@ const getUserProfile = async (req, res) => {
 // @access  Private/Admin
 const registerUser = async (req, res) => {
   const { username, email, password, role } = req.body;
+
+  // Validate password strength
+  const passwordError = validatePasswordStrength(password);
+  if (passwordError) {
+    return res.status(400).json({ message: passwordError });
+  }
 
   try {
     const userExists = await User.findOne({
@@ -122,6 +177,12 @@ const registerUser = async (req, res) => {
 // @access  Private
 const changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
+
+  // Validate new password strength
+  const passwordError = validatePasswordStrength(newPassword);
+  if (passwordError) {
+    return res.status(400).json({ message: passwordError });
+  }
 
   try {
     const user = await User.findById(req.user._id);

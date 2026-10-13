@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { ShoppingBag, Search, Plus, Barcode, Trash, Edit, Loader, CheckCircle, AlertTriangle, History, Filter, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
+import { ShoppingBag, Search, Plus, Barcode, Trash, Edit, Loader, CheckCircle, AlertTriangle, History, Filter, ArrowUp, ArrowDown, ChevronsUpDown, RotateCcw } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { Modal, Pagination, EmptyState, AlertBanner } from '../components/ui';
 import { useDebounce } from '../hooks/useDebounce';
@@ -18,6 +18,7 @@ const Books = ({ user }) => {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
   const [showFilters, setShowFilters] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
@@ -95,6 +96,7 @@ const Books = ({ user }) => {
       if (debouncedFilters.minPrice !== '') params.minPrice = debouncedFilters.minPrice;
       if (debouncedFilters.maxPrice !== '') params.maxPrice = debouncedFilters.maxPrice;
       if (debouncedFilters.stock) params.stock = debouncedFilters.stock;
+      if (showArchived) params.archived = 'true';
 
       const response = await api.get('/books', { params });
 
@@ -110,7 +112,7 @@ const Books = ({ user }) => {
         setLoading(false);
       }
     }
-  }, [page, limit, debouncedSearch, debouncedFilters, sortBy, sortOrder]);
+  }, [page, limit, debouncedSearch, debouncedFilters, sortBy, sortOrder, showArchived]);
 
   const isInitialLoad = useRef(true);
 
@@ -219,8 +221,8 @@ const Books = ({ user }) => {
     if (deleteMode) {
       const book = books.find(b => b.ISBN === isbn);
       const sure = await confirmDialog(
-        `Delete "${book?.TITLE || isbn}"? This book and its stock record will be removed. This cannot be undone.`,
-        { title: 'Delete Book', danger: true, confirmText: 'Delete' }
+        `Archive "${book?.TITLE || isbn}"? This book will be hidden from the catalog. Its stock history is preserved.`,
+        { title: 'Archive Book', danger: true, confirmText: 'Archive' }
       );
       if (!sure) return;
       try {
@@ -229,10 +231,26 @@ const Books = ({ user }) => {
         // Refresh books list (fetchBooks applies current page/search/filters/sort)
         await fetchBooks(false);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to delete book');
+        setError(err.response?.data?.message || 'Failed to archive book');
       }
     } else {
       setDeleteMode(true);
+    }
+  };
+
+  const handleRestoreBook = async (isbn) => {
+    const book = books.find(b => b.ISBN === isbn);
+    const sure = await confirmDialog(
+      `Restore "${book?.TITLE || isbn}"? This will make the book visible in the catalog again.`,
+      { title: 'Restore Book', confirmText: 'Restore' }
+    );
+    if (!sure) return;
+    try {
+      await api.put(`/books/${isbn}/restore`);
+      // Refresh books list
+      await fetchBooks(false);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to restore book');
     }
   };
 
@@ -392,6 +410,24 @@ const Books = ({ user }) => {
             </div>
           </div>
 
+          {/* Show archived checkbox (Admin only) */}
+          {user.role === 'Admin' && (
+            <div className="mt-3 flex items-center">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => {
+                    setShowArchived(e.target.checked);
+                    setPage(1);
+                  }}
+                  className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                />
+                <span className="text-sm text-gray-700">Show archived books</span>
+              </label>
+            </div>
+          )}
+
           {/* Mobile sorting - desktop sorts by clicking table headers */}
           <div className="mt-3 md:hidden">
             <label className="block text-xs font-medium text-gray-500 mb-1">Sort by</label>
@@ -432,7 +468,7 @@ const Books = ({ user }) => {
         {/* Mobile Card Layout */}
         <div className="block md:hidden">
           {books.length === 0 ? (
-            <EmptyState icon={ShoppingBag} title="No books found" message={activeFilterCount > 0 ? 'No books match your filters. Try clearing them.' : 'Try searching or adding new books.'} />
+            <EmptyState icon={ShoppingBag} title={showArchived ? 'No archived books' : 'No books found'} message={showArchived ? 'No books have been archived yet.' : (activeFilterCount > 0 ? 'No books match your filters. Try clearing them.' : 'Try searching or adding new books.')} />
           ) : (
             <div className="divide-y divide-gray-200">
               {books.map((book) => (
@@ -443,11 +479,17 @@ const Books = ({ user }) => {
                       <p className="text-sm text-gray-500">by {book.AUTHOR || 'Unknown Author'}</p>
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-1">
-                      <span className={`px-2 py-1 text-xs font-bold rounded-full ${
-                        book.QTY > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                      }`}>
-                        {book.QTY > 0 ? `${book.QTY} in stock` : 'Out of stock'}
-                      </span>
+                      {book.isArchived ? (
+                        <span className="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700">
+                          Archived
+                        </span>
+                      ) : (
+                        <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                          book.QTY > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {book.QTY > 0 ? `${book.QTY} in stock` : 'Out of stock'}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm mb-3">
@@ -477,35 +519,47 @@ const Books = ({ user }) => {
                       <History className="w-4 h-4" />
                       <span>History</span>
                     </button>
-                    <button
-                      onClick={() => setSelectedBook({ action: 'edit', book })}
-                      disabled={deleteMode && selectedBook?.action !== 'delete'}
-                      className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors touch-manipulation disabled:opacity-50 min-h-[44px]"
-                    >
-                      <Edit className="w-4 h-4" />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteBook(book.ISBN)}
-                      disabled={deleteMode && selectedBook?.action !== 'delete' && selectedBook?.action !== undefined}
-                      className={`flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg touch-manipulation min-h-[44px] transition-colors disabled:opacity-50 ${
-                        deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN
-                          ? 'bg-red-500 text-white hover:bg-red-600'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN ? (
-                        <>
-                          <CheckCircle className="w-4 h-4" />
-                          <span>Confirm</span>
-                        </>
-                      ) : (
-                        <>
-                          <Trash className="w-4 h-4" />
-                          <span>Delete</span>
-                        </>
-                      )}
-                    </button>
+                    {book.isArchived ? (
+                      <button
+                        onClick={() => handleRestoreBook(book.ISBN)}
+                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-4 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors touch-manipulation min-h-[44px]"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        <span>Restore</span>
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => setSelectedBook({ action: 'edit', book })}
+                          disabled={deleteMode && selectedBook?.action !== 'delete'}
+                          className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors touch-manipulation disabled:opacity-50 min-h-[44px]"
+                        >
+                          <Edit className="w-4 h-4" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBook(book.ISBN)}
+                          disabled={deleteMode && selectedBook?.action !== 'delete' && selectedBook?.action !== undefined}
+                          className={`flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg touch-manipulation min-h-[44px] transition-colors disabled:opacity-50 ${
+                            deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN
+                              ? 'bg-red-500 text-white hover:bg-red-600'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN ? (
+                            <>
+                              <CheckCircle className="w-4 h-4" />
+                              <span>Confirm</span>
+                            </>
+                          ) : (
+                            <>
+                              <Trash className="w-4 h-4" />
+                              <span>Delete</span>
+                            </>
+                          )}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -530,7 +584,7 @@ const Books = ({ user }) => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {books.length === 0 ? (
-                <EmptyState colSpan={8} icon={ShoppingBag} title="No books found" message="Try searching or adding new books." />
+                <EmptyState colSpan={8} icon={ShoppingBag} title={showArchived ? 'No archived books' : 'No books found'} message={showArchived ? 'No books have been archived yet.' : 'Try searching or adding new books.'} />
               ) : (
                 books.map((book) => (
                   <tr key={book.ISBN} className="hover:bg-gray-50">
@@ -540,7 +594,11 @@ const Books = ({ user }) => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.YEAR || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.PUBLISHER || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      {book.QTY > 0 ? book.QTY : <span className="text-red-600">Out of stock</span>}
+                      {book.isArchived ? (
+                        <span className="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700">Archived</span>
+                      ) : (
+                        book.QTY > 0 ? book.QTY : <span className="text-red-600">Out of stock</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{Number(book.PRICE || 0).toFixed(2)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -553,28 +611,40 @@ const Books = ({ user }) => {
                         >
                           <History className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => setSelectedBook({ action: 'edit', book })}
-                          className="flex items-center justify-center px-3 py-1 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50"
-                          disabled={deleteMode && selectedBook?.action !== 'delete'}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteBook(book.ISBN)}
-                          className={
-                            deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN
-                              ? 'flex items-center justify-center px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600 transition-colors disabled:opacity-50'
-                              : 'flex items-center justify-center px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50'
-                          }
-                          disabled={deleteMode && selectedBook?.action !== 'delete' && selectedBook?.action !== undefined}
-                        >
-                          {deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN ? (
-                            <CheckCircle className="w-4 h-4" />
-                          ) : (
-                            <Trash className="w-4 h-4" />
-                          )}
-                        </button>
+                        {book.isArchived ? (
+                          <button
+                            onClick={() => handleRestoreBook(book.ISBN)}
+                            className="flex items-center justify-center px-3 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600 transition-colors"
+                            title="Restore book"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => setSelectedBook({ action: 'edit', book })}
+                              className="flex items-center justify-center px-3 py-1 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50"
+                              disabled={deleteMode && selectedBook?.action !== 'delete'}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBook(book.ISBN)}
+                              className={
+                                deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN
+                                  ? 'flex items-center justify-center px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600 transition-colors disabled:opacity-50'
+                                  : 'flex items-center justify-center px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50'
+                              }
+                              disabled={deleteMode && selectedBook?.action !== 'delete' && selectedBook?.action !== undefined}
+                            >
+                              {deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN ? (
+                                <CheckCircle className="w-4 h-4" />
+                              ) : (
+                                <Trash className="w-4 h-4" />
+                              )}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

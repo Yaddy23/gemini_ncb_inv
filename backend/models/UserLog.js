@@ -19,6 +19,8 @@ const userLogSchema = new mongoose.Schema({
       'CREATE_BOOK',
       'UPDATE_BOOK',
       'DELETE_BOOK',
+      'ARCHIVE_BOOK',
+      'RESTORE_BOOK',
       'INBOUND_STOCK',
       'OUTBOUND_STOCK',
       'BULK_IMPORT',

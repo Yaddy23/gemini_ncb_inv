@@ -114,14 +114,15 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete marketing executive
+// Delete marketing executive (soft delete - deactivate)
 router.delete('/:id', async (req, res) => {
   try {
     const executive = await MarketingExecutive.findById(req.params.id);
     if (!executive) return res.status(404).json({ message: 'Marketing Executive not found' });
 
-    await executive.deleteOne();
-    res.json({ message: 'Marketing Executive deleted' });
+    executive.isActive = false;
+    await executive.save();
+    res.json({ message: 'Marketing Executive deactivated (preserved for document history)' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

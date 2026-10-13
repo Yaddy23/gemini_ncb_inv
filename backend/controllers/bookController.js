@@ -25,7 +25,10 @@ const logUserActivity = async (userId, action, details = '', req = null) => {
 // @access  Private
 const getBookCatalog = async (req, res) => {
   try {
-    const books = await Book.find({}, { ISBN: 1, TITLE: 1, QTY: 1, reservedQty: 1, _id: 0 });
+    const books = await Book.find(
+      { isArchived: { $ne: true } },
+      { ISBN: 1, TITLE: 1, QTY: 1, reservedQty: 1, _id: 0 }
+    );
     res.json(books);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -45,11 +48,19 @@ const getBooks = async (req, res) => {
     const search = req.query.search || '';
     const sortBy = SORTABLE_FIELDS.includes(req.query.sortBy) ? req.query.sortBy : 'createdAt';
     const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
-    const { subject, publisher, year, minPrice, maxPrice, stock } = req.query;
+    const { subject, publisher, year, minPrice, maxPrice, stock, archived } = req.query;
 
     // Search + filters coexist in one query object ($or and field
     // conditions at the top level are an implicit AND)
     const query = {};
+
+    // By default, exclude archived books. Only admins can see archived books
+    // when explicitly requested via archived=true
+    if (archived === 'true' && req.user?.role === 'Admin') {
+      query.isArchived = true;
+    } else {
+      query.isArchived = { $ne: true };
+    }
 
     if (search) {
       query.$or = [
@@ -110,7 +121,7 @@ const getBooks = async (req, res) => {
 const lookupBookByISBN = async (req, res) => {
   try {
     const { isbn } = req.params;
-    let book = await Book.findOne({ ISBN: isbn });
+    let book = await Book.findOne({ ISBN: isbn, isArchived: { $ne: true } });
 
     if (book) {
       res.json(book);
@@ -265,7 +276,7 @@ const updateBook = async (req, res) => {
   }
 };
 
-// @desc    Delete a book
+// @desc    Delete a book (soft archive)
 // @route   DELETE /api/books/:isbn
 // @access  Private/Admin
 const deleteBook = async (req, res) => {
@@ -278,18 +289,52 @@ const deleteBook = async (req, res) => {
       throw new Error('Book not found');
     }
 
+    if (book.isArchived) {
+      res.status(400);
+      throw new Error('Book is already archived');
+    }
+
     const deletedBookTitle = book.TITLE;
     const deletedBookISBN = book.ISBN;
 
-    await book.deleteOne();
+    // Soft archive - keep stock transactions for audit trail
+    book.isArchived = true;
+    await book.save();
 
-    // Also delete associated stock transactions
-    await StockTransaction.deleteMany({ ISBN: isbn });
+    // Log book archival
+    await logUserActivity(req.user._id, 'ARCHIVE_BOOK', `Archived book: ${deletedBookTitle} (ISBN: ${deletedBookISBN})`, req);
 
-    // Log book deletion
-    await logUserActivity(req.user._id, 'DELETE_BOOK', `Deleted book: ${deletedBookTitle} (ISBN: ${deletedBookISBN})`, req);
+    res.json({ message: 'Book archived successfully' });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
 
-    res.json({ message: 'Book removed' });
+// @desc    Restore an archived book
+// @route   PUT /api/books/:isbn/restore
+// @access  Private/Admin
+const restoreBook = async (req, res) => {
+  try {
+    const { isbn } = req.params;
+
+    const book = await Book.findOne({ ISBN: isbn });
+    if (!book) {
+      res.status(404);
+      throw new Error('Book not found');
+    }
+
+    if (!book.isArchived) {
+      res.status(400);
+      throw new Error('Book is not archived');
+    }
+
+    book.isArchived = false;
+    await book.save();
+
+    // Log book restoration
+    await logUserActivity(req.user._id, 'RESTORE_BOOK', `Restored book: ${book.TITLE} (ISBN: ${book.ISBN})`, req);
+
+    res.json({ message: 'Book restored successfully', book });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -301,6 +346,9 @@ const deleteBook = async (req, res) => {
 const getStats = async (req, res) => {
   try {
     const stats = await Book.aggregate([
+      {
+        $match: { isArchived: { $ne: true } }
+      },
       {
         $group: {
           _id: null,
@@ -384,7 +432,7 @@ const getBookTransactions = async (req, res) => {
 // @access  Private
 const getOutOfStockBooks = async (req, res) => {
   try {
-    const books = await Book.find({ QTY: 0 })
+    const books = await Book.find({ QTY: 0, isArchived: { $ne: true } })
       .sort({ TITLE: 1 })
       .limit(50);
 
@@ -401,6 +449,7 @@ module.exports = {
   createBook,
   updateBook,
   deleteBook,
+  restoreBook,
   getStats,
   getBookTransactions,
   getOutOfStockBooks,

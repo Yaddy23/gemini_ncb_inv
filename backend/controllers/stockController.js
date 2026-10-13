@@ -38,6 +38,11 @@ const updateStock = async (req, res) => {
       throw new Error('Book not found');
     }
 
+    if (book.isArchived) {
+      statusCode = 400;
+      throw new Error('This book is archived. Restore it before changing stock.');
+    }
+
     let newQty;
     if (action === 'INBOUND') {
       newQty = book.QTY + qtyChanged;
@@ -190,6 +195,15 @@ const bulkImportBooks = async (req, res) => {
       const existing = existingMap.get(ISBN);
 
       try {
+        if (existing && existing.isArchived) {
+          results.errors.push({
+            row: validRows.indexOf(rowData) + 2,
+            message: 'Book is archived and cannot be updated via import. Restore it first.',
+            data: rowData
+          });
+          continue;
+        }
+
         if (mode === 'skip' && existing) {
           results.skipped++;
           continue;
