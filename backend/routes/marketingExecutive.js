@@ -3,9 +3,9 @@ const router = express.Router();
 const MarketingExecutive = require('../models/MarketingExecutive');
 const { protect, admin } = require('../middleware/auth');
 
-// Apply auth + admin to all routes
+// Reads are open to all authenticated users (the EF/DR/SI form dropdown
+// fetches /active); creating/updating/deleting executives is admin-only
 router.use(protect);
-router.use(admin);
 
 // List all marketing executives
 router.get('/', async (req, res) => {
@@ -58,7 +58,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create marketing executive
-router.post('/', async (req, res) => {
+router.post('/', admin, async (req, res) => {
   try {
     const { name, isActive } = req.body;
 
@@ -84,7 +84,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update marketing executive
-router.put('/:id', async (req, res) => {
+router.put('/:id', admin, async (req, res) => {
   try {
     const executive = await MarketingExecutive.findById(req.params.id);
     if (!executive) return res.status(404).json({ message: 'Marketing Executive not found' });
@@ -115,7 +115,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete marketing executive (soft delete - deactivate)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', admin, async (req, res) => {
   try {
     const executive = await MarketingExecutive.findById(req.params.id);
     if (!executive) return res.status(404).json({ message: 'Marketing Executive not found' });

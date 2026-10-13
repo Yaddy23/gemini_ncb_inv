@@ -9,9 +9,9 @@ const { protect, admin } = require('../middleware/auth');
 const UserLog = require('../models/UserLog');
 const { generate, generateEF } = require('../services/documentGenerator');
 
-// Apply auth + admin to all routes
+// All document routes require auth; cancelling issued docs is admin-only
+// (matching the frontend, which only shows the Cancel button to admins)
 router.use(protect);
-router.use(admin);
 
 // Helper function to log user activities
 const logUserActivity = async (userId, action, details = '', req = null) => {
@@ -542,7 +542,7 @@ router.post('/dr/:id/issue', async (req, res) => {
 });
 
 // Cancel DR (issued only) - cascades to linked draft SI and restores stock (only for standalone DRs)
-router.post('/dr/:id/cancel', async (req, res) => {
+router.post('/dr/:id/cancel', admin, async (req, res) => {
   try {
     const { cancelReason } = req.body;
     if (!cancelReason || !cancelReason.trim()) {
@@ -847,7 +847,7 @@ router.post('/si/:id/issue', async (req, res) => {
 });
 
 // Cancel SI (issued only) - no stock changes (SIs never moved stock)
-router.post('/si/:id/cancel', async (req, res) => {
+router.post('/si/:id/cancel', admin, async (req, res) => {
   try {
     const { cancelReason } = req.body;
     if (!cancelReason || !cancelReason.trim()) {

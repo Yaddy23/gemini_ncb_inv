@@ -12,7 +12,6 @@ const { generateEF } = require('../services/documentGenerator');
 
 // Apply auth + admin to all routes
 router.use(protect);
-router.use(admin);
 
 // Helper function to log user activities
 const logUserActivity = async (userId, action, details = '', req = null) => {
@@ -352,7 +351,7 @@ router.post('/:id/issue', async (req, res) => {
 
 // Cancel EF (issued only) - cascades to linked draft DR (and its draft SI). No stock impact:
 // draft DRs never decremented stock, and an issued linked DR blocks the cancel.
-router.post('/:id/cancel', async (req, res) => {
+router.post('/:id/cancel', admin, async (req, res) => {
   try {
     const { cancelReason } = req.body;
     if (!cancelReason || !cancelReason.trim()) {
