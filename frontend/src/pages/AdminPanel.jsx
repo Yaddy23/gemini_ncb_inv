@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Plus, X, Edit as EditIcon, Trash2, CheckCircle } from 'lucide-react';
+import { Plus, X, Edit as EditIcon, Trash2, CheckCircle, RotateCcw, ShoppingBag } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { Pagination, AlertBanner, EmptyState } from '../components/ui';
 import { useDebounce } from '../hooks/useDebounce';
@@ -47,6 +47,13 @@ const AdminPanel = ({ user }) => {
     name: '',
     isActive: true
   });
+
+  // Archived Books states
+  const [archivedBooks, setArchivedBooks] = useState([]);
+  const [bookCurrentPage, setBookCurrentPage] = useState(1);
+  const [bookTotalPages, setBookTotalPages] = useState(1);
+  const [bookTotal, setBookTotal] = useState(0);
+  const [bookSearch, setBookSearch] = useState('');
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -267,6 +274,30 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Fetch archived books
+  const fetchArchivedBooks = async (page = 1, search = '') => {
+    setLoading(true);
+    try {
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: '20',
+        search,
+        archived: 'true'
+      });
+
+      const response = await api.get(`/books?${queryParams.toString()}`);
+      setArchivedBooks(response.data.books);
+      setBookTotalPages(response.data.pages);
+      setBookTotal(response.data.total);
+      setBookCurrentPage(page);
+    } catch (err) {
+      setError('Failed to fetch archived books');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle marketing executive creation
   const handleCreateExecutive = async (e) => {
     e.preventDefault();
@@ -332,6 +363,27 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Handle restore archived book
+  const handleRestoreBook = async (isbn) => {
+    const book = archivedBooks.find(b => b.ISBN === isbn);
+    const sure = await confirmDialog(
+      `Restore "${book?.TITLE || isbn}"? This will make the book visible in the catalog again.`,
+      { title: 'Restore Book', confirmText: 'Restore' }
+    );
+    if (!sure) return;
+    setLoading(true);
+    try {
+      await api.put(`/books/${isbn}/restore`);
+      setSuccess('Book restored successfully');
+      fetchArchivedBooks(bookCurrentPage, bookSearch);
+    } catch (err) {
+      setError('Failed to restore book');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle edit executive modal open
   const handleEditExecutive = (executive) => {
     setEditingExecutive(executive);
@@ -350,6 +402,7 @@ const AdminPanel = ({ user }) => {
   // Debounce search inputs so typing doesn't fire a request per keystroke
   const debouncedFiltersSearch = useDebounce(filters.search, 400);
   const debouncedExecSearch = useDebounce(execSearch, 400);
+  const debouncedBookSearch = useDebounce(bookSearch, 400);
 
   // Refetch when page or debounced search changes
   useEffect(() => {
@@ -367,6 +420,13 @@ const AdminPanel = ({ user }) => {
       fetchExecutives(execCurrentPage, debouncedExecSearch, execIsActiveFilter);
     }
   }, [execCurrentPage, debouncedExecSearch, execIsActiveFilter]);
+
+  // Refetch archived books when page or search changes
+  useEffect(() => {
+    if (archivedBooks.length > 0 || debouncedBookSearch !== undefined) {
+      fetchArchivedBooks(bookCurrentPage, debouncedBookSearch);
+    }
+  }, [bookCurrentPage, debouncedBookSearch]);
 
   if (!user || user.role !== 'Admin') {
     return <div className="p-4 sm:p-6">Access denied. Admin privileges required.</div>;
@@ -407,6 +467,14 @@ const AdminPanel = ({ user }) => {
               activeTab === 'executives' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}>
             Marketing Executives
+          </button>
+          <button
+            onClick={() => setActiveTab('books')}
+            className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors touch-manipulation min-h-[44px] ${
+              activeTab === 'books' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}>
+            <ShoppingBag className="w-4 h-4 inline mr-1" />
+            Books
           </button>
         </div>
       </div>
@@ -930,6 +998,156 @@ const AdminPanel = ({ user }) => {
           )}
         </div>
       )}
+
+      {/* Archived Books Tab */}
+      {activeTab === 'books' && (
+        <div>
+          <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="w-full sm:w-auto flex-1">
+              <input
+                type="text"
+                placeholder="Search archived books..."
+                value={bookSearch}
+                onChange={(e) => {
+                  setBookSearch(e.target.value);
+                  setBookCurrentPage(1);
+                  fetchArchivedBooks(1, e.target.value);
+                }}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              />
+            </div>
+          </div>
+
+          {/* Mobile Card Layout */}
+          <div className="block md:hidden">
+            {loading ? (
+              <div className="p-6 text-center">
+                <div className="flex space-x-3 justify-center">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-primary self-center">Loading archived books...</span>
+                </div>
+              </div>
+            ) : archivedBooks.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
+                  <ShoppingBag className="w-6 h-6 text-gray-400" />
+                </div>
+                <p>No archived books found</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden">
+                {archivedBooks.map((book) => (
+                  <div key={book.ISBN} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 truncate">{book.TITLE}</h3>
+                        <p className="text-sm text-gray-500">by {book.AUTHOR || 'Unknown Author'}</p>
+                      </div>
+                      <span className="flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700">
+                        Archived
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                      <div>
+                        <span className="text-gray-500">ISBN:</span>
+                        <span className="font-mono text-gray-900 ml-1">{book.ISBN}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Year:</span>
+                        <span className="text-gray-900 ml-1">{book.YEAR || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Publisher:</span>
+                        <span className="text-gray-900 ml-1">{book.PUBLISHER || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Price:</span>
+                        <span className="font-medium text-gray-900 ml-1">₱{Number(book.PRICE || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleRestoreBook(book.ISBN)}
+                        disabled={loading}
+                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-4 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors touch-manipulation min-h-[44px] disabled:opacity-50"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        <span>Restore</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden md:block overflow-x-auto bg-white rounded-lg">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ISBN</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Publisher</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-4 text-center">
+                      Loading archived books...
+                    </td>
+                  </tr>
+                ) : archivedBooks.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
+                      No archived books found
+                    </td>
+                  </tr>
+                ) : (
+                  archivedBooks.map((book) => (
+                    <tr key={book.ISBN} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{book.ISBN}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[300px]">{book.TITLE}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.AUTHOR || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.YEAR || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.PUBLISHER || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{Number(book.PRICE || 0).toFixed(2)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleRestoreBook(book.ISBN)}
+                          disabled={loading}
+                          className="px-3 py-1 text-xs font-medium bg-green-500 hover:bg-green-600 text-white rounded"
+                        >
+                          <RotateCcw className="w-3 h-3 inline mr-1" />
+                          Restore
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination for Archived Books */}
+          {bookTotal > 0 && (
+            <Pagination
+              page={bookCurrentPage}
+              totalPages={bookTotalPages}
+              total={bookTotal}
+              limit={20}
+              onPageChange={(p) => fetchArchivedBooks(p, bookSearch)}
+              label="archived books"
+            />
+          )}
+        </div>
+      )}
+
     </div>
 
     {/* Create User Modal */}

@@ -119,7 +119,7 @@ Each task lists priority, estimated effort, and the files it touches.
   - Files: `frontend/src/pages/Books.jsx`, `backend/controllers/bookController.js`
   - Effort: medium
 
-- [ ] **3.4 Sales reports page**
+- [ ] **3.4 Sales reports page** *(skipped — not needed for now)*
   - Revenue by period / executive / customer; top-selling ISBNs; delivered-but-not-invoiced docs.
   - Data already exists in issued SIs/DRs.
   - Files: new `backend/routes/reports.js`, new `frontend/src/pages/Reports.jsx`, `NavBar.jsx`
@@ -152,7 +152,7 @@ Each task lists priority, estimated effort, and the files it touches.
 
 - [x] **5.1 Stock reservations** — Reserve stock at DR draft so two drafts can't promise the same books; optional multi-location (warehouse/shelf/bin) QTY.
   - Files: `Book.js`, `StockTransaction.js`, `backend/routes/drsi.js`, `backend/routes/stock.js`
-- [ ] **5.2 Email document to customer** — "Send PDF" action on DR/SI/EF (nodemailer + existing puppeteer PDF generation).
+- [ ] **5.2 Email document to customer** — "Send PDF" action on DR/SI/EF (nodemailer + existing puppeteer PDF generation). *(skipped — not needed for now)*
   - Files: `backend/services/documentGenerator.js`, new mail service, list pages
 - [x] **5.3 PWA + global offline indicator** — vite-plugin-pwa (injectManifest, custom `src/sw.js`): precached app shell, installable, Background Sync replay of queued stock scans (Chromium; page-driven flush elsewhere). Scan queue moved to IndexedDB with claim-guarded drain (no double-replay); offline scans validate against a cached book catalog (`GET /api/books/catalog`); global online/offline banner via `OnlineContext`. Placeholder icons via `scripts/generate-icons.cjs`; nginx `sw.js`/manifest no-cache. Also fixed `numberToWords` const-reassignment crash.
 
