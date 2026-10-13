@@ -302,11 +302,11 @@ const AdminPanel = ({ user }) => {
     }
   };
 
-  // Fetch user sessions
+  // Fetch all sessions (admin view)
   const fetchSessions = async () => {
     setSessionsLoading(true);
     try {
-      const response = await api.get('/auth/sessions');
+      const response = await api.get('/auth/admin/sessions');
       setSessions(response.data.sessions || []);
     } catch (err) {
       setError('Failed to fetch sessions');
@@ -316,10 +316,10 @@ const AdminPanel = ({ user }) => {
     }
   };
 
-  // Revoke a specific session
-  const handleRevokeSession = async (sessionId) => {
+  // Revoke a specific session (admin can revoke any user's session)
+  const handleRevokeSession = async (sessionId, username) => {
     const sure = await confirmDialog(
-      'Are you sure you want to revoke this session? This will log out the user from that device.',
+      `Are you sure you want to revoke this session for ${username}? This will log them out from that device.`,
       { title: 'Revoke Session', danger: true, confirmText: 'Revoke' }
     );
     if (!sure) return;
@@ -1257,8 +1257,8 @@ const AdminPanel = ({ user }) => {
                   <div key={session._id} className="p-4 hover:bg-gray-50">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">{session.userAgent || 'Unknown Device'}</h3>
-                        <p className="text-sm text-gray-500 truncate">{session.ipAddress || 'Unknown IP'}</p>
+                        <h3 className="font-semibold text-gray-900 truncate">{session.username || 'Unknown User'}</h3>
+                        <p className="text-sm text-gray-500 truncate">{session.userAgent || 'Unknown Device'}</p>
                       </div>
                       <span className="flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-700">
                         Active
@@ -1266,8 +1266,8 @@ const AdminPanel = ({ user }) => {
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                       <div>
-                        <span className="text-gray-500">Created:</span>
-                        <span className="text-gray-900 ml-1">{new Date(session.createdAt).toLocaleString()}</span>
+                        <span className="text-gray-500">IP:</span>
+                        <span className="text-gray-900 ml-1">{session.ipAddress || 'Unknown'}</span>
                       </div>
                       <div>
                         <span className="text-gray-500">Last Used:</span>
@@ -1276,7 +1276,7 @@ const AdminPanel = ({ user }) => {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button
-                        onClick={() => handleRevokeSession(session._id)}
+                        onClick={() => handleRevokeSession(session._id, session.username)}
                         disabled={sessionsLoading}
                         className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors touch-manipulation min-h-[44px] disabled:opacity-50"
                       >
@@ -1295,6 +1295,7 @@ const AdminPanel = ({ user }) => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device / Browser</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
@@ -1305,26 +1306,27 @@ const AdminPanel = ({ user }) => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {sessionsLoading ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center">
+                    <td colSpan="6" className="px-6 py-4 text-center">
                       Loading sessions...
                     </td>
                   </tr>
                 ) : sessions.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
                       No active sessions found
                     </td>
                   </tr>
                 ) : (
                   sessions.map((session) => (
                     <tr key={session._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 truncate max-w-[300px]">{session.userAgent || 'Unknown Device'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{session.username || 'Unknown'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[300px]">{session.userAgent || 'Unknown Device'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{session.ipAddress || 'Unknown'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(session.createdAt).toLocaleString()}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(session.lastUsedAt).toLocaleString()}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
-                          onClick={() => handleRevokeSession(session._id)}
+                          onClick={() => handleRevokeSession(session._id, session.username)}
                           disabled={sessionsLoading}
                           className="px-3 py-1 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded"
                         >

@@ -14,6 +14,7 @@ const {
   logoutUser,
   refreshToken,
   getSessions,
+  getAllSessions,
   revokeSession,
   revokeAllSessions,
   revokeUserSessions,
@@ -49,5 +50,6 @@ router.get('/users', protect, admin, getAllUsers);
 router.put('/users/:id', protect, admin, updateUser);
 router.delete('/users/:id', protect, admin, deleteUser);
 router.delete('/users/:id/sessions', protect, admin, revokeUserSessions);
+router.get('/admin/sessions', protect, admin, getAllSessions);
 
 module.exports = router;

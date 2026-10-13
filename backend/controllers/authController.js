@@ -401,6 +401,47 @@ const getSessions = async (req, res) => {
   }
 };
 
+// @desc    Get all active sessions across all users (Admin only)
+// @route   GET /api/auth/admin/sessions
+// @access  Private/Admin
+const getAllSessions = async (req, res) => {
+  try {
+    // Find all users with active sessions
+    const users = await User.find({
+      'sessions.0': { $exists: true }
+    }).select('username email sessions');
+
+    const allSessions = [];
+    for (const user of users) {
+      // Clean expired sessions
+      user.cleanExpiredSessions();
+
+      for (const session of user.sessions) {
+        allSessions.push({
+          _id: session._id,
+          userId: user._id,
+          username: user.username,
+          email: user.email,
+          userAgent: session.userAgent,
+          ipAddress: session.ipAddress,
+          createdAt: session.createdAt,
+          lastUsedAt: session.lastUsedAt
+        });
+      }
+    }
+
+    // Sort by lastUsedAt descending (most recent first)
+    allSessions.sort((a, b) => new Date(b.lastUsedAt) - new Date(a.lastUsedAt));
+
+    // Save users with cleaned sessions
+    await Promise.all(users.map(u => u.save()));
+
+    res.json({ sessions: allSessions });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Revoke a specific session
 // @route   DELETE /api/auth/sessions/:sessionId
 // @access  Private
@@ -625,6 +666,7 @@ module.exports = {
   logoutUser,
   refreshToken,
   getSessions,
+  getAllSessions,
   revokeSession,
   revokeAllSessions,
   revokeUserSessions,
