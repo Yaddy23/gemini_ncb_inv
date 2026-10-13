@@ -87,7 +87,7 @@ const getBooks = async (req, res) => {
     if (stock === 'in') {
       query.QTY = { $gt: 0 };
     } else if (stock === 'out') {
-      query.QTY = 0;
+      query.QTY = { $lte: 0 };
     } else if (stock === 'low') {
       // Low = in stock but below the book's own MIN_QTY threshold
       query.$expr = {
@@ -360,7 +360,7 @@ const getStats = async (req, res) => {
             }
           },
           outOfStockCount: {
-            $sum: { $cond: [{ $eq: ['$QTY', 0] }, 1, 0] }
+            $sum: { $cond: [{ $lte: ['$QTY', 0] }, 1, 0] }
           },
           inStockCount: {
             $sum: { $cond: [{ $gt: ['$QTY', 0] }, 1, 0] }
@@ -427,16 +427,23 @@ const getBookTransactions = async (req, res) => {
   }
 };
 
-// @desc    Get books that are out of stock (QTY == 0)
+// @desc    Get books that are out of stock (QTY <= 0)
 // @route   GET /api/books/out-of-stock
 // @access  Private
 const getOutOfStockBooks = async (req, res) => {
   try {
-    const books = await Book.find({ QTY: 0, isArchived: { $ne: true } })
-      .sort({ TITLE: 1 })
-      .limit(50);
+    const query = { QTY: { $lte: 0 }, isArchived: { $ne: true } };
 
-    res.json({ books, count: books.length });
+    // Accurate total (count is NOT capped by the list limit)
+    const [count, books] = await Promise.all([
+      Book.countDocuments(query),
+      Book.find(query)
+        .sort({ TITLE: 1 })
+        .limit(200)
+        .select('ISBN TITLE')
+    ]);
+
+    res.json({ books, count });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

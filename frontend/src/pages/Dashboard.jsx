@@ -302,24 +302,32 @@ const Dashboard = ({ user }) => {
           {/* Out of Stock Modal */}
           <Modal open={showOutOfStockModal} onClose={() => setShowOutOfStockModal(false)} title="Out of Stock Books" size="sm">
             {outOfStock.books.length > 0 ? (
-              <ul className="divide-y divide-gray-100">
-                {outOfStock.books.map((book) => (
-                  <li key={book.ISBN} className="flex items-start space-x-3 py-2">
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: '#f59e0b1A' }}>
-                        <AlertTriangle className="w-4 h-4 text-amber-600" />
+              <>
+                <p className="text-xs text-gray-500 mb-2">{outOfStock.count} out of stock title{outOfStock.count === 1 ? '' : 's'}</p>
+                <ul className="divide-y divide-gray-100">
+                  {outOfStock.books.map((book) => (
+                    <li key={book.ISBN} className="flex items-start space-x-3 py-2">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: '#f59e0b1A' }}>
+                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                        </div>
                       </div>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-gray-900 truncate">
-                        <span className="font-medium">{book.TITLE}</span>
-                        <span className="ml-2 text-gray-500">ISBN: {book.ISBN}</span>
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-gray-900 truncate">
+                          <span className="font-medium">{book.TITLE}</span>
+                          <span className="ml-2 text-gray-500">ISBN: {book.ISBN}</span>
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                {outOfStock.count > outOfStock.books.length && (
+                  <p className="text-sm text-gray-500 pt-2 border-t border-gray-100 mt-2">
+                    …and {outOfStock.count - outOfStock.books.length} more. Use the Books page with the "Out of stock" filter to see them all.
+                  </p>
+                )}
+              </>
             ) : (
               <p className="text-sm text-gray-500">No out of stock books</p>
             )}
