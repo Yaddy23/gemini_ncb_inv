@@ -9,8 +9,8 @@ export const efApi = {
   deleteEF: (id) => api.delete(`/ef/${id}`),
   issueEF: (id) => api.post(`/ef/${id}/issue`),
   cancelEF: (id, cancelReason) => api.post(`/ef/${id}/cancel`, { cancelReason }),
-  exportEF: (id, format = 'pdf') => api.get(`/ef/${id}/export`, {
-    params: { format },
+  exportEF: (id) => api.get(`/ef/${id}/export`, {
+    params: { format: 'xlsx' },
     responseType: 'blob'
   }),
 

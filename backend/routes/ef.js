@@ -7,8 +7,8 @@ const Book = require('../models/Book');
 const StockTransaction = require('../models/StockTransaction');
 const Customer = require('../models/Customer');
 const { protect, admin } = require('../middleware/auth');
-const documentGenerator = require('../services/documentGenerator');
 const UserLog = require('../models/UserLog');
+const { generateEF } = require('../services/documentGenerator');
 
 // Apply auth + admin to all routes
 router.use(protect);
@@ -407,22 +407,41 @@ router.post('/:id/cancel', async (req, res) => {
   }
 });
 
-// Export EF (PDF or Excel)
+// Export EF as Excel
 router.get('/:id/export', async (req, res) => {
   try {
-    const { format = 'pdf' } = req.query;
-    const ef = await EvaluationForm.findById(req.params.id);
+    const ef = await EvaluationForm.findById(req.params.id)
+      .populate('marketingExecutive', 'name');
     if (!ef) return res.status(404).json({ message: 'Evaluation Form not found' });
 
-    // Use EF template for EF export
-    const buffer = await documentGenerator.generateEF(ef.toObject(), format);
+    const items = ef.items.map(item => ({
+      isbn: item.isbn,
+      rawTitle: item.rawTitle || item.title,
+      edition: item.edition,
+      bind: item.bind,
+      year: item.year,
+      author: item.author,
+      qty: item.qty,
+      unitPrice: item.unitPrice,
+      amount: item.amount
+    }));
 
-    const filename = `${ef.efNumber}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Type', format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    const buffer = await generateEF({
+      efNumber: ef.efNumber,
+      date: ef.date,
+      customerName: ef.customerName,
+      customerAddress: ef.customerAddress,
+      marketingExecutive: ef.marketingExecutive,
+      items,
+      totalAmount: ef.totalAmount,
+      status: ef.status
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${ef.efNumber}.xlsx"`);
     res.send(buffer);
   } catch (err) {
-    console.error('Export EF error:', err);
+    console.error('Export EF failed:', err);
     res.status(500).json({ message: err.message });
   }
 });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader, FileText, Download, Printer, X, AlertTriangle, Trash2, CheckCircle } from 'lucide-react';
+import { Loader, FileText, X, AlertTriangle, Trash2, CheckCircle } from 'lucide-react';
 import LineItemsTable from './LineItemsTable';
 import CustomerAutocomplete from './CustomerAutocomplete';
 import { formatDate, formatDateInput } from '../../utils/numberToWords';
@@ -21,8 +21,7 @@ const DocumentForm = ({
   initialData,
   onSubmit,
   onClose,
-  loading,
-  exporting
+  loading
 }) => {
   const isDR = documentType === 'DR';
   const isEF = documentType === 'EF';
@@ -269,7 +268,7 @@ const DocumentForm = ({
     onClose();
   };
 
-  const handleExport = async (format) => {
+  const handleExport = async () => {
     if (!initialData?._id) {
       toast.error('Save document first before exporting');
       return;
@@ -277,11 +276,11 @@ const DocumentForm = ({
     try {
       let url;
       if (isDR) {
-        url = `/drsi/dr/${initialData._id}/export?format=${format}`;
+        url = `/drsi/dr/${initialData._id}/export`;
       } else if (isEF) {
-        url = `/ef/${initialData._id}/export?format=${format}`;
+        url = `/ef/${initialData._id}/export`;
       } else {
-        url = `/drsi/si/${initialData._id}/export?format=${format}`;
+        url = `/drsi/si/${initialData._id}/export`;
       }
 
       const response = await api.get(url, { responseType: 'blob' });
@@ -290,7 +289,7 @@ const DocumentForm = ({
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = `${formData.documentNumber}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+      link.download = `${formData.documentNumber}.xlsx`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -510,27 +509,15 @@ const DocumentForm = ({
 
         {/* Footer Actions */}
         <div className="flex flex-wrap items-center justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0 md:rounded-b-xl">
-          {initialData && !loading && !exporting && (
-            <>
-              <button
-                onClick={() => handleExport('xlsx')}
-                disabled={exporting}
-                className="flex items-center space-x-1 px-3 py-2 min-h-[44px] bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
-                title="Download Excel"
-              >
-                <FileText className="w-4 h-4" />
-                <span className="text-sm font-medium">Excel</span>
-              </button>
-              <button
-                onClick={() => handleExport('pdf')}
-                disabled={exporting}
-                className="flex items-center space-x-1 px-3 py-2 min-h-[44px] bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
-                title="Download PDF"
-              >
-                <FileText className="w-4 h-4" />
-                <span className="text-sm font-medium">PDF</span>
-              </button>
-            </>
+          {initialData && !loading && (
+            <button
+              onClick={handleExport}
+              className="flex items-center space-x-1 px-3 py-2 min-h-[44px] bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+              title="Download Excel"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="text-sm font-medium">Excel</span>
+            </button>
           )}
           <button
             onClick={handleClose}

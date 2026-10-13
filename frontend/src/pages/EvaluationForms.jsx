@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Loader, FileText, Download, Printer, Edit, Trash2, Eye, AlertTriangle, CheckCircle, User, XCircle, FileOutput } from 'lucide-react';
+import { Plus, Search, Loader, FileText, Edit, Trash2, Eye, AlertTriangle, CheckCircle, User, XCircle, FileOutput } from 'lucide-react';
 import { efApi } from '../api/ef';
 import { drsiApi } from '../api/drsi';
 import DocumentForm from '../components/drsi/DocumentForm';
@@ -20,7 +20,6 @@ const EvaluationForms = ({ user }) => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingEF, setEditingEF] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [exporting, setExporting] = useState(null);
   const [cancelling, setCancelling] = useState(null);
   const [previewDoc, setPreviewDoc] = useState(null);
   const [linkedDR, setLinkedDR] = useState(null);
@@ -163,23 +162,20 @@ const EvaluationForms = ({ user }) => {
     }
   };
 
-  const handleExport = async (id, format) => {
-    setExporting(id);
+  const handleExportExcel = async (id) => {
     try {
-      const response = await efApi.exportEF(id, format);
+      const response = await efApi.exportEF(id);
       const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       const ef = efs.find(e => e._id === id);
-      link.download = `${ef?.efNumber || 'EF'}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+      link.download = `${ef?.efNumber || 'EF'}.xlsx`;
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (err) {
       toast.error('Export failed: ' + err.message);
-    } finally {
-      setExporting(null);
     }
   };
 
@@ -320,22 +316,12 @@ const EvaluationForms = ({ user }) => {
                         </button>
                       )}
                       <button
-                        onClick={() => handleExport(ef._id, 'xlsx')}
-                        disabled={exporting === ef._id}
-                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                        onClick={() => handleExportExcel(ef._id)}
+                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 touch-manipulation min-h-[44px] transition-colors"
                         title="Download Excel"
                       >
                         <FileText className="w-4 h-4" />
                         <span className="text-sm font-medium">Excel</span>
-                      </button>
-                      <button
-                        onClick={() => handleExport(ef._id, 'pdf')}
-                        disabled={exporting === ef._id}
-                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
-                        title="Download PDF"
-                      >
-                        <FileText className="w-4 h-4" />
-                        <span className="text-sm font-medium">PDF</span>
                       </button>
                       <button
                         onClick={() => handleEdit(ef)}
@@ -426,18 +412,9 @@ const EvaluationForms = ({ user }) => {
                             </button>
                           )}
                           <button
-                            onClick={() => handleExport(ef._id, 'xlsx')}
-                            disabled={exporting === ef._id}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
+                            onClick={() => handleExportExcel(ef._id)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded touch-manipulation min-h-[44px] min-w-[44px]"
                             title="Download Excel"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleExport(ef._id, 'pdf')}
-                            disabled={exporting === ef._id}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
-                            title="Download PDF"
                           >
                             <FileText className="w-4 h-4" />
                           </button>
@@ -486,7 +463,6 @@ const EvaluationForms = ({ user }) => {
           onSubmit={handleSubmit}
           onClose={() => { setFormOpen(false); setEditingEF(null); }}
           loading={submitting}
-          exporting={exporting}
         />
       )}
 
@@ -498,7 +474,6 @@ const EvaluationForms = ({ user }) => {
           onSubmit={handleLinkedDRSubmit}
           onClose={() => setLinkedDR(null)}
           loading={submitting}
-          exporting={exporting}
         />
       )}
 

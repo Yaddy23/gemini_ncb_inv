@@ -19,7 +19,6 @@ const SalesInvoices = ({ user }) => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingSI, setEditingSI] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [exporting, setExporting] = useState(null);
   const [cancelling, setCancelling] = useState(null);
   const [previewDoc, setPreviewDoc] = useState(null);
 
@@ -122,23 +121,20 @@ const SalesInvoices = ({ user }) => {
     }
   };
 
-  const handleExport = async (id, format) => {
-    setExporting(id);
+  const handleExportExcel = async (id) => {
     try {
-      const response = await drsiApi.exportSI(id, format);
+      const response = await drsiApi.exportSI(id);
       const blob = response.data;
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       const si = sis.find(s => s._id === id);
-      link.download = `${si?.siNumber || 'SI'}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+      link.download = `${si?.siNumber || 'SI'}.xlsx`;
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (err) {
       toast.error('Export failed: ' + err.message);
-    } finally {
-      setExporting(null);
     }
   };
 
@@ -277,22 +273,12 @@ const SalesInvoices = ({ user }) => {
                         </button>
                       )}
                       <button
-                        onClick={() => handleExport(si._id, 'xlsx')}
-                        disabled={exporting === si._id}
-                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                        onClick={() => handleExportExcel(si._id)}
+                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 touch-manipulation min-h-[44px] transition-colors"
                         title="Download Excel"
                       >
                         <FileText className="w-4 h-4" />
                         <span className="text-sm font-medium">Excel</span>
-                      </button>
-                      <button
-                        onClick={() => handleExport(si._id, 'pdf')}
-                        disabled={exporting === si._id}
-                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
-                        title="Download PDF"
-                      >
-                        <FileText className="w-4 h-4" />
-                        <span className="text-sm font-medium">PDF</span>
                       </button>
                       <button
                         onClick={() => handleEdit(si)}
@@ -380,18 +366,9 @@ const SalesInvoices = ({ user }) => {
                             </button>
                           )}
                           <button
-                            onClick={() => handleExport(si._id, 'xlsx')}
-                            disabled={exporting === si._id}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
+                            onClick={() => handleExportExcel(si._id)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded touch-manipulation min-h-[44px] min-w-[44px]"
                             title="Download Excel"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleExport(si._id, 'pdf')}
-                            disabled={exporting === si._id}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
-                            title="Download PDF"
                           >
                             <FileText className="w-4 h-4" />
                           </button>
@@ -440,7 +417,6 @@ const SalesInvoices = ({ user }) => {
           onSubmit={handleSubmit}
           onClose={() => { setFormOpen(false); setEditingSI(null); }}
           loading={submitting}
-          exporting={exporting}
         />
       )}
 

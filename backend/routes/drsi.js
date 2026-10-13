@@ -6,8 +6,8 @@ const Book = require('../models/Book');
 const StockTransaction = require('../models/StockTransaction');
 const Customer = require('../models/Customer');
 const { protect, admin } = require('../middleware/auth');
-const documentGenerator = require('../services/documentGenerator');
 const UserLog = require('../models/UserLog');
+const { generate, generateEF } = require('../services/documentGenerator');
 
 // Apply auth + admin to all routes
 router.use(protect);
@@ -617,21 +617,42 @@ router.post('/dr/:id/cancel', async (req, res) => {
   }
 });
 
-// Export DR (PDF or Excel)
+// Export DR as Excel
 router.get('/dr/:id/export', async (req, res) => {
   try {
-    const { format = 'pdf' } = req.query;
-    const dr = await DeliveryReceipt.findById(req.params.id);
+    const dr = await DeliveryReceipt.findById(req.params.id)
+      .populate('marketingExecutive', 'name')
+      .populate('efRef', 'efNumber');
     if (!dr) return res.status(404).json({ message: 'Delivery Receipt not found' });
 
-    const buffer = await documentGenerator.generate('DR1', dr.toObject(), format);
+    const items = dr.items.map(item => ({
+      isbn: item.isbn,
+      rawTitle: item.rawTitle || item.title,
+      edition: item.edition,
+      bind: item.bind,
+      year: item.year,
+      author: item.author,
+      qty: item.qty,
+      unitPrice: item.unitPrice,
+      amount: item.amount
+    }));
 
-    const filename = `${dr.drNumber}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Type', format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    const buffer = await generate('DR1', {
+      drNumber: dr.drNumber,
+      date: dr.date,
+      customerName: dr.customerName,
+      customerAddress: dr.customerAddress,
+      marketingExecutive: dr.marketingExecutive,
+      items,
+      totalAmount: dr.totalAmount,
+      status: dr.status
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${dr.drNumber}.xlsx"`);
     res.send(buffer);
   } catch (err) {
-    console.error('Export DR error:', err);
+    console.error('Export DR failed:', err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -849,21 +870,45 @@ router.post('/si/:id/cancel', async (req, res) => {
   }
 });
 
-// Export SI (PDF or Excel)
+// Export SI as Excel
 router.get('/si/:id/export', async (req, res) => {
   try {
-    const { format = 'pdf' } = req.query;
-    const si = await SalesInvoice.findById(req.params.id);
+    const si = await SalesInvoice.findById(req.params.id)
+      .populate('marketingExecutive', 'name')
+      .populate('drRef', 'drNumber');
     if (!si) return res.status(404).json({ message: 'Sales Invoice not found' });
 
-    const buffer = await documentGenerator.generate('INV1', si.toObject(), format);
+    const items = si.items.map(item => ({
+      isbn: item.isbn,
+      rawTitle: item.rawTitle || item.title,
+      edition: item.edition,
+      bind: item.bind,
+      year: item.year,
+      author: item.author,
+      qty: item.qty,
+      unitPrice: item.unitPrice,
+      amount: item.amount
+    }));
 
-    const filename = `${si.siNumber}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Type', format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    const buffer = await generate('INV1', {
+      siNumber: si.siNumber,
+      date: si.date,
+      customerName: si.customerName,
+      customerAddress: si.customerAddress,
+      marketingExecutive: si.marketingExecutive,
+      poNumber: si.poNumber,
+      discountPercentage: si.discountPercentage,
+      items,
+      totalAmount: si.totalAmount,
+      subtotal: si.subtotal,
+      status: si.status
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${si.siNumber}.xlsx"`);
     res.send(buffer);
   } catch (err) {
-    console.error('Export SI error:', err);
+    console.error('Export SI failed:', err);
     res.status(500).json({ message: err.message });
   }
 });
