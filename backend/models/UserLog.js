@@ -40,7 +40,9 @@ const userLogSchema = new mongoose.Schema({
       'ISSUE_EF',
       'CANCEL_DR',
       'CANCEL_SI',
-      'CANCEL_EF'
+      'CANCEL_EF',
+      'REVOKE_SESSION',
+      'REVOKE_ALL_SESSIONS'
     ]
   },
   details: {

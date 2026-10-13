@@ -37,14 +37,16 @@ function App() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (token) {
+        const accessToken = localStorage.getItem('accessToken');
+        if (accessToken) {
           const response = await api.get('/auth/me');
           setUser(response.data);
         }
       } catch (error) {
         // Token invalid or expired
-        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
       } finally {
         setLoading(false);
       }
@@ -55,7 +57,7 @@ function App() {
 
   const login = (userData) => {
     setUser(userData);
-    localStorage.setItem('token', userData.token);
+    // Token is already stored in login page
   };
 
   const logout = async () => {
@@ -65,7 +67,9 @@ function App() {
       console.error('Logout API call failed:', error);
     } finally {
       setUser(null);
-      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
     }
   };
 

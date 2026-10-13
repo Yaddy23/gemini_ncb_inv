@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
+import { useToast } from '../components/Toast';
 import { User, Loader, Edit, Lock } from 'lucide-react';
 import { AlertBanner } from '../components/ui';
 
@@ -19,6 +20,7 @@ const Profile = ({ user, onLogin, onLogout }) => {
   const [success, setSuccess] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -62,15 +64,12 @@ const Profile = ({ user, onLogin, onLogout }) => {
     try {
       const response = await api.put('/auth/profile', profileData);
       setEditMode(false);
-      setSuccess('Profile updated successfully!');
-
-      // Update local storage if token needs refresh
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        onLogin(response.data);
-      }
+      toast.success('Profile updated successfully!');
+      // Update local user state
+      onLogin(response.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update profile');
+      toast.error(err.response?.data?.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -79,6 +78,17 @@ const Profile = ({ user, onLogin, onLogout }) => {
   const handleChangePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setError('New passwords do not match');
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (passwordData.newPassword.length < 8) {
+      setError('Password must be at least 8 characters long');
+      toast.error('Password must be at least 8 characters long');
+      return;
+    }
+    if (!/[A-Za-z]/.test(passwordData.newPassword) || !/\d/.test(passwordData.newPassword)) {
+      setError('Password must contain at least one letter and one number');
+      toast.error('Password must contain at least one letter and one number');
       return;
     }
 
@@ -97,9 +107,11 @@ const Profile = ({ user, onLogin, onLogout }) => {
         newPassword: '',
         confirmPassword: ''
       });
-      setSuccess('Password changed successfully!');
+      setShowPasswordChange(false);
+      toast.success('Password changed successfully!');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to change password');
+      toast.error(err.response?.data?.message || 'Failed to change password');
     } finally {
       setLoading(false);
     }
@@ -268,7 +280,7 @@ const Profile = ({ user, onLogin, onLogout }) => {
                 value={passwordData.newPassword}
                 onChange={handlePasswordChange}
                 required
-                minLength="6"
+                minLength="8"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
               />
             </div>
@@ -281,7 +293,7 @@ const Profile = ({ user, onLogin, onLogout }) => {
                 value={passwordData.confirmPassword}
                 onChange={handlePasswordChange}
                 required
-                minLength="6"
+                minLength="8"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
               />
             </div>

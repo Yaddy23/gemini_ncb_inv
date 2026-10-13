@@ -22,7 +22,7 @@ const AdminPanel = ({ user }) => {
   const [logsPerPage, setLogsPerPage] = useState(50);
   const [activeTab, setActiveTab] = useState('users');
 
-  const { confirmDialog } = useToast();
+  const { confirmDialog, toast } = useToast();
 
   // Create user modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -54,6 +54,10 @@ const AdminPanel = ({ user }) => {
   const [bookTotalPages, setBookTotalPages] = useState(1);
   const [bookTotal, setBookTotal] = useState(0);
   const [bookSearch, setBookSearch] = useState('');
+
+  // Sessions states
+  const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -298,6 +302,64 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Fetch user sessions
+  const fetchSessions = async () => {
+    setSessionsLoading(true);
+    try {
+      const response = await api.get('/auth/sessions');
+      setSessions(response.data.sessions || []);
+    } catch (err) {
+      setError('Failed to fetch sessions');
+      console.error(err);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  // Revoke a specific session
+  const handleRevokeSession = async (sessionId) => {
+    const sure = await confirmDialog(
+      'Are you sure you want to revoke this session? This will log out the user from that device.',
+      { title: 'Revoke Session', danger: true, confirmText: 'Revoke' }
+    );
+    if (!sure) return;
+    setSessionsLoading(true);
+    try {
+      await api.delete(`/auth/sessions/${sessionId}`);
+      toast.success('Session revoked successfully');
+      fetchSessions();
+    } catch (err) {
+      const message = err.response?.data?.message || 'Failed to revoke session';
+      setError(message);
+      toast.error(message);
+      console.error(err);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  // Revoke all sessions
+  const handleRevokeAllSessions = async () => {
+    const sure = await confirmDialog(
+      'Are you sure you want to revoke all sessions? This will log you out from all devices.',
+      { title: 'Revoke All Sessions', danger: true, confirmText: 'Revoke All' }
+    );
+    if (!sure) return;
+    setSessionsLoading(true);
+    try {
+      await api.delete('/auth/sessions');
+      toast.success('All sessions revoked successfully');
+      fetchSessions();
+    } catch (err) {
+      const message = err.response?.data?.message || 'Failed to revoke all sessions';
+      setError(message);
+      toast.error(message);
+      console.error(err);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
   // Handle marketing executive creation
   const handleCreateExecutive = async (e) => {
     e.preventDefault();
@@ -475,6 +537,14 @@ const AdminPanel = ({ user }) => {
             }`}>
             <ShoppingBag className="w-4 h-4 inline mr-1" />
             Books
+          </button>
+          <button
+            onClick={() => { setActiveTab('sessions'); fetchSessions(); }}
+            className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors touch-manipulation min-h-[44px] ${
+              activeTab === 'sessions' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}>
+            <RotateCcw className="w-4 h-4 inline mr-1" />
+            Sessions
           </button>
         </div>
       </div>
@@ -1145,6 +1215,129 @@ const AdminPanel = ({ user }) => {
               label="archived books"
             />
           )}
+        </div>
+      )}
+
+      {/* Sessions Tab */}
+      {activeTab === 'sessions' && (
+        <div>
+          <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="w-full sm:w-auto flex-1 flex flex-col sm:flex-row gap-3">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mt-1">Active Sessions</h2>
+            </div>
+            <button
+              onClick={handleRevokeAllSessions}
+              disabled={sessionsLoading}
+              className="flex-shrink-0 flex items-center justify-center space-x-2 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[140px]"
+            >
+              <RotateCcw className="w-5 h-5" />
+              <span className="hidden sm:inline">Revoke All Sessions</span>
+            </button>
+          </div>
+
+          {/* Mobile Card Layout */}
+          <div className="block md:hidden">
+            {sessionsLoading ? (
+              <div className="p-6 text-center">
+                <div className="flex space-x-3 justify-center">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-primary self-center">Loading sessions...</span>
+                </div>
+              </div>
+            ) : sessions.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
+                  <RotateCcw className="w-6 h-6 text-gray-400" />
+                </div>
+                <p>No active sessions found</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden">
+                {sessions.map((session) => (
+                  <div key={session._id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 truncate">{session.userAgent || 'Unknown Device'}</h3>
+                        <p className="text-sm text-gray-500 truncate">{session.ipAddress || 'Unknown IP'}</p>
+                      </div>
+                      <span className="flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-700">
+                        Active
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                      <div>
+                        <span className="text-gray-500">Created:</span>
+                        <span className="text-gray-900 ml-1">{new Date(session.createdAt).toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Last Used:</span>
+                        <span className="text-gray-900 ml-1">{new Date(session.lastUsedAt).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleRevokeSession(session._id)}
+                        disabled={sessionsLoading}
+                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors touch-manipulation min-h-[44px] disabled:opacity-50"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        <span>Revoke</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden md:block overflow-x-auto bg-white rounded-lg">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device / Browser</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Used</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {sessionsLoading ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 text-center">
+                      Loading sessions...
+                    </td>
+                  </tr>
+                ) : sessions.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                      No active sessions found
+                    </td>
+                  </tr>
+                ) : (
+                  sessions.map((session) => (
+                    <tr key={session._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 truncate max-w-[300px]">{session.userAgent || 'Unknown Device'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{session.ipAddress || 'Unknown'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(session.createdAt).toLocaleString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(session.lastUsedAt).toLocaleString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleRevokeSession(session._id)}
+                          disabled={sessionsLoading}
+                          className="px-3 py-1 text-xs font-medium bg-red-500 hover:bg-red-600 text-white rounded"
+                        >
+                          <RotateCcw className="w-3 h-3 inline mr-1" />
+                          Revoke
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

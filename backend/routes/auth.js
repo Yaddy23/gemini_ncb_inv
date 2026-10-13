@@ -12,6 +12,11 @@ const {
   updateUser,
   deleteUser,
   logoutUser,
+  refreshToken,
+  getSessions,
+  revokeSession,
+  revokeAllSessions,
+  revokeUserSessions,
 } = require('../controllers/authController');
 
 // Login rate limiter: 10 attempts per 15 minutes per IP
@@ -25,6 +30,7 @@ const loginLimiter = rateLimit({
 
 // Public routes
 router.post('/login', loginLimiter, loginUser);
+router.post('/refresh', refreshToken);
 
 // Protected routes
 router.get('/me', protect, getUserProfile);
@@ -33,9 +39,15 @@ router.put('/change-password', protect, changePassword);
 router.put('/profile', protect, updateProfile);
 router.post('/logout', protect, logoutUser);
 
+// Session management
+router.get('/sessions', protect, getSessions);
+router.delete('/sessions', protect, revokeAllSessions);
+router.delete('/sessions/:sessionId', protect, revokeSession);
+
 // Admin only routes - User Management
 router.get('/users', protect, admin, getAllUsers);
 router.put('/users/:id', protect, admin, updateUser);
 router.delete('/users/:id', protect, admin, deleteUser);
+router.delete('/users/:id/sessions', protect, admin, revokeUserSessions);
 
 module.exports = router;

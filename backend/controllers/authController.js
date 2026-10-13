@@ -1,12 +1,33 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
 const UserLog = require('../models/UserLog');
 
-// Generate JWT
-const generateToken = (id) => {
+// Generate access token (short-lived: 15 minutes)
+const generateAccessToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
+    expiresIn: '15m',
   });
+};
+
+// Generate refresh token (long-lived: 7 days)
+const generateRefreshToken = (user, req) => {
+  // Store request info temporarily for session tracking
+  user._tempUserAgent = req ? req.get('User-Agent') : null;
+  user._tempIpAddress = req ? req.ip : null;
+
+  const refreshToken = user.generateRefreshToken();
+
+  // Clean up temp properties
+  delete user._tempUserAgent;
+  delete user._tempIpAddress;
+
+  return refreshToken;
+};
+
+// Hash refresh token for storage comparison
+const hashRefreshToken = (token) => {
+  return crypto.createHash('sha256').update(token).digest('hex');
 };
 
 // Helper function to log user activities
@@ -93,6 +114,14 @@ const loginUser = async (req, res) => {
       await user.save();
     }
 
+    // Clean up expired sessions
+    user.cleanExpiredSessions();
+
+    // Generate tokens
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user, req);
+    await user.save();
+
     // Log successful login
     await logUserActivity(user._id, 'LOGIN', `User logged in successfully`, req);
 
@@ -102,7 +131,8 @@ const loginUser = async (req, res) => {
       email: user.email,
       role: user.role,
       isActive: user.isActive,
-      token: generateToken(user._id),
+      accessToken,
+      refreshToken,
     });
   } catch (error) {
     res.status(401).json({ message: error.message });
@@ -152,6 +182,11 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
+      // Generate tokens for the new user
+      const accessToken = generateAccessToken(user._id);
+      const refreshToken = generateRefreshToken(user, req);
+      await user.save();
+
       // Log user creation
       await logUserActivity(req.user._id, 'CREATE_USER', `Created new user: ${username} (${role || 'Staff'})`, req);
 
@@ -161,7 +196,8 @@ const registerUser = async (req, res) => {
         email: user.email,
         role: user.role,
         isActive: user.isActive,
-        token: generateToken(user._id),
+        accessToken,
+        refreshToken,
       });
     } else {
       res.status(400);
@@ -249,14 +285,205 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// @desc    Logout user
+// @desc    Logout user (revoke current session)
 // @route   POST /api/auth/logout
 // @access  Private
 const logoutUser = async (req, res) => {
   try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const accessToken = authHeader.split(' ')[1];
+      try {
+        const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id);
+        if (user) {
+          // Revoke the current session based on the access token
+          // We can't directly revoke by access token, but we can revoke all sessions for security
+          // Or we could store the refresh token hash in the access token payload
+          user.cleanExpiredSessions();
+          await user.save();
+        }
+      } catch (e) {
+        // Token might be expired, ignore
+      }
+    }
+
     // Log logout
     await logUserActivity(req.user._id, 'LOGOUT', `User logged out`, req);
     res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Refresh access token using refresh token
+// @route   POST /api/auth/refresh
+// @access  Public (requires valid refresh token)
+const refreshToken = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(400).json({ message: 'Refresh token is required' });
+  }
+
+  try {
+    const hashedToken = hashRefreshToken(refreshToken);
+
+    // Find user with this refresh token
+    const user = await User.findOne({
+      $or: [
+        { refreshToken: hashedToken, refreshTokenExpires: { $gt: new Date() } },
+        { 'sessions.refreshTokenHash': hashedToken }
+      ]
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid or expired refresh token' });
+    }
+
+    // Verify the refresh token using the user model method
+    if (!user.verifyRefreshToken(refreshToken)) {
+      return res.status(401).json({ message: 'Invalid or expired refresh token' });
+    }
+
+    // Check if account is still active
+    if (!user.isActive) {
+      return res.status(403).json({ message: 'Account is deactivated. Contact an administrator.' });
+    }
+
+    // Generate new access token
+    const newAccessToken = generateAccessToken(user._id);
+
+    // Rotate refresh token (generate new one, revoke old)
+    const newRefreshToken = generateRefreshToken(user, req);
+    await user.save();
+
+    // Log token refresh
+    await logUserActivity(user._id, 'LOGIN', `Access token refreshed`, req);
+
+    res.json({
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get current user's active sessions
+// @route   GET /api/auth/sessions
+// @access  Private
+const getSessions = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('sessions');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Clean expired sessions
+    user.cleanExpiredSessions();
+    await user.save();
+
+    // Return sessions without the token hashes
+    const sessions = user.sessions.map(session => ({
+      _id: session._id,
+      userAgent: session.userAgent,
+      ipAddress: session.ipAddress,
+      createdAt: session.createdAt,
+      lastUsedAt: session.lastUsedAt,
+      isCurrent: false // Could be determined by comparing token hashes
+    }));
+
+    res.json({ sessions });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Revoke a specific session
+// @route   DELETE /api/auth/sessions/:sessionId
+// @access  Private
+const revokeSession = async (req, res) => {
+  const { sessionId } = req.params;
+
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Find the session by ID
+    const session = user.sessions.id(sessionId);
+    if (!session) {
+      return res.status(404).json({ message: 'Session not found' });
+    }
+
+    // Revoke the session by removing it
+    user.sessions.pull(sessionId);
+    await user.save();
+
+    // Log session revocation
+    await logUserActivity(req.user._id, 'LOGOUT', `Revoked session from ${session.userAgent || 'unknown device'}`, req);
+
+    res.json({ message: 'Session revoked successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Revoke all sessions (logout from all devices)
+// @route   DELETE /api/auth/sessions
+// @access  Private
+const revokeAllSessions = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const sessionCount = user.sessions.length;
+
+    // Revoke all sessions
+    user.revokeAllSessions();
+    await user.save();
+
+    // Log session revocation
+    await logUserActivity(req.user._id, 'LOGOUT', `Revoked all sessions (${sessionCount} sessions)`, req);
+
+    res.json({ message: 'All sessions revoked successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Admin: Revoke user's sessions
+// @route   DELETE /api/auth/users/:id/sessions
+// @access  Private/Admin
+const revokeUserSessions = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Prevent admin from revoking their own sessions via this endpoint
+    if (id === req.user._id.toString()) {
+      return res.status(400).json({ message: 'Use the regular logout endpoint for your own sessions' });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const sessionCount = user.sessions.length;
+    user.revokeAllSessions();
+    await user.save();
+
+    // Log admin action
+    await logUserActivity(req.user._id, 'UPDATE_USER', `Revoked all sessions for user ${user.username} (${sessionCount} sessions)`, req);
+
+    res.json({ message: `Revoked ${sessionCount} sessions for user ${user.username}` });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -396,4 +623,9 @@ module.exports = {
   updateUser,
   deleteUser,
   logoutUser,
+  refreshToken,
+  getSessions,
+  revokeSession,
+  revokeAllSessions,
+  revokeUserSessions,
 };

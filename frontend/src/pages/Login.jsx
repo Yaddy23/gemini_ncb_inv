@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import { useToast } from '../components/Toast';
 import { LogIn, User, Lock } from 'lucide-react';
 
 const Login = ({ onLogin }) => {
@@ -9,7 +10,7 @@ const Login = ({ onLogin }) => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { toast } = useToast();
 
   const handleChange = (e) => {
     setFormData({
@@ -21,13 +22,21 @@ const Login = ({ onLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     try {
       const response = await api.post('/auth/login', formData);
-      onLogin(response.data);
+      const { accessToken, refreshToken, ...userData } = response.data;
+
+      // Store both tokens
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('user', JSON.stringify(userData));
+
+      onLogin(userData);
+      toast.success('Welcome back!');
     } catch (error) {
-      setError(error.response?.data?.message || 'Login failed');
+      const message = error.response?.data?.message || 'Login failed';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -76,12 +85,6 @@ const Login = ({ onLogin }) => {
               />
             </div>
           </div>
-
-          {error && (
-            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-              {error}
-            </div>
-          )}
 
           <button
             type="submit"
