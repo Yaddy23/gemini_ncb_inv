@@ -1,13 +1,84 @@
 import React, { useState } from 'react';
 import api from '../api/axios';
-import { Upload, CheckCircle, AlertTriangle, Loader, Trash, Edit, Loader as LoaderIcon } from 'lucide-react';
+import { Upload, CheckCircle, AlertTriangle, Loader, Trash, Edit, Loader as LoaderIcon, Download } from 'lucide-react';
 import { AlertBanner } from '../components/ui';
+import { ExcelImport, useExcelImport } from '../components/import';
 import * as XLSX from 'xlsx';
 
+// Row rules for the book inventory import: ISBN/TITLE/QTY/PRICE required,
+// QTY/PRICE must be non-negative numbers. Valid rows are normalized; invalid
+// ones are dropped and reported as a count. Passed to useExcelImport.
+const validateBookRows = (data) => {
+  const invalidRows = [];
+
+  const validatedData = data.map((row, index) => {
+    const rowNum = index + 1;
+    const {
+      ISBN, SUBJECT, TITLE, EDITION, YEAR, AUTHOR, BIND, QTY, PRICE, PUBLISHER
+    } = row;
+
+    // Check required fields
+    if (!ISBN || !TITLE || QTY === undefined || PRICE === undefined) {
+      invalidRows.push({
+        row: rowNum,
+        message: 'Missing required fields: ISBN, TITLE, QTY, or PRICE',
+        data: row
+      });
+      return null;
+    }
+
+    // Validate numeric fields
+    if (isNaN(Number(QTY)) || Number(QTY) < 0) {
+      invalidRows.push({
+        row: rowNum,
+        message: 'QTY must be a non-negative number',
+        data: row
+      });
+      return null;
+    }
+
+    if (isNaN(Number(PRICE)) || Number(PRICE) < 0) {
+      invalidRows.push({
+        row: rowNum,
+        message: 'PRICE must be a non-negative number',
+        data: row
+      });
+      return null;
+    }
+
+    return {
+      ISBN: String(ISBN).trim(),
+      SUBJECT: String(SUBJECT || '').trim(),
+      TITLE: String(TITLE).trim(),
+      EDITION: String(EDITION || '').trim(),
+      YEAR: String(YEAR || '').trim(),
+      AUTHOR: String(AUTHOR || '').trim(),
+      BIND: String(BIND || '').trim(),
+      QTY: Number(QTY),
+      PRICE: Number(PRICE),
+      PUBLISHER: String(PUBLISHER || '').trim()
+    };
+  }).filter(Boolean); // Remove null rows
+
+  if (invalidRows.length > 0) {
+    console.log('Invalid rows:', invalidRows);
+  }
+
+  return {
+    rows: validatedData,
+    error: invalidRows.length > 0
+      ? `Found ${invalidRows.length} invalid row(s). Please check your data.`
+      : null
+  };
+};
+
 const ImportExport = ({ user }) => {
-  const [file, setFile] = useState(null);
-  const [previewData, setPreviewData] = useState([]);
-  const [previewError, setPreviewError] = useState(null);
+  const {
+    file,
+    rows: previewData,
+    error: previewError,
+    handleFileChange
+  } = useExcelImport({ validateRows: validateBookRows });
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState(null);
   const [importSuccess, setImportSuccess] = useState(null);
@@ -15,135 +86,29 @@ const ImportExport = ({ user }) => {
   const [mode, setMode] = useState('skip'); // skip, update, merge
   const [exporting, setExporting] = useState(false);
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (!selectedFile) {
-      setFile(null);
-      setPreviewData([]);
-      setPreviewError(null);
-      return;
-    }
-
-    // Validate file type
-    const validTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-      'text/csv'
-    ];
-
-    if (!validTypes.includes(selectedFile.type)) {
-      setPreviewError('Invalid file type. Please upload an Excel (.xlsx, .xls) or CSV file.');
-      setFile(null);
-      return;
-    }
-
-    setFile(selectedFile);
-    setPreviewError(null);
-    previewFile(selectedFile);
-  };
-
-  const previewFile = (file) => {
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      try {
-        const contents = e.target.result;
-        let data;
-
-        if (file.name.endsWith('.csv')) {
-          // Parse CSV
-          const lines = contents.split('\n').filter(line => line.trim());
-          const headers = lines[0].split(',').map(h => h.trim());
-          data = lines.slice(1).map(line => {
-            const values = line.split(',').map(v => v.trim());
-            const row = {};
-            headers.forEach((header, index) => {
-              row[header] = values[index] !== undefined ? values[index] : '';
-            });
-            return row;
-          });
-        } else {
-          // Parse Excel
-          const workbook = XLSX.read(contents, { type: 'binary' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          data = XLSX.utils.sheet_to_json(worksheet);
-        }
-
-        // Validate required fields
-        const requiredFields = ['ISBN', 'TITLE', 'QTY', 'PRICE'];
-        const invalidRows = [];
-
-        const validatedData = data.map((row, index) => {
-          const rowNum = index + 1;
-          const {
-            ISBN, SUBJECT, TITLE, EDITION, YEAR, AUTHOR, BIND, QTY, PRICE, PUBLISHER
-          } = row;
-
-          // Check required fields
-          if (!ISBN || !TITLE || QTY === undefined || PRICE === undefined) {
-            invalidRows.push({
-              row: rowNum,
-              message: 'Missing required fields: ISBN, TITLE, QTY, or PRICE',
-              data: row
-            });
-            return null;
-          }
-
-          // Validate numeric fields
-          if (isNaN(Number(QTY)) || Number(QTY) < 0) {
-            invalidRows.push({
-              row: rowNum,
-              message: 'QTY must be a non-negative number',
-              data: row
-            });
-            return null;
-          }
-
-          if (isNaN(Number(PRICE)) || Number(PRICE) < 0) {
-            invalidRows.push({
-              row: rowNum,
-              message: 'PRICE must be a non-negative number',
-              data: row
-            });
-            return null;
-          }
-
-          return {
-            ISBN: String(ISBN).trim(),
-            SUBJECT: String(SUBJECT || '').trim(),
-            TITLE: String(TITLE).trim(),
-            EDITION: String(EDITION || '').trim(),
-            YEAR: String(YEAR || '').trim(),
-            AUTHOR: String(AUTHOR || '').trim(),
-            BIND: String(BIND || '').trim(),
-            QTY: Number(QTY),
-            PRICE: Number(PRICE),
-            PUBLISHER: String(PUBLISHER || '').trim()
-          };
-        }).filter(Boolean); // Remove null rows
-
-        if (invalidRows.length > 0) {
-          setPreviewError(`Found ${invalidRows.length} invalid row(s). Please check your data.`);
-          console.log('Invalid rows:', invalidRows);
-        }
-
-        setPreviewData(validatedData);
-      } catch (err) {
-        setPreviewError('Error parsing file. Please ensure it\'s a valid Excel or CSV file.');
-        console.error('File parsing error:', err);
+  // Download Excel template with the columns the import expects
+  // (ISBN, TITLE, QTY, PRICE required; the rest optional)
+  const downloadTemplate = () => {
+    const workbook = XLSX.utils.book_new();
+    const templateData = [
+      {
+        ISBN: '9781234567890', SUBJECT: 'Mathematics', TITLE: 'Example Book Title',
+        EDITION: '1st', YEAR: '2024', AUTHOR: 'Jane Doe', BIND: 'Paperback',
+        QTY: 10, PRICE: 250, PUBLISHER: 'Academic Publishing'
+      },
+      {
+        ISBN: '9781234567891', SUBJECT: 'Science', TITLE: 'Another Example Book',
+        EDITION: '2nd', YEAR: '2023', AUTHOR: 'John Smith', BIND: 'Hardcover',
+        QTY: 5, PRICE: 395.5, PUBLISHER: 'Science Press'
       }
-    };
-
-    reader.onerror = () => {
-      setPreviewError('Error reading file.');
-    };
-
-    if (file.name.endsWith('.csv')) {
-      reader.readAsText(file);
-    } else {
-      reader.readAsBinaryString(file);
-    }
+    ];
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    worksheet['!cols'] = [
+      { wch: 16 }, { wch: 14 }, { wch: 28 }, { wch: 8 }, { wch: 8 },
+      { wch: 18 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 20 }
+    ];
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Book Import');
+    XLSX.writeFile(workbook, 'book-import-template.xlsx');
   };
 
   const handleImport = async () => {
@@ -212,25 +177,32 @@ const ImportExport = ({ user }) => {
 
       {/* Import Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-4 sm:mb-6">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Import Books</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 sm:mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Import Books</h2>
+          <button
+            onClick={downloadTemplate}
+            className="flex items-center justify-center space-x-1 px-3 py-2 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors touch-manipulation min-h-[44px]"
+            title="Download Excel template with the expected columns"
+          >
+            <Download className="w-4 h-4" />
+            <span>Download Template</span>
+          </button>
+        </div>
 
         <div className="space-y-4 sm:space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Select File</label>
             <div className="flex flex-col space-y-2">
-              <label className="flex items-center justify-center space-x-3 px-4 py-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-gray-50 transition-colors cursor-pointer touch-manipulation min-h-[56px]">
-                <input
-                  type="file"
-                  id="file-input"
-                  accept=".xlsx,.xls,.csv"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
+              <ExcelImport
+                id="file-input"
+                onChange={handleFileChange}
+                labelClassName="flex items-center justify-center space-x-3 px-4 py-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-gray-50 transition-colors cursor-pointer touch-manipulation min-h-[56px]"
+              >
                 <span className="flex flex-col items-center text-center">
                   <Upload className="w-6 h-6 text-primary mb-1" />
                   <span className="text-sm font-medium text-gray-700">Click to upload or drag and drop</span>
                 </span>
-              </label>
+              </ExcelImport>
               <p className="text-xs text-gray-500 text-center">
                 Supported: .xlsx, .xls, .csv | Required: ISBN, TITLE, QTY, PRICE<br />
                 Optional: SUBJECT, EDITION, YEAR, AUTHOR, BIND, PUBLISHER

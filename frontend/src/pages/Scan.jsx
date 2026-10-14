@@ -9,6 +9,42 @@ import { AlertBanner } from '../components/ui';
 import { useOnline } from '../context/OnlineContext';
 import { enqueueScan, getPendingItems, drainQueue, registerBackgroundSync } from '../lib/offlineQueue';
 import { lookupLocal, adjustLocalStock, refreshCatalog } from '../lib/bookCatalog';
+import { ExcelImport, useExcelImport } from '../components/import';
+
+// Row rules for the bulk stock-movement import: ISBN required, QTY optional
+// (defaults to 1, minimum 1). Passed to useExcelImport.
+const validateStockRows = (data) => {
+  // Validate ISBN column exists
+  const hasISBN = data.some(row => row.ISBN !== undefined);
+  if (!hasISBN) {
+    return { rows: [], error: 'File must contain an ISBN column.' };
+  }
+
+  // Validate and prepare data
+  const validatedData = data.map((row, index) => {
+    const rowNum = index + 1;
+    const isbn = row.ISBN ? String(row.ISBN).trim() : '';
+    const qty = row.QTY !== undefined && row.QTY !== '' && !isNaN(Number(row.QTY))
+      ? Math.max(1, Number(row.QTY))
+      : 1;
+
+    if (!isbn) {
+      return null;
+    }
+
+    return {
+      row: rowNum,
+      isbn,
+      qty,
+      originalRow: row
+    };
+  }).filter(Boolean);
+
+  if (validatedData.length === 0) {
+    return { rows: [], error: 'No valid ISBNs found in the file.' };
+  }
+  return { rows: validatedData, error: null };
+};
 
 const Scan = ({ user }) => {
   const { toast } = useToast();
@@ -37,13 +73,17 @@ const Scan = ({ user }) => {
   const [scanQueue, setScanQueue] = useState([]);
   const [flushing, setFlushing] = useState(false);
 
-  // Import state
+  // Import state (file/preview/error handling shared via useExcelImport)
   const [showImport, setShowImport] = useState(false);
-  const [importFile, setImportFile] = useState(null);
-  const [importPreview, setImportPreview] = useState([]);
-  const [importError, setImportError] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState(null);
+  const {
+    file: importFile,
+    rows: importPreview,
+    error: importError,
+    clear: clearImportFile,
+    handleFileChange: handleImportFileChange
+  } = useExcelImport({ validateRows: validateStockRows });
 
   const cameraContainerRef = useRef(null);
   const isbnInputRef = useRef(null);
@@ -597,115 +637,6 @@ const Scan = ({ user }) => {
     XLSX.writeFile(workbook, `${mode === 'inbound' ? 'stock-in' : 'stock-out'}-template.xlsx`);
   };
 
-  // Handle file selection for import
-  const handleImportFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) {
-      setImportFile(null);
-      setImportPreview([]);
-      setImportError(null);
-      return;
-    }
-
-    // Validate file type
-    const validTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-      'text/csv'
-    ];
-
-    if (!validTypes.includes(file.type)) {
-      setImportError('Invalid file type. Please upload an Excel (.xlsx, .xls) or CSV file.');
-      setImportFile(null);
-      return;
-    }
-
-    setImportFile(file);
-    setImportError(null);
-    previewImportFile(file);
-  };
-
-  // Preview the import file
-  const previewImportFile = (file) => {
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      try {
-        const contents = e.target.result;
-        let data;
-
-        if (file.name.endsWith('.csv')) {
-          // Parse CSV
-          const lines = contents.split('\n').filter(line => line.trim());
-          const headers = lines[0].split(',').map(h => h.trim());
-          data = lines.slice(1).map(line => {
-            const values = line.split(',').map(v => v.trim());
-            const row = {};
-            headers.forEach((header, index) => {
-              row[header] = values[index] !== undefined ? values[index] : '';
-            });
-            return row;
-          });
-        } else {
-          // Parse Excel
-          const workbook = XLSX.read(contents, { type: 'binary' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          data = XLSX.utils.sheet_to_json(worksheet);
-        }
-
-        // Validate ISBN column exists
-        const hasISBN = data.some(row => row.ISBN !== undefined);
-        if (!hasISBN) {
-          setImportError('File must contain an ISBN column.');
-          setImportPreview([]);
-          return;
-        }
-
-        // Validate and prepare data
-        const validatedData = data.map((row, index) => {
-          const rowNum = index + 1;
-          const isbn = row.ISBN ? String(row.ISBN).trim() : '';
-          const qty = row.QTY !== undefined && row.QTY !== '' && !isNaN(Number(row.QTY))
-            ? Math.max(1, Number(row.QTY))
-            : 1;
-
-          if (!isbn) {
-            return null;
-          }
-
-          return {
-            row: rowNum,
-            isbn,
-            qty,
-            originalRow: row
-          };
-        }).filter(Boolean);
-
-        if (validatedData.length === 0) {
-          setImportError('No valid ISBNs found in the file.');
-          setImportPreview([]);
-          return;
-        }
-
-        setImportPreview(validatedData);
-      } catch (err) {
-        setImportError('Error parsing file. Please ensure it\'s a valid Excel or CSV file.');
-        console.error('File parsing error:', err);
-      }
-    };
-
-    reader.onerror = () => {
-      setImportError('Error reading file.');
-    };
-
-    if (file.name.endsWith('.csv')) {
-      reader.readAsText(file);
-    } else {
-      reader.readAsBinaryString(file);
-    }
-  };
-
   // Process bulk import
   const processBulkImport = async () => {
     if (!importPreview.length || !mode) {
@@ -777,10 +708,8 @@ const Scan = ({ user }) => {
 
   // Clear import state
   const clearImport = () => {
+    clearImportFile();
     setShowImport(false);
-    setImportFile(null);
-    setImportPreview([]);
-    setImportError(null);
     setImporting(false);
     setImportResults(null);
   };
@@ -932,23 +861,17 @@ const Scan = ({ user }) => {
                   {!importFile ? (
                   // Initial state - show upload button
                   <div className="text-center py-6 sm:py-8">
-                    <input
-                      type="file"
+                    <ExcelImport
                       id="import-file-input"
-                      accept=".xlsx,.xls,.csv"
                       onChange={handleImportFileChange}
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor="import-file-input"
-                      className="flex flex-col items-center justify-center space-y-3 px-4 py-6 sm:px-6 sm:py-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-blue-50 cursor-pointer transition-colors touch-manipulation"
+                      labelClassName="flex flex-col items-center justify-center space-y-3 px-4 py-6 sm:px-6 sm:py-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary hover:bg-blue-50 cursor-pointer transition-colors touch-manipulation"
                     >
                       <Upload className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" />
                       <span className="text-base sm:text-lg text-gray-600">Click to upload or drag and drop</span>
                       <p className="text-xs sm:text-sm text-gray-500">
                         Excel (.xlsx, .xls) or CSV with ISBN column
                       </p>
-                    </label>
+                    </ExcelImport>
                   </div>
                 ) : (
                   // File selected - show preview and actions
@@ -959,9 +882,7 @@ const Scan = ({ user }) => {
                         <span className="flex-1">{importError}</span>
                         <button
                           onClick={() => {
-                            setImportFile(null);
-                            setImportPreview([]);
-                            setImportError(null);
+                            clearImportFile();
                             setShowImport(false);
                           }}
                           className="flex-shrink-0 px-3 py-1.5 text-red-600 hover:underline text-sm bg-red-50 rounded-lg touch-manipulation min-h-[44px]"
@@ -979,8 +900,7 @@ const Scan = ({ user }) => {
                           </p>
                           <button
                             onClick={() => {
-                              setImportFile(null);
-                              setImportPreview([]);
+                              clearImportFile();
                               setShowImport(false);
                             }}
                             className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 bg-gray-50 rounded-lg touch-manipulation min-h-[44px]"
