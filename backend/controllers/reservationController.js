@@ -153,7 +153,79 @@ const expireStale = async (req, res) => {
   }
 };
 
+// @desc    Remove a single book (line item) from a reservation, releasing its reservedQty.
+//          If it is the last item, the whole draft DR (the hold) is deleted.
+// @route   POST /api/stock/reservations/release-item
+// @access  Private
+const releaseItem = async (req, res) => {
+  try {
+    const { drId, isbn, lineIndex } = req.body;
+    if (!drId || !isbn) {
+      return res.status(400).json({ message: 'drId and isbn are required' });
+    }
+
+    // Re-fetch fresh state: the DR may have been issued/linked/deleted since
+    // the list was loaded (same race guard as expire-stale).
+    const dr = await DeliveryReceipt.findById(drId);
+    if (!dr) return res.status(404).json({ message: 'Delivery Receipt not found' });
+    if (dr.status !== 'draft') return res.status(400).json({ message: 'DR is no longer a draft' });
+    if (dr.efRef) return res.status(400).json({ message: 'DR is linked to an Evaluation Form and holds no reservation' });
+
+    // Prefer the exact line the user clicked (disambiguates duplicate-ISBN lines,
+    // possible via the allow-duplicates path). If the document changed since the
+    // list was rendered, refuse rather than silently removing the wrong line.
+    let itemIndex = -1;
+    if (Number.isInteger(lineIndex) && lineIndex >= 0 && lineIndex < dr.items.length) {
+      if (dr.items[lineIndex].isbn !== isbn) {
+        return res.status(409).json({ message: 'Reservation changed since it was loaded — please refresh and try again' });
+      }
+      itemIndex = lineIndex;
+    } else {
+      itemIndex = dr.items.findIndex(it => it.isbn === isbn);
+    }
+    if (itemIndex === -1) {
+      return res.status(404).json({ message: `ISBN ${isbn} is not on this reservation` });
+    }
+    const item = dr.items[itemIndex];
+
+    // Release this item's reservation (mirrors DELETE /dr/:id)
+    const book = await Book.findOne({ ISBN: item.isbn });
+    if (!book) return res.status(400).json({ message: `Book not found: ${item.isbn}` });
+    if (book.reservedQty < item.qty) {
+      return res.status(400).json({ message: `Insufficient reservation to release for ${item.isbn}` });
+    }
+    book.reservedQty -= item.qty;
+    await book.save();
+    await StockTransaction.create({
+      ISBN: book.ISBN,
+      action: 'RELEASE',
+      qtyChanged: 0,
+      previousQty: book.QTY, // QTY unchanged by reservation release
+      newQty: book.QTY,
+      performedBy: req.user._id
+    });
+
+    const wasLastItem = dr.items.length === 1;
+
+    if (wasLastItem) {
+      const { drNumber } = dr;
+      await dr.deleteOne();
+      await logUserActivity(req.user._id, 'UPDATE_DR', `Released ${item.qty} unit(s) of ${item.isbn} from draft DR ${drNumber}; DR deleted (no items left)`, req);
+      return res.json({ message: 'Reservation released — DR deleted (no items left)', deleted: true, releasedQty: item.qty, drNumber });
+    }
+
+    dr.items.splice(itemIndex, 1);
+    await dr.save(); // pre-save hook recomputes subtotal/totalAmount/updatedAt
+    await logUserActivity(req.user._id, 'UPDATE_DR', `Released ${item.qty} unit(s) of ${item.isbn} from draft DR ${dr.drNumber} (reservation item removed)`, req);
+
+    res.json({ message: `${item.qty} unit(s) of ${item.isbn} returned to available stock`, deleted: false, releasedQty: item.qty, remainingItems: dr.items.length });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getReservations,
-  expireStale
+  expireStale,
+  releaseItem
 };

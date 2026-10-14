@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bookmark, ChevronDown, ChevronRight, ExternalLink, Loader, RefreshCw, Unlock } from 'lucide-react';
+import { Bookmark, ChevronDown, ChevronRight, ExternalLink, Loader, RefreshCw, Trash2, Unlock } from 'lucide-react';
 import { reservationsApi } from '../api/reservations';
 import { drsiApi } from '../api/drsi';
 import { formatDate } from '../utils/numberToWords';
@@ -44,6 +44,7 @@ const Reservations = ({ user }) => {
   const [staleFilter, setStaleFilter] = useState('');
   const [expandedId, setExpandedId] = useState(null);
   const [releasing, setReleasing] = useState(null);
+  const [removingItem, setRemovingItem] = useState(null); // "${drId}:${isbn}" while a per-item release is in flight
   const [expiring, setExpiring] = useState(false);
   const [expireResult, setExpireResult] = useState(null);
 
@@ -114,6 +115,31 @@ const Reservations = ({ user }) => {
     }
   };
 
+  const handleRemoveItem = async (hold, item, lineIndex) => {
+    const sure = await confirmDialog(
+      `Remove "${item.title}" from reservation ${hold.drNumber}? ${item.qty} unit(s) will return to available stock.${hold.items.length === 1 ? ' This is the last item — the whole reservation (draft DR) will be released.' : ''}`,
+      { title: 'Remove Book from Reservation', danger: true, confirmText: 'Remove' }
+    );
+    if (!sure) return;
+    const key = `${hold.drId}:${item.isbn}`;
+    setRemovingItem(key);
+    try {
+      const response = await reservationsApi.releaseItem(hold.drId, item.isbn, lineIndex);
+      const result = response.data || {};
+      if (result.deleted) {
+        toast.success('Reservation fully released — draft DR deleted');
+        if (expandedId === hold.drId) setExpandedId(null);
+      } else {
+        toast.success(result.message || `${item.qty} unit(s) returned to available stock`);
+      }
+      fetchReservations();
+    } catch (err) {
+      toast.error('Remove failed: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setRemovingItem(null);
+    }
+  };
+
   const handleExpireStale = async () => {
     const sure = await confirmDialog(
       `Expire all stale reservations? This will delete ${summary.staleCount} stale draft DR(s) and return their units to available stock.`,
@@ -136,11 +162,22 @@ const Reservations = ({ user }) => {
     }
   };
 
-  const renderItemRow = (item, idx) => (
+  const renderItemRow = (hold, item, idx) => (
     <tr key={idx}>
       <td className="px-3 py-2 text-xs font-mono text-gray-600 dark:text-slate-400 whitespace-nowrap">{item.isbn}</td>
       <td className="px-3 py-2 text-xs text-gray-700 dark:text-slate-300">{item.title}</td>
       <td className="px-3 py-2 text-xs font-medium text-gray-900 dark:text-slate-100 text-right whitespace-nowrap">{item.qty}</td>
+      <td className="px-3 py-2 text-right">
+        <button
+          onClick={() => handleRemoveItem(hold, item, idx)}
+          disabled={removingItem === `${hold.drId}:${item.isbn}`}
+          className="inline-flex items-center justify-center space-x-1 px-2.5 py-2 bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/30 transition-colors touch-manipulation min-h-[44px] text-xs font-medium disabled:opacity-50"
+          title={`Remove ${item.title} from this reservation`}
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          <span>{removingItem === `${hold.drId}:${item.isbn}` ? 'Removing...' : 'Remove'}</span>
+        </button>
+      </td>
     </tr>
   );
 
@@ -282,7 +319,18 @@ const Reservations = ({ user }) => {
                           <span className="text-gray-700 dark:text-slate-300 truncate" title={`${it.isbn} — ${it.title}`}>
                             <span className="font-mono text-gray-500 dark:text-slate-400">{it.isbn}</span> · {it.title}
                           </span>
-                          <span className="font-medium text-gray-900 dark:text-slate-100 flex-shrink-0">×{it.qty}</span>
+                          <span className="flex items-center flex-shrink-0">
+                            <span className="font-medium text-gray-900 dark:text-slate-100 mr-1">×{it.qty}</span>
+                            <button
+                              onClick={() => handleRemoveItem(hold, it, idx)}
+                              disabled={removingItem === `${hold.drId}:${it.isbn}`}
+                              className="p-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/15 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-50"
+                              title={`Remove ${it.title} from this reservation`}
+                              aria-label={`Remove ${it.title} from this reservation`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -380,10 +428,11 @@ const Reservations = ({ user }) => {
                                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">ISBN</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Title</th>
                                     <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Qty</th>
+                                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Actions</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
-                                  {hold.items?.map(renderItemRow)}
+                                  {hold.items?.map((item, idx) => renderItemRow(hold, item, idx))}
                                 </tbody>
                               </table>
                             </div>
