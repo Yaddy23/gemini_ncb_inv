@@ -124,16 +124,16 @@ const Profile = ({ user, onLogin, onLogout }) => {
   return (
     <div className="p-4 sm:p-6">
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center space-x-3">
-          <User className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 flex items-center space-x-3">
+          <User className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
           User Profile
         </h1>
-        <p className="mt-2 text-gray-600">Manage your account settings</p>
+        <p className="mt-2 text-gray-600 dark:text-slate-400">Manage your account settings</p>
       </div>
 
       {/* Profile Info Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-4 sm:mb-6">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Account Information</h2>
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-4 sm:p-6 mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4">Account Information</h2>
 
         {editMode ? (
           <form onSubmit={(e) => {
@@ -141,39 +141,39 @@ const Profile = ({ user, onLogin, onLogout }) => {
             handleUpdateProfile();
           }} className="space-y-4 sm:space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Username</label>
               <input
                 type="text"
                 name="username"
                 value={profileData.username}
                 onChange={handleProfileChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:placeholder-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 focus:border-transparent touch-manipulation min-h-[44px] text-base"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Email</label>
               <input
                 type="email"
                 name="email"
                 value={profileData.email}
                 onChange={handleProfileChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:placeholder-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 focus:border-transparent touch-manipulation min-h-[44px] text-base"
               />
             </div>
 
             <div className="flex items-center space-x-3">
-              <label className="text-sm font-medium text-gray-700">Role:</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-slate-300">Role:</label>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                profileData.role === 'Admin' ? 'bg-primary/20 text-primary' : 'bg-green-100 text-green-700'
+                profileData.role === 'Admin' ? 'bg-primary/20 dark:bg-blue-500/25 text-primary dark:text-blue-400' : 'bg-green-100 dark:bg-emerald-500/20 text-green-700 dark:text-emerald-400'
               }`}>
                 {profileData.role}
               </span>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200 dark:border-slate-800">
               <Button
                 variant="secondary"
                 size="touch"
@@ -196,41 +196,41 @@ const Profile = ({ user, onLogin, onLogout }) => {
           </form>
         ) : (
           <div className="space-y-4 sm:space-y-5">
-            <div className="flex items-center space-x-3 sm:space-x-4 p-3 bg-gray-50 rounded-lg">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                <User className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <div className="flex items-center space-x-3 sm:space-x-4 p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 dark:bg-blue-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-700">Username</p>
-                <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">{profileData.username}</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Username</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 truncate">{profileData.username}</p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 sm:space-x-4 p-3 bg-gray-50 rounded-lg">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Edit className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <div className="flex items-center space-x-3 sm:space-x-4 p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 dark:bg-blue-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Edit className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-700">Email</p>
-                <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">{profileData.email}</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Email</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 truncate">{profileData.email}</p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 sm:space-x-4 p-3 bg-gray-50 rounded-lg">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <div className="flex items-center space-x-3 sm:space-x-4 p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 dark:bg-blue-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-700">Role</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Role</p>
                 <p className={`text-lg sm:text-xl font-bold ${
-                  profileData.role === 'Admin' ? 'text-primary' : 'text-green-600'
+                  profileData.role === 'Admin' ? 'text-primary dark:text-blue-400' : 'text-green-600 dark:text-emerald-400'
                 }`}>
                   {profileData.role}
                 </p>
               </div>
             </div>
 
-            <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-200 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <Button
                 variant="primary"
                 size="touch"
@@ -262,26 +262,26 @@ const Profile = ({ user, onLogin, onLogout }) => {
 
       {/* Password Change Section */}
       {showPasswordChange && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Change Password</h2>
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4">Change Password</h2>
           <form onSubmit={(e) => {
             e.preventDefault();
             handleChangePassword();
           }} className="space-y-4 sm:space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Current Password</label>
               <input
                 type="password"
                 name="currentPassword"
                 value={passwordData.currentPassword}
                 onChange={handlePasswordChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:placeholder-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 focus:border-transparent touch-manipulation min-h-[44px] text-base"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">New Password</label>
               <input
                 type="password"
                 name="newPassword"
@@ -289,12 +289,12 @@ const Profile = ({ user, onLogin, onLogout }) => {
                 onChange={handlePasswordChange}
                 required
                 minLength="8"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:placeholder-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 focus:border-transparent touch-manipulation min-h-[44px] text-base"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Confirm New Password</label>
               <input
                 type="password"
                 name="confirmPassword"
@@ -302,11 +302,11 @@ const Profile = ({ user, onLogin, onLogout }) => {
                 onChange={handlePasswordChange}
                 required
                 minLength="8"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:placeholder-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 focus:border-transparent touch-manipulation min-h-[44px] text-base"
               />
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200 dark:border-slate-800">
               <Button
                 variant="secondary"
                 size="touch"

@@ -25,13 +25,13 @@ const ToastItem = ({ toast, onClose }) => {
   return (
     <div
       role={toast.type === 'error' ? 'alert' : 'status'}
-      className={`flex items-start space-x-3 w-full max-w-sm bg-white shadow-lg rounded-lg border border-gray-100 border-l-4 p-4 ${config.border}`}
+      className={`flex items-start space-x-3 w-full max-w-sm bg-white shadow-lg rounded-lg border border-gray-100 border-l-4 p-4 dark:bg-slate-900 dark:border-slate-800 ${config.border}`}
     >
       <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${config.iconColor}`} />
-      <p className="flex-1 text-sm text-gray-700 break-words">{toast.message}</p>
+      <p className="flex-1 text-sm text-gray-700 break-words dark:text-slate-300">{toast.message}</p>
       <button
         onClick={() => onClose(toast.id)}
-        className="flex-shrink-0 p-1 -m-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+        className="flex-shrink-0 p-1 -m-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-slate-800"
         aria-label="Dismiss notification"
       >
         <X className="w-4 h-4" />
@@ -93,10 +93,10 @@ const DialogItem = ({ dialog, isTop, onResolve }) => {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative w-full max-w-md bg-white rounded-lg shadow-xl p-6"
+        className="relative w-full max-w-md bg-white rounded-lg shadow-xl p-6 dark:bg-slate-900"
       >
-        <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
-        <p className="text-gray-600 mb-4 break-words">{message}</p>
+        <h3 className="text-lg font-bold text-gray-900 mb-2 dark:text-slate-100">{title}</h3>
+        <p className="text-gray-600 mb-4 break-words dark:text-slate-400">{message}</p>
         {kind === 'prompt' && (
           <input
             ref={inputRef}
@@ -104,13 +104,13 @@ const DialogItem = ({ dialog, isTop, onResolve }) => {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={options.placeholder || ''}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4 dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
           />
         )}
         <div className="flex justify-end space-x-3">
           <button
             onClick={cancel}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800/60 dark:text-slate-300"
           >
             Cancel
           </button>

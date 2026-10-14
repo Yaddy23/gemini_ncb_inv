@@ -146,19 +146,19 @@ const Books = ({ user }) => {
 
   // Sortable <th> for the desktop table; first click sorts A-Z, second Z-A
   const sortHeader = (label, field, widthClass, extra = null) => (
-    <th className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider truncate ${widthClass || ''}`}>
+    <th className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider truncate dark:text-slate-400 ${widthClass || ''}`}>
       <button
         type="button"
         onClick={() => handleSort(field)}
-        className="group inline-flex items-center space-x-1 hover:text-gray-700"
+        className="group inline-flex items-center space-x-1 hover:text-gray-700 dark:hover:text-slate-200"
       >
         <span className="truncate">{label}</span>
         {sortBy === field ? (
           sortOrder === 'asc'
-            ? <ArrowUp className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-            : <ArrowDown className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            ? <ArrowUp className="w-3.5 h-3.5 text-primary flex-shrink-0 dark:text-blue-400" />
+            : <ArrowDown className="w-3.5 h-3.5 text-primary flex-shrink-0 dark:text-blue-400" />
         ) : (
-          <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-400 flex-shrink-0" />
+          <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-400 flex-shrink-0 dark:text-slate-500 dark:group-hover:text-slate-300" />
         )}
         {extra}
       </button>
@@ -177,9 +177,9 @@ const Books = ({ user }) => {
   };
 
   const getActionBadgeClass = (action) => {
-    if (action === 'INBOUND') return 'bg-green-100 text-green-700';
-    if (action === 'OUTBOUND') return 'bg-red-100 text-red-700';
-    return 'bg-gray-100 text-gray-700';
+    if (action === 'INBOUND') return 'bg-green-100 text-green-700 dark:bg-emerald-500/20 dark:text-emerald-400';
+    if (action === 'OUTBOUND') return 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400';
+    return 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300';
   };
 
   const openHistory = (book) => {
@@ -259,8 +259,8 @@ const Books = ({ user }) => {
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="flex space-x-3">
-            <Loader className="w-8 h-8 text-primary animate-spin" />
-            <span className="text-primary">Loading books...</span>
+            <Loader className="w-8 h-8 text-primary animate-spin dark:text-blue-400" />
+            <span className="text-primary dark:text-blue-400">Loading books...</span>
           </div>
         </div>
       </div>
@@ -278,24 +278,24 @@ const Books = ({ user }) => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
-          <ShoppingBag className="w-5 h-5 text-primary" />
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center space-x-3 dark:text-slate-100">
+          <ShoppingBag className="w-5 h-5 text-primary dark:text-blue-400" />
           Book Catalog
         </h1>
-        <p className="mt-2 text-gray-600">Manage your book inventory</p>
+        <p className="mt-2 text-gray-600 dark:text-slate-400">Manage your book inventory</p>
       </div>
 
       {/* Search and Controls */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex-1 w-full sm:w-auto">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-500" />
             <input
               type="text"
               placeholder="Search books by title, author, ISBN..."
               value={search}
               onChange={handleSearchChange}
-              className="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+              className="w-full px-4 py-3 pl-11 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
             />
           </div>
         </div>
@@ -306,7 +306,7 @@ const Books = ({ user }) => {
             className={`relative flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[140px] ${
               showFilters || activeFilterCount > 0
                 ? 'bg-primary text-white hover:bg-primary/90'
-                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                : 'bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             <Filter className="w-5 h-5" />
@@ -328,7 +328,7 @@ const Books = ({ user }) => {
           )}
           <button
             onClick={() => navigate('/scan')}
-            className="flex items-center justify-center space-x-2 px-4 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors touch-manipulation min-h-[44px] min-w-[140px]"
+            className="flex items-center justify-center space-x-2 px-4 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors touch-manipulation min-h-[44px] min-w-[140px]"
           >
             <Barcode className="w-5 h-5" />
             <span className="hidden sm:inline">Scan Books</span>
@@ -338,45 +338,45 @@ const Books = ({ user }) => {
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="mb-6 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="mb-6 bg-white border border-gray-200 rounded-lg p-4 shadow-sm dark:bg-slate-900 dark:border-slate-800">
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Subject</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1 dark:text-slate-400">Subject</label>
               <input
                 type="text"
                 placeholder="e.g. Mathematics"
                 value={filters.subject}
                 onChange={(e) => handleFilterChange('subject', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Publisher</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1 dark:text-slate-400">Publisher</label>
               <input
                 type="text"
                 placeholder="e.g. Pearson"
                 value={filters.publisher}
                 onChange={(e) => handleFilterChange('publisher', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Year</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1 dark:text-slate-400">Year</label>
               <input
                 type="text"
                 inputMode="numeric"
                 placeholder="e.g. 2018"
                 value={filters.year}
                 onChange={(e) => handleFilterChange('year', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Stock</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1 dark:text-slate-400">Stock</label>
               <select
                 value={filters.stock}
                 onChange={(e) => handleFilterChange('stock', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500 bg-white dark:bg-slate-900"
               >
                 <option value="">All</option>
                 <option value="in">In stock</option>
@@ -385,7 +385,7 @@ const Books = ({ user }) => {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Min Price (₱)</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1 dark:text-slate-400">Min Price (₱)</label>
               <input
                 type="number"
                 min="0"
@@ -393,11 +393,11 @@ const Books = ({ user }) => {
                 placeholder="0"
                 value={filters.minPrice}
                 onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Max Price (₱)</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1 dark:text-slate-400">Max Price (₱)</label>
               <input
                 type="number"
                 min="0"
@@ -405,7 +405,7 @@ const Books = ({ user }) => {
                 placeholder="Any"
                 value={filters.maxPrice}
                 onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
               />
             </div>
           </div>
@@ -421,16 +421,16 @@ const Books = ({ user }) => {
                     setShowArchived(e.target.checked);
                     setPage(1);
                   }}
-                  className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                  className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2 dark:text-blue-400 dark:border-slate-600 dark:focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">Show archived books</span>
+                <span className="text-sm text-gray-700 dark:text-slate-300">Show archived books</span>
               </label>
             </div>
           )}
 
           {/* Mobile sorting - desktop sorts by clicking table headers */}
           <div className="mt-3 md:hidden">
-            <label className="block text-xs font-medium text-gray-500 mb-1">Sort by</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1 dark:text-slate-400">Sort by</label>
             <select
               value={`${sortBy}:${sortOrder}`}
               onChange={(e) => {
@@ -439,7 +439,7 @@ const Books = ({ user }) => {
                 setSortOrder(order);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[44px] touch-manipulation dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500 bg-white dark:bg-slate-900"
             >
               <option value="createdAt:desc">Newest first</option>
               <option value="TITLE:asc">Title (A–Z)</option>
@@ -455,7 +455,7 @@ const Books = ({ user }) => {
             <button
               onClick={clearFilters}
               disabled={activeFilterCount === 0}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 underline disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed touch-manipulation min-h-[44px]"
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 underline disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed touch-manipulation min-h-[44px] dark:text-slate-400 dark:hover:text-slate-200"
             >
               Clear filters
             </button>
@@ -464,28 +464,28 @@ const Books = ({ user }) => {
       )}
 
       {/* Books Table - Responsive: Cards on mobile, Table on desktop */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-lg shadow dark:bg-slate-900">
         {/* Mobile Card Layout */}
         <div className="block md:hidden">
           {books.length === 0 ? (
             <EmptyState icon={ShoppingBag} title={showArchived ? 'No archived books' : 'No books found'} message={showArchived ? 'No books have been archived yet.' : (activeFilterCount > 0 ? 'No books match your filters. Try clearing them.' : 'Try searching or adding new books.')} />
           ) : (
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-gray-200 dark:divide-slate-800">
               {books.map((book) => (
-                <div key={book.ISBN} className="p-4 hover:bg-gray-50">
+                <div key={book.ISBN} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-800/60">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 truncate">{book.TITLE}</h3>
-                      <p className="text-sm text-gray-500">by {book.AUTHOR || 'Unknown Author'}</p>
+                      <h3 className="font-semibold text-gray-900 truncate dark:text-slate-100">{book.TITLE}</h3>
+                      <p className="text-sm text-gray-500 dark:text-slate-400">by {book.AUTHOR || 'Unknown Author'}</p>
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-1">
                       {book.isArchived ? (
-                        <span className="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700">
+                        <span className="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300">
                           Archived
                         </span>
                       ) : (
                         <span className={`px-2 py-1 text-xs font-bold rounded-full ${
-                          book.QTY > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          book.QTY > 0 ? 'bg-green-100 text-green-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'
                         }`}>
                           {book.QTY > 0 ? `${book.QTY} in stock` : 'Out of stock'}
                         </span>
@@ -494,27 +494,27 @@ const Books = ({ user }) => {
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                     <div>
-                      <span className="text-gray-500">ISBN:</span>
-                      <span className="font-mono text-gray-900 ml-1">{book.ISBN}</span>
+                      <span className="text-gray-500 dark:text-slate-400">ISBN:</span>
+                      <span className="font-mono text-gray-900 ml-1 dark:text-slate-100">{book.ISBN}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500">Year:</span>
-                      <span className="text-gray-900 ml-1">{book.YEAR || 'N/A'}</span>
+                      <span className="text-gray-500 dark:text-slate-400">Year:</span>
+                      <span className="text-gray-900 ml-1 dark:text-slate-100">{book.YEAR || 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500">Publisher:</span>
-                      <span className="text-gray-900 ml-1">{book.PUBLISHER || 'N/A'}</span>
+                      <span className="text-gray-500 dark:text-slate-400">Publisher:</span>
+                      <span className="text-gray-900 ml-1 dark:text-slate-100">{book.PUBLISHER || 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500">Price:</span>
-                      <span className="font-medium text-gray-900 ml-1">₱{Number(book.PRICE || 0).toFixed(2)}</span>
+                      <span className="text-gray-500 dark:text-slate-400">Price:</span>
+                      <span className="font-medium text-gray-900 ml-1 dark:text-slate-100">₱{Number(book.PRICE || 0).toFixed(2)}</span>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => openHistory(book)}
                       disabled={deleteMode}
-                      className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors touch-manipulation disabled:opacity-50 min-h-[44px]"
+                      className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors touch-manipulation disabled:opacity-50 min-h-[44px]"
                     >
                       <History className="w-4 h-4" />
                       <span>History</span>
@@ -543,7 +543,7 @@ const Books = ({ user }) => {
                           className={`flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg touch-manipulation min-h-[44px] transition-colors disabled:opacity-50 ${
                             deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN
                               ? 'bg-red-500 text-white hover:bg-red-600'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                           }`}
                         >
                           {deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN ? (
@@ -569,43 +569,43 @@ const Books = ({ user }) => {
 
         {/* Desktop Table Layout */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 table-fixed">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800 table-fixed">
+            <thead className="bg-gray-50 dark:bg-slate-800/60">
               <tr>
                 {sortHeader('ISBN', 'ISBN', 'w-[120px]')}
-                {sortHeader('Title', 'TITLE', 'w-[300px]', isSearching && <Loader className="w-4 h-4 text-primary animate-spin flex-shrink-0" />)}
+                {sortHeader('Title', 'TITLE', 'w-[300px]', isSearching && <Loader className="w-4 h-4 text-primary dark:text-blue-400 animate-spin flex-shrink-0" />)}
                 {sortHeader('Author', 'AUTHOR', 'w-[200px]')}
                 {sortHeader('Year', 'YEAR', 'w-[200px]')}
                 {sortHeader('Publisher', 'PUBLISHER', 'w-[200px]')}
                 {sortHeader('Qty', 'QTY', 'w-[80px]')}
                 {sortHeader('Price', 'PRICE', 'w-[100px]')}
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider truncate">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider truncate dark:text-slate-400">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
               {books.length === 0 ? (
                 <EmptyState colSpan={8} icon={ShoppingBag} title={showArchived ? 'No archived books' : 'No books found'} message={showArchived ? 'No books have been archived yet.' : 'Try searching or adding new books.'} />
               ) : (
                 books.map((book) => (
-                  <tr key={book.ISBN} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 max-w-[120px]">{book.ISBN}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[300px]">{book.TITLE}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.AUTHOR || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.YEAR || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.PUBLISHER || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                  <tr key={book.ISBN} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 max-w-[120px] dark:text-slate-100">{book.ISBN}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-300 truncate max-w-[300px]">{book.TITLE}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-300 truncate max-w-[200px]">{book.AUTHOR || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-300 truncate max-w-[200px]">{book.YEAR || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-300 truncate max-w-[200px]">{book.PUBLISHER || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium dark:text-slate-100">
                       {book.isArchived ? (
-                        <span className="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700">Archived</span>
+                        <span className="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300">Archived</span>
                       ) : (
-                        book.QTY > 0 ? book.QTY : <span className="text-red-600">Out of stock</span>
+                        book.QTY > 0 ? book.QTY : <span className="text-red-600 dark:text-red-400">Out of stock</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{Number(book.PRICE || 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">₱{Number(book.PRICE || 0).toFixed(2)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
                         <button
                           onClick={() => openHistory(book)}
-                          className="flex items-center justify-center px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50"
+                          className="flex items-center justify-center px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded-md hover:bg-gray-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                           disabled={deleteMode}
                           title="Transaction history"
                         >
@@ -633,7 +633,7 @@ const Books = ({ user }) => {
                               className={
                                 deleteMode && selectedBook?.action === 'delete' && selectedBook?.book?.ISBN === book.ISBN
                                   ? 'flex items-center justify-center px-3 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600 transition-colors disabled:opacity-50'
-                                  : 'flex items-center justify-center px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50'
+                                  : 'flex items-center justify-center px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded-md hover:bg-gray-300 dark:bg-slate-800 dark:text-slate-200 transition-colors disabled:opacity-50'
                               }
                               disabled={deleteMode && selectedBook?.action !== 'delete' && selectedBook?.action !== undefined}
                             >
@@ -697,112 +697,112 @@ const Books = ({ user }) => {
               className="space-y-4 md:space-y-3"
             >
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">ISBN</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">ISBN</label>
                 <input
                   type="text"
                   name="ISBN"
                   value={formData.ISBN || ''}
                   onChange={(e) => setFormData({...formData, ISBN: e.target.value})}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Title</label>
                 <input
                   type="text"
                   name="TITLE"
                   value={formData.TITLE || ''}
                   onChange={(e) => setFormData({...formData, TITLE: e.target.value})}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Author</label>
                   <input
                     type="text"
                     name="AUTHOR"
                     value={formData.AUTHOR || ''}
                     onChange={(e) => setFormData({...formData, AUTHOR: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Subject</label>
                   <input
                     type="text"
                     name="SUBJECT"
                     value={formData.SUBJECT || ''}
                     onChange={(e) => setFormData({...formData, SUBJECT: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Year</label>
                   <input
                     type="text"
                     name="YEAR"
                     value={formData.YEAR || ''}
                     onChange={(e) => setFormData({...formData, YEAR: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Edition</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Edition</label>
                   <input
                     type="text"
                     name="EDITION"
                     value={formData.EDITION || ''}
                     onChange={(e) => setFormData({...formData, EDITION: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Binding</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Binding</label>
                   <input
                     type="text"
                     name="BIND"
                     value={formData.BIND || ''}
                     onChange={(e) => setFormData({...formData, BIND: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Publisher</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Publisher</label>
                   <input
                     type="text"
                     name="PUBLISHER"
                     value={formData.PUBLISHER || ''}
                     onChange={(e) => setFormData({...formData, PUBLISHER: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Quantity</label>
                   <input
                     type="number"
                     name="QTY"
                     value={formData.QTY || ''}
                     onChange={(e) => setFormData({...formData, QTY: parseInt(e.target.value) || 0})}
                     min="0"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Price</label>
                   <input
                     type="number"
                     name="PRICE"
@@ -810,22 +810,22 @@ const Books = ({ user }) => {
                     onChange={(e) => setFormData({...formData, PRICE: parseFloat(e.target.value) || 0.0})}
                     min="0"
                     step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               {formError && (
-                <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-600">
+                <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-600 dark:bg-red-500/15 dark:border-red-500/40 dark:text-red-400">
                   {formError}
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row items-center justify-end gap-3 mt-4 md:mt-6 pt-4 border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row items-center justify-end gap-3 mt-4 md:mt-6 pt-4 border-t border-gray-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setSelectedBook(null)}
-                  className="flex-1 sm:flex-none flex items-center justify-center space-x-2 px-4 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors touch-manipulation min-h-[44px] min-w-[120px]"
+                  className="flex-1 sm:flex-none flex items-center justify-center space-x-2 px-4 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors touch-manipulation min-h-[44px] min-w-[120px]"
                 >
                   <span>Cancel</span>
                 </button>
@@ -858,33 +858,33 @@ const Books = ({ user }) => {
         onClose={() => setHistoryBook(null)}
         title={
           <div className="min-w-0">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Stock History</h2>
-            <p className="text-sm text-gray-500 truncate font-normal">{historyBook?.TITLE} · {historyBook?.ISBN}</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100">Stock History</h2>
+            <p className="text-sm text-gray-500 truncate font-normal dark:text-slate-400">{historyBook?.TITLE} · {historyBook?.ISBN}</p>
           </div>
         }
         size="md"
       >
         {historyLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader className="w-6 h-6 text-primary animate-spin" />
-                <span className="ml-2 text-primary">Loading history...</span>
+                <Loader className="w-6 h-6 text-primary animate-spin dark:text-blue-400" />
+                <span className="ml-2 text-primary dark:text-blue-400">Loading history...</span>
               </div>
             ) : historyData.transactions.length === 0 ? (
-              <div className="py-8 text-center text-gray-500">
-                <History className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+              <div className="py-8 text-center text-gray-500 dark:text-slate-400">
+                <History className="w-10 h-10 mx-auto mb-2 text-gray-300 dark:text-slate-500" />
                 <p>No transactions yet.</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {historyData.transactions.map((t) => (
-                  <div key={t._id} className="p-3 bg-gray-50 rounded-lg">
+                  <div key={t._id} className="p-3 bg-gray-50 rounded-lg dark:bg-slate-800/60">
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getActionBadgeClass(t.action)}`}>{t.action}</span>
-                      <span className={`text-sm font-bold ${t.qtyChanged > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <span className={`text-sm font-bold ${t.qtyChanged > 0 ? 'text-green-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                         {t.qtyChanged > 0 ? '+' : ''}{t.qtyChanged}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1 truncate">
+                    <p className="text-xs text-gray-500 mt-1 truncate dark:text-slate-400">
                       {t.previousQty} → {t.newQty} · {t.performedBy?.username || 'Unknown'} · {new Date(t.createdAt).toLocaleString()}
                     </p>
                   </div>
@@ -894,19 +894,19 @@ const Books = ({ user }) => {
 
             {historyData.total > 10 && (
               <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-                <p className="text-sm text-gray-500">Page {historyData.page} of {historyData.pages}</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">Page {historyData.page} of {historyData.pages}</p>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setHistoryPage(Math.max(1, historyPage - 1))}
                     disabled={historyPage === 1 || historyLoading}
-                    className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition-colors touch-manipulation min-h-[44px]"
+                    className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition-colors touch-manipulation min-h-[44px] dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                   >
                     Prev
                   </button>
                   <button
                     onClick={() => setHistoryPage(Math.min(historyData.pages, historyPage + 1))}
                     disabled={historyPage === historyData.pages || historyLoading}
-                    className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition-colors touch-manipulation min-h-[44px]"
+                    className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition-colors touch-manipulation min-h-[44px] dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                   >
                     Next
                   </button>

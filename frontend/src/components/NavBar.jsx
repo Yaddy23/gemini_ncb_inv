@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, LogOut, User, Plus, Barcode, ShoppingBag, Settings, X, FileText, Receipt, FilePlus } from 'lucide-react';
+import { Menu, LogOut, User, Plus, Barcode, ShoppingBag, Settings, X, FileText, Receipt, FilePlus, Sun, Moon, Monitor } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Scan Books', icon: Barcode },
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
 const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose }) => {
   const location = useLocation();
   const prevLocationRef = React.useRef(location);
+  const { theme, setTheme, resolvedTheme } = useTheme();
 
   // Close mobile menu on navigation (route change)
   React.useEffect(() => {
@@ -31,10 +33,25 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
   }
 
   const sidebarClasses = isMobile
-    ? 'fixed left-0 top-[calc(4rem_+_env(safe-area-inset-top,0px))] h-[calc(100vh_-_4rem_-_env(safe-area-inset-top,0px))] w-64 bg-white border-r shadow-xl z-50 transform transition-transform duration-300 ease-in-out'
-    : `fixed left-0 top-0 h-screen bg-white border-r shadow-lg z-50 transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`;
+    ? 'fixed left-0 top-[calc(4rem_+_env(safe-area-inset-top,0px))] h-[calc(100vh_-_4rem_-_env(safe-area-inset-top,0px))] w-64 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 border-r shadow-xl z-50 transform transition-transform duration-300 ease-in-out'
+    : `fixed left-0 top-0 h-screen bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 border-r shadow-lg z-50 transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`;
 
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || user.role === 'Admin');
+
+  // Cycle: light -> dark -> follow OS -> light
+  const cycleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light');
+  };
+
+  const themeIcon = theme === 'system'
+    ? <Monitor className="w-5 h-5" />
+    : resolvedTheme === 'dark'
+      ? <Sun className="w-5 h-5" />
+      : <Moon className="w-5 h-5" />;
+
+  const themeLabel = theme === 'system'
+    ? 'System'
+    : resolvedTheme === 'dark' ? 'Dark' : 'Light';
 
   return (
     <nav className={sidebarClasses}>
@@ -44,39 +61,59 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
           <div className="flex items-center space-x-3 mb-6">
             <button
               onClick={onToggle}
-              className="flex items-center space-x-3 w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center space-x-3 w-full p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
               title={collapsed ? 'Expand menu' : 'Collapse menu'}
             >
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Menu className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 bg-primary/10 dark:bg-blue-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Menu className="w-5 h-5 text-primary dark:text-blue-400" />
               </div>
               {!collapsed && (
                 <div className="flex-1 min-w-0 transition-opacity duration-200">
-                  <h2 className="font-semibold text-primary truncate">BookInventory</h2>
-                  <p className="text-xs text-gray-500 truncate">Management System</p>
+                  <h2 className="font-semibold text-primary dark:text-blue-400 truncate">BookInventory</h2>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 truncate">Management System</p>
                 </div>
               )}
             </button>
+            {!collapsed && (
+              <button
+                onClick={cycleTheme}
+                className="flex-shrink-0 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-400 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label={`Theme: ${themeLabel}. Click to change`}
+                title={`Theme: ${themeLabel}`}
+              >
+                {themeIcon}
+              </button>
+            )}
           </div>
         )}
 
         {/* Mobile Header with Close Button */}
         {isMobile && (
           <div className="flex items-center justify-between mb-6">
-            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Menu className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 bg-primary/10 dark:bg-blue-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Menu className="w-5 h-5 text-primary dark:text-blue-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="font-semibold text-primary">BookInventory</h2>
-              <p className="text-xs text-gray-500">Management System</p>
+              <h2 className="font-semibold text-primary dark:text-blue-400">BookInventory</h2>
+              <p className="text-xs text-gray-500 dark:text-slate-400">Management System</p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
-              aria-label="Close menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={cycleTheme}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-400 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label={`Theme: ${themeLabel}. Click to change`}
+                title={`Theme: ${themeLabel}`}
+              >
+                {themeIcon}
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-400"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         )}
 
@@ -86,7 +123,7 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
               <li key={to}>
                 <Link
                   to={to}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 group"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 group"
                   onClick={isMobile ? onClose : undefined}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
@@ -98,10 +135,10 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
           </ul>
         </div>
 
-        <div className="pt-4 pb-2 border-t">
+        <div className="pt-4 pb-2 border-t border-gray-200 dark:border-slate-800">
           <button
             onClick={onLogout}
-            className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-md group"
+            className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-md group"
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
             {!isMobile && !collapsed && <span className="transition-opacity duration-200">Logout</span>}

@@ -43,16 +43,16 @@ export default function Modal({ open, onClose, title, footer, size = 'md', close
       <div
         className={
           isSheet
-            ? 'bg-white w-full min-h-screen md:min-h-0 md:rounded-lg md:shadow-xl md:max-w-5xl md:max-h-[90vh] flex flex-col'
-            : `bg-white rounded-lg shadow-xl w-full ${sizeClass} my-8 max-h-[90vh] overflow-y-auto flex flex-col`
+            ? 'bg-white w-full min-h-screen md:min-h-0 md:rounded-lg md:shadow-xl md:max-w-5xl md:max-h-[90vh] flex flex-col dark:bg-slate-900'
+            : `bg-white rounded-lg shadow-xl w-full ${sizeClass} my-8 max-h-[90vh] overflow-y-auto flex flex-col dark:bg-slate-900`
         }
       >
         {title !== undefined && (
-          <div className="sticky top-0 z-10 bg-white flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-gray-100 rounded-t-lg">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{title}</h2>
+          <div className="sticky top-0 z-10 bg-white flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-gray-100 rounded-t-lg dark:bg-slate-900 dark:border-slate-800">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate dark:text-slate-100">{title}</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 p-2 -mr-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="text-gray-400 hover:text-gray-600 p-2 -mr-2 min-h-[44px] min-w-[44px] flex items-center justify-center dark:text-slate-500 dark:hover:text-slate-300"
               aria-label="Close modal"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -66,7 +66,7 @@ export default function Modal({ open, onClose, title, footer, size = 'md', close
 
         {footer && (
           <div
-            className={`bg-white border-t border-gray-100 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-end gap-2 rounded-b-lg ${
+            className={`bg-white border-t border-gray-100 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-end gap-2 rounded-b-lg dark:bg-slate-900 dark:border-slate-800 ${
               isSheet ? 'sticky bottom-0' : ''
             }`}
           >

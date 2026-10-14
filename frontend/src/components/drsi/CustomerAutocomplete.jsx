@@ -128,22 +128,22 @@ const CustomerAutocomplete = ({
         onChange={(e) => handleNameChange(e.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={dismissSuggestions}
-        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary pr-9 ${
-          hasError ? 'border-red-500' : 'border-gray-300'
+        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:placeholder-slate-500 pr-9 ${
+          hasError ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
         }`}
         placeholder={placeholder}
         disabled={disabled}
       />
       {loading && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-          <Loader className="w-4 h-4 animate-spin text-primary" />
+          <Loader className="w-4 h-4 animate-spin text-primary dark:text-blue-400" />
         </div>
       )}
 
       {open && suggestions.length > 0 && (
         <ul
           role="listbox"
-          className="absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+          className="absolute z-30 left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg shadow-lg max-h-60 overflow-y-auto"
         >
           {suggestions.map((customer, index) => (
             <li
@@ -154,11 +154,11 @@ const CustomerAutocomplete = ({
               onMouseDown={(e) => e.preventDefault()}
               onMouseEnter={() => setHighlightIndex(index)}
               onClick={() => selectCustomer(customer)}
-              className={`px-3 py-2 cursor-pointer ${index === highlightIndex ? 'bg-primary/5' : ''}`}
+              className={`px-3 py-2 cursor-pointer ${index === highlightIndex ? 'bg-primary/5 dark:bg-blue-500/15' : ''}`}
             >
-              <p className="text-sm font-medium text-gray-900 truncate">{customer.name}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{customer.name}</p>
               {customer.address && (
-                <p className="text-xs text-gray-500 truncate">{customer.address}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{customer.address}</p>
               )}
             </li>
           ))}

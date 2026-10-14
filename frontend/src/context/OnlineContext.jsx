@@ -149,18 +149,18 @@ export const OnlineBanner = () => {
     <div
       className={`mb-4 rounded-lg border px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${
         isOnline
-          ? 'bg-blue-50 border-blue-200 text-blue-800'
-          : 'bg-amber-50 border-amber-300 text-amber-900'
+          ? 'bg-blue-50 dark:bg-blue-500/15 border-blue-200 dark:border-blue-500/40 text-blue-800 dark:text-blue-300'
+          : 'bg-amber-50 dark:bg-amber-500/15 border-amber-300 dark:border-amber-500/40 text-amber-900 dark:text-amber-200'
       }`}
       role="status"
     >
       <div className="flex items-center space-x-3">
         {syncing ? (
-          <Loader className="w-5 h-5 flex-shrink-0 animate-spin text-blue-600" />
+          <Loader className="w-5 h-5 flex-shrink-0 animate-spin text-blue-600 dark:text-blue-400" />
         ) : isOnline ? (
-          <Wifi className="w-5 h-5 flex-shrink-0 text-blue-600" />
+          <Wifi className="w-5 h-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
         ) : (
-          <WifiOff className="w-5 h-5 flex-shrink-0 text-amber-600" />
+          <WifiOff className="w-5 h-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
         )}
         <div>
           {!isOnline ? (
@@ -180,7 +180,7 @@ export const OnlineBanner = () => {
       {isOnline && !syncing && queuedCount > 0 && (
         <button
           onClick={requestFlush}
-          className="flex-shrink-0 flex items-center space-x-1.5 px-3 py-1.5 text-sm font-medium bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 min-h-[36px]"
+          className="flex-shrink-0 flex items-center space-x-1.5 px-3 py-1.5 text-sm font-medium bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-500/40 min-h-[36px]"
         >
           <RefreshCw className="w-4 h-4" />
           <span>Sync now</span>

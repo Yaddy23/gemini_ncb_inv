@@ -18,6 +18,7 @@ import NavBar from './components/NavBar';
 import PrivateRoute from './components/PrivateRoute';
 import { ToastProvider } from './components/Toast';
 import { OnlineProvider, OnlineBanner } from './context/OnlineContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { useIsMobile } from './hooks/useMediaQuery';
 
 function App() {
@@ -74,27 +75,28 @@ function App() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-slate-950 dark:text-slate-100">Loading...</div>;
   }
 
   return (
     <ToastProvider>
       <OnlineProvider>
-        <Router>
-        <div className="min-h-screen bg-gray-50">
-          {/* Mobile Top Bar */}
+        <ThemeProvider>
+          <Router>
+          <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+            {/* Mobile Top Bar */}
           {user && isMobile && (
-            <header className="fixed top-0 left-0 right-0 topbar-height pt-safe bg-white border-b shadow-sm z-40 flex items-center px-4">
+            <header className="fixed top-0 left-0 right-0 topbar-height pt-safe bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-sm z-40 flex items-center px-4">
               <button
                 onClick={() => setMobileMenuOpen(true)}
-                className="p-2 rounded-lg hover:bg-gray-100"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300"
                 aria-label="Open menu"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-              <h1 className="ml-4 font-semibold text-gray-900">Book Inventory</h1>
+              <h1 className="ml-4 font-semibold text-gray-900 dark:text-slate-100">Book Inventory</h1>
             </header>
           )}
 
@@ -214,6 +216,7 @@ function App() {
           </main>
         </div>
         </Router>
+        </ThemeProvider>
       </OnlineProvider>
     </ToastProvider>
   );

@@ -498,8 +498,8 @@ const AdminPanel = ({ user }) => {
     <>
       <div className="p-4 sm:p-6">
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Admin Panel</h1>
-        <p className="text-gray-600 mt-1">Manage users and view activity logs</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100">Admin Panel</h1>
+        <p className="text-gray-600 mt-1 dark:text-slate-400">Manage users and view activity logs</p>
       </div>
 
       {/* Status Messages */}
@@ -512,28 +512,28 @@ const AdminPanel = ({ user }) => {
           <button
             onClick={() => setActiveTab('users')}
             className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors touch-manipulation min-h-[44px] ${
-              activeTab === 'users' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              activeTab === 'users' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
             }`}>
             User Management
           </button>
           <button
             onClick={() => setActiveTab('logs')}
             className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors touch-manipulation min-h-[44px] ${
-              activeTab === 'logs' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              activeTab === 'logs' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
             }`}>
             Activity Logs
           </button>
           <button
             onClick={() => setActiveTab('executives')}
             className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors touch-manipulation min-h-[44px] ${
-              activeTab === 'executives' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              activeTab === 'executives' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
             }`}>
             Marketing Executives
           </button>
           <button
             onClick={() => setActiveTab('books')}
             className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors touch-manipulation min-h-[44px] ${
-              activeTab === 'books' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              activeTab === 'books' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
             }`}>
             <ShoppingBag className="w-4 h-4 inline mr-1" />
             Books
@@ -541,7 +541,7 @@ const AdminPanel = ({ user }) => {
           <button
             onClick={() => { setActiveTab('sessions'); fetchSessions(); }}
             className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors touch-manipulation min-h-[44px] ${
-              activeTab === 'sessions' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              activeTab === 'sessions' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
             }`}>
             <RotateCcw className="w-4 h-4 inline mr-1" />
             Sessions
@@ -563,7 +563,7 @@ const AdminPanel = ({ user }) => {
                   setCurrentPage(1);
                   fetchUsers(1, e.target.value);
                 }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
               />
             </div>
             <button
@@ -581,29 +581,29 @@ const AdminPanel = ({ user }) => {
               <div className="p-6 text-center">
                 <div className="flex space-x-3 justify-center">
                   <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-primary self-center">Loading users...</span>
+                  <span className="text-primary self-center dark:text-blue-400">Loading users...</span>
                 </div>
               </div>
             ) : users.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
-                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-6 text-center text-gray-500 dark:text-slate-400">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full dark:bg-slate-800 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
                 </div>
                 <p>No users found</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden">
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden dark:divide-slate-800 dark:bg-slate-900">
                 {users.map((user) => (
-                  <div key={user._id} className="p-4 hover:bg-gray-50">
+                  <div key={user._id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-800/60">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">{user.username}</h3>
-                        <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                        <h3 className="font-semibold text-gray-900 truncate dark:text-slate-100">{user.username}</h3>
+                        <p className="text-sm text-gray-500 truncate dark:text-slate-400">{user.email}</p>
                       </div>
                       <span className={`flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full ${
-                        user.role === 'Admin' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                        user.role === 'Admin' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300' : 'bg-green-100 text-green-700 dark:bg-emerald-500/20 dark:text-emerald-400'
                       }`}>
                         {user.role}
                       </span>
@@ -613,7 +613,7 @@ const AdminPanel = ({ user }) => {
                         onClick={() => handleToggleStatus(user._id, user.isActive)}
                         disabled={loading}
                         className={`flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 rounded-lg touch-manipulation min-h-[44px] transition-colors disabled:opacity-50 ${
-                          user.isActive ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-red-50 text-red-700 hover:bg-red-100'
+                          user.isActive ? 'bg-green-50 text-green-700 hover:bg-green-100 dark:bg-emerald-500/15 dark:text-emerald-400 dark:hover:bg-emerald-500/30' : 'bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-500/15 dark:text-red-400 dark:hover:bg-red-500/30'
                         }`}
                       >
                         <span className="text-sm font-medium">{user.isActive ? 'Deactivate' : 'Activate'}</span>
@@ -621,14 +621,14 @@ const AdminPanel = ({ user }) => {
                       <button
                         onClick={() => handleRoleChange(user._id, user.role)}
                         disabled={loading}
-                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 dark:bg-blue-500/15 dark:text-blue-400 dark:hover:bg-blue-500/30 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
                       >
                         <span className="text-sm font-medium">Change Role</span>
                       </button>
                       <button
                         onClick={() => handleDeleteUser(user._id)}
                         disabled={loading}
-                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 dark:bg-red-500/15 dark:text-red-400 dark:hover:bg-red-500/30 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
                       >
                         <span className="text-sm font-medium">Delete</span>
                       </button>
@@ -640,18 +640,18 @@ const AdminPanel = ({ user }) => {
           </div>
 
           {/* Desktop Table Layout */}
-          <div className="hidden md:block overflow-x-auto bg-white rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="hidden md:block overflow-x-auto bg-white rounded-lg dark:bg-slate-900">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+              <thead className="bg-gray-50 dark:bg-slate-800/60">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Username</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Role</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                 {loading ? (
                   <tr>
                     <td colSpan="5" className="px-6 py-4 text-center">
@@ -660,21 +660,21 @@ const AdminPanel = ({ user }) => {
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
                       No users found
                     </td>
                   </tr>
                 ) : (
                   users.map((user) => (
-                    <tr key={user._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr key={user._id} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
                         {user.username}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
                         {user.email}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'Admin' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'Admin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300' : 'bg-green-100 text-green-800 dark:bg-emerald-500/20 dark:text-emerald-300'}`}>
                           {user.role}
                         </span>
                       </td>
@@ -730,11 +730,11 @@ const AdminPanel = ({ user }) => {
           <div className="mb-4">
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Action</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Action</label>
                 <select
                   value={filters.action}
                   onChange={handleFiltersChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
                 >
                   <option value="">All Actions</option>
                   {logActions.map(action => (
@@ -745,11 +745,11 @@ const AdminPanel = ({ user }) => {
                 </select>
               </div>
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">User</label>
                 <select
                   value={filters.userId}
                   onChange={handleFiltersChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
                 >
                   <option value="">All Users</option>
                   {logUsers.map(user => (
@@ -762,21 +762,21 @@ const AdminPanel = ({ user }) => {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Start Date</label>
                 <input
                   type="date"
                   value={filters.startDate}
                   onChange={(e) => handleDateChange('startDate', e.target.value ? new Date(e.target.value) : null)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">End Date</label>
                 <input
                   type="date"
                   value={filters.endDate}
                   onChange={(e) => handleDateChange('endDate', e.target.value ? new Date(e.target.value) : null)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
                 />
               </div>
             </div>
@@ -795,36 +795,36 @@ const AdminPanel = ({ user }) => {
               <div className="p-6 text-center">
                 <div className="flex space-x-3 justify-center">
                   <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-primary self-center">Loading logs...</span>
+                  <span className="text-primary self-center dark:text-blue-400">Loading logs...</span>
                 </div>
               </div>
             ) : filteredLogs.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
-                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-6 text-center text-gray-500 dark:text-slate-400">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full dark:bg-slate-800 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
                 <p>No logs found</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden">
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden dark:divide-slate-800 dark:bg-slate-900">
                 {filteredLogs.map((log) => (
-                  <div key={log._id} className="p-4 hover:bg-gray-50">
+                  <div key={log._id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-800/60">
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">{log.userId?.username || 'Unknown User'}</h3>
-                        <p className="text-sm text-gray-500 truncate">{log.details || '-'}</p>
+                        <h3 className="font-semibold text-gray-900 truncate dark:text-slate-100">{log.userId?.username || 'Unknown User'}</h3>
+                        <p className="text-sm text-gray-500 truncate dark:text-slate-400">{log.details || '-'}</p>
                       </div>
                       <span className={`flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full ${
-                        log.action === 'LOGIN' ? 'bg-blue-100 text-blue-700' :
-                        log.action === 'LOGOUT' ? 'bg-gray-100 text-gray-700' :
-                        log.action.startsWith('CREATE') || log.action.startsWith('UPDATE') || log.action.startsWith('DELETE') ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
+                        log.action === 'LOGIN' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300' :
+                        log.action === 'LOGOUT' ? 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300' :
+                        log.action.startsWith('CREATE') || log.action.startsWith('UPDATE') || log.action.startsWith('DELETE') ? 'bg-green-100 text-green-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400'
                       }`}>
                         {log.action}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400">{new Date(log.createdAt).toLocaleString()}</p>
+                    <p className="text-xs text-gray-400 dark:text-slate-500">{new Date(log.createdAt).toLocaleString()}</p>
                   </div>
                 ))}
               </div>
@@ -832,17 +832,17 @@ const AdminPanel = ({ user }) => {
           </div>
 
           {/* Desktop Table Layout */}
-          <div className="hidden md:block overflow-x-auto bg-white rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="hidden md:block overflow-x-auto bg-white rounded-lg dark:bg-slate-900">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+              <thead className="bg-gray-50 dark:bg-slate-800/60">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Username</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Action</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Details</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Timestamp</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                 {loading ? (
                   <tr>
                     <td colSpan="4" className="px-6 py-4 text-center">
@@ -851,27 +851,27 @@ const AdminPanel = ({ user }) => {
                   </tr>
                 ) : filteredLogs.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
                       No logs found
                     </td>
                   </tr>
                 ) : (
                   filteredLogs.map((log) => (
-                    <tr key={log._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr key={log._id} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
                         {log.userId?.username || 'Unknown User'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${log.action === 'LOGIN' ? 'bg-blue-100 text-blue-800' : log.action === 'LOGOUT' ? 'bg-gray-100 text-gray-800' : log.action.startsWith('CREATE') || log.action.startsWith('UPDATE') || log.action.startsWith('DELETE') ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'}`}>
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${log.action === 'LOGIN' ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300' : log.action === 'LOGOUT' ? 'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200' : log.action.startsWith('CREATE') || log.action.startsWith('UPDATE') || log.action.startsWith('DELETE') ? 'bg-green-100 text-green-800 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300'}`}>
                           {log.action}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-slate-400">
                         <div className="max-w-[240px] truncate" title={log.details || '-'}>
                           {log.details || '-'}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
                         {new Date(log.createdAt).toLocaleString()}
                       </td>
                     </tr>
@@ -901,7 +901,7 @@ const AdminPanel = ({ user }) => {
           <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="w-full sm:w-auto flex-1 flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Search</label>
                 <input
                   type="text"
                   placeholder="Search marketing executives..."
@@ -911,11 +911,11 @@ const AdminPanel = ({ user }) => {
                     setExecCurrentPage(1);
                     fetchExecutives(1, e.target.value, execIsActiveFilter);
                   }}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
                 />
               </div>
               <div className="flex-1 sm:w-48">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Status</label>
                 <select
                   value={execIsActiveFilter}
                   onChange={(e) => {
@@ -923,7 +923,7 @@ const AdminPanel = ({ user }) => {
                     setExecCurrentPage(1);
                     fetchExecutives(1, execSearch, e.target.value);
                   }}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
                 >
                   <option value="">All</option>
                   <option value="true">Active</option>
@@ -946,27 +946,27 @@ const AdminPanel = ({ user }) => {
               <div className="p-6 text-center">
                 <div className="flex space-x-3 justify-center">
                   <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-primary self-center">Loading executives...</span>
+                  <span className="text-primary self-center dark:text-blue-400">Loading executives...</span>
                 </div>
               </div>
             ) : executives.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
-                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-6 text-center text-gray-500 dark:text-slate-400">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full dark:bg-slate-800 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
                 </div>
                 <p>No marketing executives found</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden">
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden dark:divide-slate-800 dark:bg-slate-900">
                 {executives.map((exec) => (
-                  <div key={exec._id} className="p-4 hover:bg-gray-50">
+                  <div key={exec._id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-800/60">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">{exec.name}</h3>
+                        <h3 className="font-semibold text-gray-900 truncate dark:text-slate-100">{exec.name}</h3>
                       </div>
-                      <span className={`flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full ${exec.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      <span className={`flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full ${exec.isActive ? 'bg-green-100 text-green-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'}`}>
                         {exec.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </div>
@@ -974,14 +974,14 @@ const AdminPanel = ({ user }) => {
                       <button
                         onClick={() => handleEditExecutive(exec)}
                         disabled={loading}
-                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 dark:bg-blue-500/15 dark:text-blue-400 dark:hover:bg-blue-500/30 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
                       >
                         <span className="text-sm font-medium">Edit</span>
                       </button>
                       <button
                         onClick={() => handleDeleteExecutive(exec._id)}
                         disabled={loading}
-                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                        className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 dark:bg-red-500/15 dark:text-red-400 dark:hover:bg-red-500/30 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
                       >
                         <span className="text-sm font-medium">Delete</span>
                       </button>
@@ -993,17 +993,17 @@ const AdminPanel = ({ user }) => {
           </div>
 
           {/* Desktop Table Layout */}
-          <div className="hidden md:block overflow-x-auto bg-white rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="hidden md:block overflow-x-auto bg-white rounded-lg dark:bg-slate-900">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+              <thead className="bg-gray-50 dark:bg-slate-800/60">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                 {loading ? (
                   <tr>
                     <td colSpan="4" className="px-6 py-4 text-center">
@@ -1012,22 +1012,22 @@ const AdminPanel = ({ user }) => {
                   </tr>
                 ) : executives.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
                       No marketing executives found
                     </td>
                   </tr>
                 ) : (
                   executives.map((exec) => (
-                    <tr key={exec._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr key={exec._id} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
                         {exec.name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${exec.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${exec.isActive ? 'bg-green-100 text-green-800 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300'}`}>
                           {exec.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
                         {new Date(exec.createdAt).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1083,7 +1083,7 @@ const AdminPanel = ({ user }) => {
                   setBookCurrentPage(1);
                   fetchArchivedBooks(1, e.target.value);
                 }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
               />
             </div>
           </div>
@@ -1094,45 +1094,45 @@ const AdminPanel = ({ user }) => {
               <div className="p-6 text-center">
                 <div className="flex space-x-3 justify-center">
                   <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-primary self-center">Loading archived books...</span>
+                  <span className="text-primary self-center dark:text-blue-400">Loading archived books...</span>
                 </div>
               </div>
             ) : archivedBooks.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
-                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
-                  <ShoppingBag className="w-6 h-6 text-gray-400" />
+              <div className="p-6 text-center text-gray-500 dark:text-slate-400">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full dark:bg-slate-800 flex items-center justify-center">
+                  <ShoppingBag className="w-6 h-6 text-gray-400 dark:text-slate-500" />
                 </div>
                 <p>No archived books found</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden">
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden dark:divide-slate-800 dark:bg-slate-900">
                 {archivedBooks.map((book) => (
-                  <div key={book.ISBN} className="p-4 hover:bg-gray-50">
+                  <div key={book.ISBN} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-800/60">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">{book.TITLE}</h3>
-                        <p className="text-sm text-gray-500">by {book.AUTHOR || 'Unknown Author'}</p>
+                        <h3 className="font-semibold text-gray-900 truncate dark:text-slate-100">{book.TITLE}</h3>
+                        <p className="text-sm text-gray-500 dark:text-slate-400">by {book.AUTHOR || 'Unknown Author'}</p>
                       </div>
-                      <span className="flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700">
+                      <span className="flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300">
                         Archived
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                       <div>
-                        <span className="text-gray-500">ISBN:</span>
-                        <span className="font-mono text-gray-900 ml-1">{book.ISBN}</span>
+                        <span className="text-gray-500 dark:text-slate-400">ISBN:</span>
+                        <span className="font-mono text-gray-900 ml-1 dark:text-slate-100">{book.ISBN}</span>
                       </div>
                       <div>
-                        <span className="text-gray-500">Year:</span>
-                        <span className="text-gray-900 ml-1">{book.YEAR || 'N/A'}</span>
+                        <span className="text-gray-500 dark:text-slate-400">Year:</span>
+                        <span className="text-gray-900 ml-1 dark:text-slate-100">{book.YEAR || 'N/A'}</span>
                       </div>
                       <div>
-                        <span className="text-gray-500">Publisher:</span>
-                        <span className="text-gray-900 ml-1">{book.PUBLISHER || 'N/A'}</span>
+                        <span className="text-gray-500 dark:text-slate-400">Publisher:</span>
+                        <span className="text-gray-900 ml-1 dark:text-slate-100">{book.PUBLISHER || 'N/A'}</span>
                       </div>
                       <div>
-                        <span className="text-gray-500">Price:</span>
-                        <span className="font-medium text-gray-900 ml-1">₱{Number(book.PRICE || 0).toFixed(2)}</span>
+                        <span className="text-gray-500 dark:text-slate-400">Price:</span>
+                        <span className="font-medium text-gray-900 ml-1 dark:text-slate-100">₱{Number(book.PRICE || 0).toFixed(2)}</span>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -1152,20 +1152,20 @@ const AdminPanel = ({ user }) => {
           </div>
 
           {/* Desktop Table Layout */}
-          <div className="hidden md:block overflow-x-auto bg-white rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="hidden md:block overflow-x-auto bg-white rounded-lg dark:bg-slate-900">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+              <thead className="bg-gray-50 dark:bg-slate-800/60">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ISBN</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Publisher</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">ISBN</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Title</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Author</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Year</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Publisher</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Price</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                 {loading ? (
                   <tr>
                     <td colSpan="7" className="px-6 py-4 text-center">
@@ -1174,19 +1174,19 @@ const AdminPanel = ({ user }) => {
                   </tr>
                 ) : archivedBooks.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan="7" className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
                       No archived books found
                     </td>
                   </tr>
                 ) : (
                   archivedBooks.map((book) => (
-                    <tr key={book.ISBN} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{book.ISBN}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[300px]">{book.TITLE}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.AUTHOR || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.YEAR || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px]">{book.PUBLISHER || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{Number(book.PRICE || 0).toFixed(2)}</td>
+                    <tr key={book.ISBN} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">{book.ISBN}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[300px] dark:text-slate-300">{book.TITLE}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px] dark:text-slate-300">{book.AUTHOR || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px] dark:text-slate-300">{book.YEAR || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[200px] dark:text-slate-300">{book.PUBLISHER || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">₱{Number(book.PRICE || 0).toFixed(2)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => handleRestoreBook(book.ISBN)}
@@ -1223,7 +1223,7 @@ const AdminPanel = ({ user }) => {
         <div>
           <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="w-full sm:w-auto flex-1 flex flex-col sm:flex-row gap-3">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mt-1">Active Sessions</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mt-1 dark:text-slate-100">Active Sessions</h2>
             </div>
             <button
               onClick={handleRevokeAllSessions}
@@ -1241,37 +1241,37 @@ const AdminPanel = ({ user }) => {
               <div className="p-6 text-center">
                 <div className="flex space-x-3 justify-center">
                   <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-primary self-center">Loading sessions...</span>
+                  <span className="text-primary self-center dark:text-blue-400">Loading sessions...</span>
                 </div>
               </div>
             ) : sessions.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
-                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
-                  <RotateCcw className="w-6 h-6 text-gray-400" />
+              <div className="p-6 text-center text-gray-500 dark:text-slate-400">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full dark:bg-slate-800 flex items-center justify-center">
+                  <RotateCcw className="w-6 h-6 text-gray-400 dark:text-slate-500" />
                 </div>
                 <p>No active sessions found</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden">
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden dark:divide-slate-800 dark:bg-slate-900">
                 {sessions.map((session) => (
-                  <div key={session._id} className="p-4 hover:bg-gray-50">
+                  <div key={session._id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-800/60">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">{session.username || 'Unknown User'}</h3>
-                        <p className="text-sm text-gray-500 truncate">{session.userAgent || 'Unknown Device'}</p>
+                        <h3 className="font-semibold text-gray-900 truncate dark:text-slate-100">{session.username || 'Unknown User'}</h3>
+                        <p className="text-sm text-gray-500 truncate dark:text-slate-400">{session.userAgent || 'Unknown Device'}</p>
                       </div>
-                      <span className="flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-700">
+                      <span className="flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">
                         Active
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                       <div>
-                        <span className="text-gray-500">IP:</span>
-                        <span className="text-gray-900 ml-1">{session.ipAddress || 'Unknown'}</span>
+                        <span className="text-gray-500 dark:text-slate-400">IP:</span>
+                        <span className="text-gray-900 ml-1 dark:text-slate-100">{session.ipAddress || 'Unknown'}</span>
                       </div>
                       <div>
-                        <span className="text-gray-500">Last Used:</span>
-                        <span className="text-gray-900 ml-1">{new Date(session.lastUsedAt).toLocaleString()}</span>
+                        <span className="text-gray-500 dark:text-slate-400">Last Used:</span>
+                        <span className="text-gray-900 ml-1 dark:text-slate-100">{new Date(session.lastUsedAt).toLocaleString()}</span>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -1291,19 +1291,19 @@ const AdminPanel = ({ user }) => {
           </div>
 
           {/* Desktop Table Layout */}
-          <div className="hidden md:block overflow-x-auto bg-white rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="hidden md:block overflow-x-auto bg-white rounded-lg dark:bg-slate-900">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+              <thead className="bg-gray-50 dark:bg-slate-800/60">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device / Browser</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Used</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Device / Browser</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">IP Address</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Last Used</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                 {sessionsLoading ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-4 text-center">
@@ -1312,18 +1312,18 @@ const AdminPanel = ({ user }) => {
                   </tr>
                 ) : sessions.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
                       No active sessions found
                     </td>
                   </tr>
                 ) : (
                   sessions.map((session) => (
-                    <tr key={session._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{session.username || 'Unknown'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[300px]">{session.userAgent || 'Unknown Device'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{session.ipAddress || 'Unknown'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(session.createdAt).toLocaleString()}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(session.lastUsedAt).toLocaleString()}</td>
+                    <tr key={session._id} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">{session.username || 'Unknown'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[300px] dark:text-slate-300">{session.userAgent || 'Unknown Device'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-300">{session.ipAddress || 'Unknown'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-300">{new Date(session.createdAt).toLocaleString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-300">{new Date(session.lastUsedAt).toLocaleString()}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => handleRevokeSession(session._id, session.username)}
@@ -1356,7 +1356,7 @@ const AdminPanel = ({ user }) => {
             <button
               type="button"
               onClick={() => setShowCreateModal(false)}
-              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors"
+              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800/60 dark:text-slate-300"
             >
               Cancel
             </button>
@@ -1373,42 +1373,42 @@ const AdminPanel = ({ user }) => {
       >
         <form id="create-user-form" onSubmit={handleCreateUser} className="space-y-4 sm:space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Username <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Username <span className="text-red-500">*</span></label>
             <input
               type="text"
               value={newUser.username}
               onChange={(e) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
               placeholder="Username"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Email <span className="text-red-500">*</span></label>
             <input
               type="email"
               value={newUser.email}
               onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
               placeholder="user@example.com"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Password <span className="text-red-500">*</span></label>
             <input
               type="password"
               value={newUser.password}
               onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
               placeholder="Min 6 characters"
               minLength="6"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Role</label>
             <select
               value={newUser.role}
               onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
             >
               <option value="Staff">Staff</option>
               <option value="Admin">Admin</option>
@@ -1429,7 +1429,7 @@ const AdminPanel = ({ user }) => {
             <button
               type="button"
               onClick={() => setShowExecCreateModal(false)}
-              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors"
+              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800/60 dark:text-slate-300"
             >
               Cancel
             </button>
@@ -1446,21 +1446,21 @@ const AdminPanel = ({ user }) => {
       >
         <form id="create-exec-form" onSubmit={handleCreateExecutive} className="space-y-4 sm:space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Name <span className="text-red-500">*</span></label>
             <input
               type="text"
               value={newExecutive.name}
               onChange={(e) => setNewExecutive(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
               placeholder="Marketing Executive Name"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Status</label>
             <select
               value={newExecutive.isActive ? 'true' : 'false'}
               onChange={(e) => setNewExecutive(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
             >
               <option value="true">Active</option>
               <option value="false">Inactive</option>
@@ -1481,7 +1481,7 @@ const AdminPanel = ({ user }) => {
             <button
               type="button"
               onClick={() => { setShowExecEditModal(false); setEditingExecutive(null); setNewExecutive({ name: '', isActive: true }); }}
-              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors"
+              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800/60 dark:text-slate-300"
             >
               Cancel
             </button>
@@ -1498,21 +1498,21 @@ const AdminPanel = ({ user }) => {
       >
         <form id="edit-exec-form" onSubmit={handleUpdateExecutive} className="space-y-4 sm:space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Name <span className="text-red-500">*</span></label>
             <input
               type="text"
               value={newExecutive.name}
               onChange={(e) => setNewExecutive(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
               placeholder="Marketing Executive Name"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Status</label>
             <select
               value={newExecutive.isActive ? 'true' : 'false'}
               onChange={(e) => setNewExecutive(prev => ({ ...prev, isActive: e.target.value === 'true' }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
             >
               <option value="true">Active</option>
               <option value="false">Inactive</option>

@@ -10,6 +10,17 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="description" content="Book Inventory Management System - stock scanning, delivery receipts, sales invoices and evaluation forms" />
     <title>Book Inventory Management System</title>
+    <script>
+      // Apply the saved theme before first paint to avoid a light flash
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          var dark = t === 'dark' || ((t === 'system' || !t) &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) { /* blocked storage: stay light */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

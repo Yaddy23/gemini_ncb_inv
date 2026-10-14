@@ -333,8 +333,8 @@ const DocumentForm = ({
         onClose={() => setDuplicateDialog({ open: false, duplicates: [], action: null, payload: null })}
         title={
           <span className="flex items-center space-x-3">
-            <span className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <AlertTriangle className="w-6 h-6 text-yellow-600" />
+            <span className="w-10 h-10 bg-yellow-100 dark:bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-6 h-6 text-yellow-600 dark:text-yellow-300" />
             </span>
             Duplicate ISBNs Detected
           </span>
@@ -356,20 +356,20 @@ const DocumentForm = ({
           </>
         }
       >
-        <p className="text-gray-600 mb-4">The following ISBNs appear multiple times in your line items:</p>
+        <p className="text-gray-600 dark:text-slate-400 mb-4">The following ISBNs appear multiple times in your line items:</p>
 
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 max-h-48 overflow-y-auto">
+        <div className="bg-yellow-50 dark:bg-yellow-500/15 border border-yellow-200 dark:border-yellow-500/40 rounded-lg p-4 mb-4 max-h-48 overflow-y-auto">
           {duplicateDialog.duplicates.map((dup, index) => (
             <div key={index} className="mb-3 last:mb-0">
-              <p className="font-medium text-gray-900">ISBN: {dup.isbn}</p>
-              <p className="text-sm text-gray-600">
+              <p className="font-medium text-gray-900 dark:text-slate-100">ISBN: {dup.isbn}</p>
+              <p className="text-sm text-gray-600 dark:text-slate-400">
                 Appears {dup.count} time{dup.count > 1 ? 's' : ''} (line{dup.count > 1 ? 's' : ''}: {dup.lineNumbers.join(', ')})
               </p>
             </div>
           ))}
         </div>
 
-        <p className="text-sm text-gray-600">How would you like to proceed?</p>
+        <p className="text-sm text-gray-600 dark:text-slate-400">How would you like to proceed?</p>
       </Modal>
     );
   };
@@ -385,7 +385,7 @@ const DocumentForm = ({
         size="sheet"
         title={
           <span className="flex items-center space-x-2">
-            <FileText className="w-6 h-6 text-primary" />
+            <FileText className="w-6 h-6 text-primary dark:text-blue-400" />
             <span>{title} {initialData ? 'Edit' : 'New'}</span>
           </span>
         }
@@ -394,7 +394,7 @@ const DocumentForm = ({
             {initialData && !loading && (
               <button
                 onClick={handleExport}
-                className="flex items-center space-x-1 px-3 py-2 min-h-[44px] bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                className="flex items-center space-x-1 px-3 py-2 min-h-[44px] bg-green-50 dark:bg-emerald-500/15 text-green-700 dark:text-emerald-400 border border-green-200 dark:border-emerald-500/40 rounded-lg hover:bg-green-100 dark:hover:bg-emerald-500/30 transition-colors"
                 title="Download Excel"
               >
                 <FileText className="w-4 h-4" />
@@ -404,14 +404,14 @@ const DocumentForm = ({
             <button
               onClick={handleClose}
               disabled={loading}
-              className="px-4 py-2 min-h-[44px] bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 disabled:opacity-50"
+              className="px-4 py-2 min-h-[44px] bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 text-gray-700 dark:text-slate-300 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={() => handleSubmit('draft')}
               disabled={loading}
-              className="px-4 py-2 min-h-[44px] bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+              className="px-4 py-2 min-h-[44px] bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-700 disabled:opacity-50"
             >
               {loading ? <Loader className="w-4 h-4 animate-spin mx-auto" /> : 'Save Draft'}
             </button>
@@ -430,33 +430,33 @@ const DocumentForm = ({
           {/* Header Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{numberLabel} <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">{numberLabel} <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={formData.documentNumber}
                 onChange={(e) => setFormData(prev => ({ ...prev, documentNumber: e.target.value }))}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${errors.documentNumber ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:placeholder-slate-500 ${errors.documentNumber ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
                 placeholder={isDR ? 'DR-20240101-001' : isEF ? 'EF-20240101-001' : 'SI-20240101-001'}
                 disabled={loading}
               />
               {errors.documentNumber && <p className="mt-1 text-sm text-red-500">{errors.documentNumber}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Date</label>
               <input
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:placeholder-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500"
                 disabled={loading}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Requested By</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Requested By</label>
               <select
                 value={formData.marketingExecutive}
                 onChange={(e) => setFormData(prev => ({ ...prev, marketingExecutive: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:placeholder-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500"
                 disabled={loading || loadingExecutives}
               >
                 <option value="">Select Marketing Executive</option>
@@ -464,10 +464,10 @@ const DocumentForm = ({
                   <option key={exec._id} value={exec._id}>{exec.name}</option>
                 ))}
               </select>
-              {loadingExecutives && <p className="mt-1 text-sm text-gray-500">Loading executives...</p>}
+              {loadingExecutives && <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">Loading executives...</p>}
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Customer Name <span className="text-red-500">*</span></label>
               <CustomerAutocomplete
                 value={formData.customerName}
                 onNameChange={(name) => setFormData(prev => ({ ...prev, customerName: name }))}
@@ -483,30 +483,30 @@ const DocumentForm = ({
               {errors.customerName && <p className="mt-1 text-sm text-red-500">{errors.customerName}</p>}
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Customer Address</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Customer Address</label>
               <textarea
                 value={formData.customerAddress}
                 onChange={(e) => setFormData(prev => ({ ...prev, customerAddress: e.target.value }))}
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:placeholder-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500"
                 disabled={loading}
               />
             </div>
             {!isDR && !isEF && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">P.O. Number</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">P.O. Number</label>
                   <input
                     type="text"
                     value={formData.poNumber}
                     onChange={(e) => setFormData(prev => ({ ...prev, poNumber: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:placeholder-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500"
                     placeholder="Purchase Order #"
                     disabled={loading}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Discount %</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Discount %</label>
                   <input
                     type="number"
                     value={formData.discountPercentage}
@@ -514,7 +514,7 @@ const DocumentForm = ({
                     min="0"
                     max="100"
                     step="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:placeholder-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500"
                     placeholder="0"
                     disabled={loading}
                   />
@@ -524,7 +524,7 @@ const DocumentForm = ({
           </div>
 
           {errors.items && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex items-center space-x-2">
+            <div className="bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/40 rounded-lg p-3 text-red-700 dark:text-red-400 text-sm flex items-center space-x-2">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               <span>{errors.items}</span>
             </div>

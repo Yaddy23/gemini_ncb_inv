@@ -10,14 +10,15 @@ import StockMovementChart from '../components/dashboard/StockMovementChart';
 import { Modal } from '../components/ui';
 
 // Feed icon + tint per action; inbound/outbound reuse the chart's series
-// colors so the two views read as the same entities
+// colors so the two views read as the same entities. Colors are CSS vars
+// (light + dark steps in index.css) because these chips are inline-styled.
 const ACTION_STYLES = {
-  INBOUND: { icon: ArrowDownCircle, color: '#2563eb' },
-  OUTBOUND: { icon: ArrowUpCircle, color: '#f59e0b' },
-  ADJUSTMENT: { icon: SlidersHorizontal, color: '#6b7280' },
-  BULK_IMPORT: { icon: Package, color: '#6b7280' },
-  RESERVE: { icon: Bookmark, color: '#8b5cf6' },
-  RELEASE: { icon: RotateCcw, color: '#10b981' },
+  INBOUND: { icon: ArrowDownCircle, color: 'var(--accent-inbound-fg)', bg: 'var(--accent-inbound-bg)' },
+  OUTBOUND: { icon: ArrowUpCircle, color: 'var(--accent-outbound-fg)', bg: 'var(--accent-outbound-bg)' },
+  ADJUSTMENT: { icon: SlidersHorizontal, color: 'var(--accent-neutral-fg)', bg: 'var(--accent-neutral-bg)' },
+  BULK_IMPORT: { icon: Package, color: 'var(--accent-neutral-fg)', bg: 'var(--accent-neutral-bg)' },
+  RESERVE: { icon: Bookmark, color: 'var(--accent-reserve-fg)', bg: 'var(--accent-reserve-bg)' },
+  RELEASE: { icon: RotateCcw, color: 'var(--accent-release-fg)', bg: 'var(--accent-release-bg)' },
 };
 
 // Human labels for actions whose raw name doesn't read as a sentence
@@ -45,13 +46,13 @@ const RecentActivity = ({ transactions }) => {
   if (!transactions || transactions.length === 0) {
     return (
       <div className="h-40 flex items-center justify-center">
-        <p className="text-sm text-gray-400">No recent stock activity</p>
+        <p className="text-sm text-gray-400 dark:text-slate-500">No recent stock activity</p>
       </div>
     );
   }
 
   return (
-    <ul className="divide-y divide-gray-100">
+    <ul className="divide-y divide-gray-100 dark:divide-slate-800">
       {transactions.map(t => {
         const style = ACTION_STYLES[t.action] || ACTION_STYLES.ADJUSTMENT;
         const Icon = style.icon;
@@ -61,16 +62,16 @@ const RecentActivity = ({ transactions }) => {
           <li key={t._id} className="flex items-start space-x-3 py-2.5">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ color: style.color, backgroundColor: `${style.color}1A` }}
+              style={{ color: style.color, backgroundColor: style.bg }}
             >
               <Icon className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-gray-900 truncate">
+              <p className="text-sm text-gray-900 dark:text-slate-100 truncate">
                 <span className="font-medium">{t.title || t.ISBN}</span>
                 {!isReservationHold && <span className="ml-2 font-semibold">{qty}</span>}
               </p>
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-xs text-gray-500 dark:text-slate-400 truncate">
                 {ACTION_LABELS[t.action] || t.action.charAt(0) + t.action.slice(1).toLowerCase()}
                 {' · '}
                 {t.performedBy?.username || 'Unknown'}
@@ -78,7 +79,7 @@ const RecentActivity = ({ transactions }) => {
                 {timeAgo(t.createdAt)}
               </p>
             </div>
-            <p className="text-xs text-gray-400 flex-shrink-0 pt-0.5" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            <p className="text-xs text-gray-400 dark:text-slate-500 flex-shrink-0 pt-0.5" style={{ fontVariantNumeric: 'tabular-nums' }}>
               QTY {t.newQty}
             </p>
           </li>
@@ -139,8 +140,8 @@ const Dashboard = ({ user }) => {
       <div className="p-4 sm:p-6">
         <div className="flex items-center justify-center h-64">
           <div className="flex space-x-3">
-            <Loader className="w-8 h-8 text-primary animate-spin" />
-            <span className="text-primary">Loading dashboard...</span>
+            <Loader className="w-8 h-8 text-primary dark:text-blue-400 animate-spin" />
+            <span className="text-primary dark:text-blue-400">Loading dashboard...</span>
           </div>
         </div>
       </div>
@@ -150,13 +151,13 @@ const Dashboard = ({ user }) => {
   if (error) {
     return (
       <div className="p-4 sm:p-6">
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-r-lg">
+        <div className="bg-red-50 dark:bg-red-500/15 border-l-4 border-red-400 dark:border-red-500/50 p-4 mb-6 rounded-r-lg">
           <div className="flex">
             <div className="flex-shrink-0">
               <AlertTriangle className="w-5 h-5 text-red-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
             </div>
           </div>
         </div>
@@ -167,61 +168,61 @@ const Dashboard = ({ user }) => {
   return (
     <div className="p-4 sm:p-6">
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center space-x-3">
-          <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 flex items-center space-x-3">
+          <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
           Dashboard Overview
         </h1>
-        <p className="mt-2 text-gray-600">Welcome back, {user.username}! Here's your inventory overview.</p>
+        <p className="mt-2 text-gray-600 dark:text-slate-400">Welcome back, {user.username}! Here's your inventory overview.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Total Books */}
-        <div className="bg-white rounded-xl shadow-sm p-5 sm:p-6 border border-gray-100">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-5 sm:p-6 border border-gray-100 dark:border-slate-800">
           <div className="flex items-start justify-between">
             <div className="min-w-0">
-              <p className="text-sm sm:text-base font-medium text-gray-500 truncate">Total Book Titles</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{stats.totalBooks}</p>
+              <p className="text-sm sm:text-base font-medium text-gray-500 dark:text-slate-400 truncate">Total Book Titles</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 mt-1">{stats.totalBooks}</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
-              <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 dark:bg-blue-500/15 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
+              <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
             </div>
           </div>
         </div>
 
         {/* Total Quantity */}
-        <div className="bg-white rounded-xl shadow-sm p-5 sm:p-6 border border-gray-100">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-5 sm:p-6 border border-gray-100 dark:border-slate-800">
           <div className="flex items-start justify-between">
             <div className="min-w-0">
-              <p className="text-sm sm:text-base font-medium text-gray-500 truncate">Total Units in Stock</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{stats.totalQuantity}</p>
+              <p className="text-sm sm:text-base font-medium text-gray-500 dark:text-slate-400 truncate">Total Units in Stock</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 mt-1">{stats.totalQuantity}</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
-              <ScanBarcode className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 dark:bg-blue-500/15 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
+              <ScanBarcode className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
             </div>
           </div>
         </div>
 
         {/* Today's Transactions */}
-        <div className="bg-white rounded-xl shadow-sm p-5 sm:p-6 border border-gray-100">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-5 sm:p-6 border border-gray-100 dark:border-slate-800">
           <div className="flex items-start justify-between">
             <div className="min-w-0">
-              <p className="text-sm sm:text-base font-medium text-gray-500 truncate">Today's Transactions</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{stats.todayTransactions}</p>
+              <p className="text-sm sm:text-base font-medium text-gray-500 dark:text-slate-400 truncate">Today's Transactions</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 mt-1">{stats.todayTransactions}</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
-              <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 dark:bg-blue-500/15 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
+              <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
             </div>
           </div>
         </div>
 
         {/* Out of Stock */}
-        <div className="bg-white rounded-xl shadow-sm p-5 sm:p-6 border border-gray-100">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-5 sm:p-6 border border-gray-100 dark:border-slate-800">
           <div className="flex items-start justify-between">
             <div className="min-w-0">
-              <p className="text-sm sm:text-base font-medium text-gray-500 truncate">Out of Stock Titles</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{outOfStock.count}</p>
+              <p className="text-sm sm:text-base font-medium text-gray-500 dark:text-slate-400 truncate">Out of Stock Titles</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 mt-1">{outOfStock.count}</p>
               {outOfStock.count === 0 ? (
-                <p className="text-xs sm:text-sm text-green-600 mt-1">No out of stock items</p>
+                <p className="text-xs sm:text-sm text-green-600 dark:text-emerald-400 mt-1">No out of stock items</p>
               ) : (
                 <button
                   onClick={() => setShowOutOfStockModal(true)}
@@ -231,8 +232,8 @@ const Dashboard = ({ user }) => {
                 </button>
               )}
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
-              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-100 dark:bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
+              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 dark:text-amber-400" />
             </div>
           </div>
         </div>
@@ -240,14 +241,14 @@ const Dashboard = ({ user }) => {
 
       {/* Stock movement chart + recent activity */}
       <div className="mt-6 sm:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-5 sm:p-6">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-5 sm:p-6">
           <StockMovementChart data={movement} />
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 sm:p-6">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-5 sm:p-6">
           <div className="flex items-center space-x-2 mb-2">
-            <Activity className="w-4 h-4 text-primary" />
-            <h3 className="text-base font-bold text-gray-900">Recent Activity</h3>
+            <Activity className="w-4 h-4 text-primary dark:text-blue-400" />
+            <h3 className="text-base font-bold text-gray-900 dark:text-slate-100">Recent Activity</h3>
           </div>
           <RecentActivity transactions={recent} />
         </div>
@@ -255,45 +256,45 @@ const Dashboard = ({ user }) => {
 
       {/* Quick Actions */}
       <div className="mt-6 sm:mt-8">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Quick Actions</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 gap-3 sm:gap-4">
           <button
             onClick={() => navigate('/scan')}
-            className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex items-center justify-between border border-gray-100 touch-manipulation min-h-[48px]"
+            className="bg-white dark:bg-slate-900 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex items-center justify-between border border-gray-100 dark:border-slate-800 touch-manipulation min-h-[48px]"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm sm:text-base font-medium text-gray-700 truncate">Scan Books</p>
-              <p className="text-xs sm:text-sm text-gray-500 mt-0.5">Use barcode scanner or camera</p>
+              <p className="text-sm sm:text-base font-medium text-gray-700 dark:text-slate-300 truncate">Scan Books</p>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-0.5">Use barcode scanner or camera</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
-              <ScanBarcode className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 dark:bg-blue-500/15 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
+              <ScanBarcode className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
             </div>
           </button>
 
           <button
             onClick={() => navigate('/books')}
-            className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex items-center justify-between border border-gray-100 touch-manipulation min-h-[48px]"
+            className="bg-white dark:bg-slate-900 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex items-center justify-between border border-gray-100 dark:border-slate-800 touch-manipulation min-h-[48px]"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm sm:text-base font-medium text-gray-700 truncate">Manage Books</p>
-              <p className="text-xs sm:text-sm text-gray-500 mt-0.5">View and edit book catalog</p>
+              <p className="text-sm sm:text-base font-medium text-gray-700 dark:text-slate-300 truncate">Manage Books</p>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-0.5">View and edit book catalog</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
-              <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 dark:bg-blue-500/15 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
+              <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
             </div>
           </button>
 
           {user.role === 'Admin' && (
             <button
               onClick={() => navigate('/import-export')}
-              className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex items-center justify-between border border-gray-100 touch-manipulation min-h-[48px]"
+              className="bg-white dark:bg-slate-900 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex items-center justify-between border border-gray-100 dark:border-slate-800 touch-manipulation min-h-[48px]"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-sm sm:text-base font-medium text-gray-700 truncate">Import/Export</p>
-                <p className="text-xs sm:text-sm text-gray-500 mt-0.5">Bulk operations</p>
+                <p className="text-sm sm:text-base font-medium text-gray-700 dark:text-slate-300 truncate">Import/Export</p>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-0.5">Bulk operations</p>
               </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
-                <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 dark:bg-blue-500/15 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
+                <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
               </div>
             </button>
           )}
@@ -303,33 +304,33 @@ const Dashboard = ({ user }) => {
           <Modal open={showOutOfStockModal} onClose={() => setShowOutOfStockModal(false)} title="Out of Stock Books" size="sm">
             {outOfStock.books.length > 0 ? (
               <>
-                <p className="text-xs text-gray-500 mb-2">{outOfStock.count} out of stock title{outOfStock.count === 1 ? '' : 's'}</p>
-                <ul className="divide-y divide-gray-100">
+                <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">{outOfStock.count} out of stock title{outOfStock.count === 1 ? '' : 's'}</p>
+                <ul className="divide-y divide-gray-100 dark:divide-slate-800">
                   {outOfStock.books.map((book) => (
                     <li key={book.ISBN} className="flex items-start space-x-3 py-2">
                       <div className="flex-shrink-0">
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: '#f59e0b1A' }}>
-                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                          style={{ backgroundColor: 'var(--accent-warn-bg)' }}>
+                          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                         </div>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-gray-900 truncate">
+                        <p className="text-sm text-gray-900 dark:text-slate-100 truncate">
                           <span className="font-medium">{book.TITLE}</span>
-                          <span className="ml-2 text-gray-500">ISBN: {book.ISBN}</span>
+                          <span className="ml-2 text-gray-500 dark:text-slate-400">ISBN: {book.ISBN}</span>
                         </p>
                       </div>
                     </li>
                   ))}
                 </ul>
                 {outOfStock.count > outOfStock.books.length && (
-                  <p className="text-sm text-gray-500 pt-2 border-t border-gray-100 mt-2">
+                  <p className="text-sm text-gray-500 dark:text-slate-400 pt-2 border-t border-gray-100 dark:border-slate-800 mt-2">
                     …and {outOfStock.count - outOfStock.books.length} more. Use the Books page with the "Out of stock" filter to see them all.
                   </p>
                 )}
               </>
             ) : (
-              <p className="text-sm text-gray-500">No out of stock books</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">No out of stock books</p>
             )}
           </Modal>
     </div>

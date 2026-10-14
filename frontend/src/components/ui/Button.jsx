@@ -1,9 +1,9 @@
 
 const VARIANTS = {
   primary: 'bg-primary text-white hover:bg-primary/90 disabled:bg-primary/50',
-  secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-50',
+  secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-50 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700',
   danger: 'bg-red-500 text-white hover:bg-red-600 disabled:opacity-50',
-  ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 disabled:opacity-50',
+  ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800',
 };
 
 /**

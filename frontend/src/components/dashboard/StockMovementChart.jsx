@@ -80,11 +80,11 @@ const Legend = () => (
   <div className="flex items-center space-x-4">
     <div className="flex items-center space-x-1.5">
       <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: INBOUND_COLOR }} aria-hidden="true"></span>
-      <span className="text-xs text-gray-600">Inbound</span>
+      <span className="text-xs text-gray-600 dark:text-slate-400">Inbound</span>
     </div>
     <div className="flex items-center space-x-1.5">
       <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: OUTBOUND_COLOR }} aria-hidden="true"></span>
-      <span className="text-xs text-gray-600">Outbound</span>
+      <span className="text-xs text-gray-600 dark:text-slate-400">Outbound</span>
     </div>
   </div>
 );
@@ -104,8 +104,8 @@ const StockMovementChart = ({ data }) => {
   if (!data || data.length === 0) {
     return (
       <div>
-        <h3 className="text-base font-bold text-gray-900">Stock Movement</h3>
-        <p className="mt-8 mb-8 text-center text-sm text-gray-400">No data available</p>
+        <h3 className="text-base font-bold text-gray-900 dark:text-slate-100">Stock Movement</h3>
+        <p className="mt-8 mb-8 text-center text-sm text-gray-400 dark:text-slate-500">No data available</p>
       </div>
     );
   }
@@ -115,14 +115,14 @@ const StockMovementChart = ({ data }) => {
       {/* Header: title, legend, table toggle */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div>
-          <h3 className="text-base font-bold text-gray-900">Stock Movement</h3>
-          <p className="text-xs text-gray-500 mt-0.5">Units in vs out · last {data.length} days</p>
+          <h3 className="text-base font-bold text-gray-900 dark:text-slate-100">Stock Movement</h3>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Units in vs out · last {data.length} days</p>
         </div>
         <div className="flex items-center space-x-4">
           {!showTable && <Legend />}
           <button
             onClick={() => setShowTable(prev => !prev)}
-            className="flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50"
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-slate-400 border border-gray-200 dark:border-slate-800 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60"
             aria-pressed={showTable}
           >
             {showTable ? <BarChart3 className="w-3.5 h-3.5" /> : <Table className="w-3.5 h-3.5" />}
@@ -133,28 +133,28 @@ const StockMovementChart = ({ data }) => {
 
       {showTable ? (
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200" style={{ fontVariantNumeric: 'tabular-nums' }}>
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            <thead className="bg-gray-50 dark:bg-slate-800/60">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Inbound</th>
-                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Outbound</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Date</th>
+                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Inbound</th>
+                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Outbound</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
+            <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-100 dark:divide-slate-800">
               {rows.map(d => (
-                <tr key={d.date} className="hover:bg-gray-50">
-                  <td className="px-3 py-2 text-sm text-gray-700">{fullDayLabel(d.date)}</td>
-                  <td className="px-3 py-2 text-sm text-gray-900 text-right">{d.inbound || 0}</td>
-                  <td className="px-3 py-2 text-sm text-gray-900 text-right">{d.outbound || 0}</td>
+                <tr key={d.date} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
+                  <td className="px-3 py-2 text-sm text-gray-700 dark:text-slate-300">{fullDayLabel(d.date)}</td>
+                  <td className="px-3 py-2 text-sm text-gray-900 dark:text-slate-100 text-right">{d.inbound || 0}</td>
+                  <td className="px-3 py-2 text-sm text-gray-900 dark:text-slate-100 text-right">{d.outbound || 0}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       ) : !hasData ? (
-        <div className="h-52 flex items-center justify-center border border-gray-100 rounded-lg">
-          <p className="text-sm text-gray-400">No stock movement in this period</p>
+        <div className="h-52 flex items-center justify-center border border-gray-100 dark:border-slate-800 rounded-lg">
+          <p className="text-sm text-gray-400 dark:text-slate-500">No stock movement in this period</p>
         </div>
       ) : (
         <div ref={wrapRef} className="relative">
@@ -327,20 +327,20 @@ const StockMovementSvg = ({ data, width, hoveredIndex, onHover }) => {
       {/* Tooltip: every series at the hovered day */}
       {hovered && (
         <div
-          className="absolute z-10 pointer-events-none bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2"
+          className="absolute z-10 pointer-events-none bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg shadow-lg px-3 py-2"
           style={{ left: tooltipLeft, top: 0, transform: 'translate(-50%, 0)' }}
           role="status"
         >
-          <p className="text-xs text-gray-500 mb-1">{fullDayLabel(hovered.date)}</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">{fullDayLabel(hovered.date)}</p>
           <div className="flex items-center space-x-2">
             <span className="w-3 h-0.5 rounded-full" style={{ backgroundColor: INBOUND_COLOR }} aria-hidden="true"></span>
-            <span className="text-sm font-bold text-gray-900">{hovered.inbound || 0}</span>
-            <span className="text-xs text-gray-500">in</span>
+            <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{hovered.inbound || 0}</span>
+            <span className="text-xs text-gray-500 dark:text-slate-400">in</span>
           </div>
           <div className="flex items-center space-x-2">
             <span className="w-3 h-0.5 rounded-full" style={{ backgroundColor: OUTBOUND_COLOR }} aria-hidden="true"></span>
-            <span className="text-sm font-bold text-gray-900">{hovered.outbound || 0}</span>
-            <span className="text-xs text-gray-500">out</span>
+            <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{hovered.outbound || 0}</span>
+            <span className="text-xs text-gray-500 dark:text-slate-400">out</span>
           </div>
         </div>
       )}

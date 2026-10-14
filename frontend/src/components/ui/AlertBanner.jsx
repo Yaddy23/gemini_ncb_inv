@@ -1,9 +1,9 @@
 
 const TONES = {
-  error: 'bg-red-50 border-red-400 text-red-700',
-  success: 'bg-green-50 border-green-400 text-green-700',
-  info: 'bg-blue-50 border-blue-400 text-blue-700',
-  warning: 'bg-yellow-50 border-yellow-400 text-yellow-700',
+  error: 'bg-red-50 border-red-400 text-red-700 dark:bg-red-500/15 dark:border-red-500/50 dark:text-red-400',
+  success: 'bg-green-50 border-green-400 text-green-700 dark:bg-emerald-500/15 dark:border-emerald-500/40 dark:text-emerald-400',
+  info: 'bg-blue-50 border-blue-400 text-blue-700 dark:bg-blue-500/15 dark:border-blue-500/50 dark:text-blue-300',
+  warning: 'bg-yellow-50 border-yellow-400 text-yellow-700 dark:bg-yellow-500/15 dark:border-yellow-500/50 dark:text-yellow-300',
 };
 
 /** Inline alert with the app-wide `border-l-4` look. */

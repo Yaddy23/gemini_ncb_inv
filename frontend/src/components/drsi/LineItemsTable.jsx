@@ -283,17 +283,17 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
     <div className="space-y-4">
       {/* Duplicate ISBN Warning Banner */}
       {uniqueDuplicateISBNs.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-          <div className="flex items-center space-x-2 text-yellow-800">
+        <div className="bg-yellow-50 dark:bg-yellow-500/15 border border-yellow-200 dark:border-yellow-500/40 rounded-lg p-3">
+          <div className="flex items-center space-x-2 text-yellow-800 dark:text-yellow-300">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <span className="font-medium">Duplicate ISBNs detected:</span>
           </div>
-          <div className="mt-2 text-sm text-yellow-700">
+          <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
             {uniqueDuplicateISBNs.map((dup, idx) => (
               <div key={idx} className="flex items-center space-x-2">
-                <span className="font-mono bg-yellow-100 px-2 py-0.5 rounded">{dup.isbn}</span>
+                <span className="font-mono bg-yellow-100 dark:bg-yellow-500/20 px-2 py-0.5 rounded">{dup.isbn}</span>
                 <span>appears {dup.count} time{dup.count > 1 ? 's' : ''}</span>
-                <span className="text-yellow-600">(lines: {dup.indices.map(i => i + 1).join(', ')})</span>
+                <span className="text-yellow-600 dark:text-yellow-300">(lines: {dup.indices.map(i => i + 1).join(', ')})</span>
               </div>
             ))}
           </div>
@@ -301,7 +301,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
       )}
 
       <div className="flex items-center justify-between">
-        <label className="font-medium text-gray-700">Line Items ({items.length}/{maxRows})</label>
+        <label className="font-medium text-gray-700 dark:text-slate-300">Line Items ({items.length}/{maxRows})</label>
         <button
           onClick={addRow}
           disabled={items.length >= maxRows}
@@ -313,24 +313,24 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+          <thead className="bg-gray-50 dark:bg-slate-800/60">
             <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-8">#</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-24">CODE</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-16">QTY</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-48">ISBN / BARCODE</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">TITLE / DESCRIPTION</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-28">UNIT PRICE</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-28">AMOUNT</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-12"></th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase w-8">#</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase w-24">CODE</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase w-16">QTY</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase w-48">ISBN / BARCODE</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">TITLE / DESCRIPTION</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase w-28">UNIT PRICE</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase w-28">AMOUNT</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase w-12"></th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
             {items.map((item, index) => (
-              <tr key={index} className={`hover:bg-gray-50 ${item.stockBlocked ? 'bg-red-50' : duplicateISBNs[index] ? 'bg-yellow-50' : ''}`}>
-                <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
-                <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+              <tr key={index} className={`hover:bg-gray-50 dark:hover:bg-slate-800/60 ${item.stockBlocked ? 'bg-red-50 dark:bg-red-500/15' : duplicateISBNs[index] ? 'bg-yellow-50 dark:bg-yellow-500/15' : ''}`}>
+                <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">{index + 1}</td>
+                <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
                   {item.isbn?.substring(0, 8) || ''}
                 </td>
                 <td className="px-3 py-2">
@@ -339,7 +339,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
                     value={item.qty || 1}
                     onChange={(e) => handleQtyChange(index, e.target.value)}
                     min="1"
-                    className="w-full px-2 py-2.5 min-h-[44px] text-base border border-gray-300 rounded text-right focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full px-2 py-2.5 min-h-[44px] text-base border border-gray-300 dark:border-slate-600 dark:placeholder-slate-500 rounded text-right focus:outline-none focus:ring-1 focus:ring-primary dark:focus:ring-blue-500"
                   />
                 </td>
                 <td className="px-3 py-2">
@@ -350,12 +350,12 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
                       value={item.isbn || ''}
                       onChange={(e) => handleISBNChange(index, e.target.value)}
                       placeholder="Scan or type ISBN"
-                      className={`w-full px-2 py-2.5 min-h-[44px] text-base border rounded focus:outline-none focus:ring-1 focus:ring-primary pr-12 ${
+                      className={`w-full px-2 py-2.5 min-h-[44px] text-base border rounded focus:outline-none focus:ring-1 focus:ring-primary dark:focus:ring-blue-500 dark:placeholder-slate-500 pr-12 ${
                         item.stockBlocked
-                          ? 'border-red-400 bg-red-50'
+                          ? 'border-red-400 dark:border-red-500/50 bg-red-50 dark:bg-red-500/15'
                           : duplicateISBNs[index]
-                            ? 'border-yellow-400 bg-yellow-50'
-                            : 'border-gray-300'
+                            ? 'border-yellow-400 dark:border-yellow-500/50 bg-yellow-50 dark:bg-yellow-500/15'
+                            : 'border-gray-300 dark:border-slate-600'
                       }`}
                       autoComplete="off"
                     />
@@ -366,7 +366,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
                     )}
                     {lookupLoading[index] && (
                       <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                        <Loader className="w-4 h-4 animate-spin text-primary" />
+                        <Loader className="w-4 h-4 animate-spin text-primary dark:text-blue-400" />
                       </div>
                     )}
                     {lookupErrors[index] && !lookupLoading[index] && (
@@ -395,8 +395,8 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
                     placeholder={lookupErrors[index] ? 'Enter title manually' : ''}
                     className={`w-full px-2 py-2.5 min-h-[44px] text-base border rounded ${
                       lookupErrors[index] && !lookupLoading[index]
-                        ? 'border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary'
-                        : 'border-gray-200 bg-gray-50 text-gray-700'
+                        ? 'border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary dark:focus:ring-blue-500'
+                        : 'border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/60 text-gray-700 dark:text-slate-300'
                     }`}
                   />
                 </td>
@@ -407,17 +407,17 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
                     onChange={(e) => handlePriceChange(index, e.target.value)}
                     min="0"
                     step="0.01"
-                    className="w-full px-2 py-2.5 min-h-[44px] text-base border border-gray-300 rounded text-right focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full px-2 py-2.5 min-h-[44px] text-base border border-gray-300 dark:border-slate-600 dark:placeholder-slate-500 rounded text-right focus:outline-none focus:ring-1 focus:ring-primary dark:focus:ring-blue-500"
                   />
                 </td>
-                <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100 text-right">
                   {formatCurrency(item.amount || 0)}
                 </td>
                 <td className="px-3 py-2">
                   <button
                     onClick={() => removeRow(index)}
                     disabled={items.length <= 1}
-                    className="w-11 h-11 -my-2 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="w-11 h-11 -my-2 flex items-center justify-center text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/20 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
                     title="Remove item"
                   >
                     <Trash2 className="w-5 h-5" />
@@ -427,28 +427,28 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan="8" className="px-3 py-8 text-center text-gray-400">
+                <td colSpan="8" className="px-3 py-8 text-center text-gray-400 dark:text-slate-500">
                   No items added yet. Click "Add Item" to start.
                 </td>
               </tr>
             )}
           </tbody>
-          <tfoot className="bg-gray-50">
+          <tfoot className="bg-gray-50 dark:bg-slate-800/60">
             <tr>
-              <td colSpan="6" className="px-3 py-2 text-right font-bold text-gray-700">SUBTOTAL:</td>
-              <td className="px-3 py-2 font-bold text-gray-900 text-right">{formatCurrency(subtotal)}</td>
+              <td colSpan="6" className="px-3 py-2 text-right font-bold text-gray-700 dark:text-slate-300">SUBTOTAL:</td>
+              <td className="px-3 py-2 font-bold text-gray-900 dark:text-slate-100 text-right">{formatCurrency(subtotal)}</td>
               <td></td>
             </tr>
             {documentType === 'SI' && discountPercentage > 0 && (
               <tr>
-                <td colSpan="6" className="px-3 py-2 text-right font-bold text-gray-700">LESS {discountPercentage}% DISCOUNT:</td>
-                <td className="px-3 py-2 font-bold text-gray-900 text-right">{formatCurrency(discountAmount)}</td>
+                <td colSpan="6" className="px-3 py-2 text-right font-bold text-gray-700 dark:text-slate-300">LESS {discountPercentage}% DISCOUNT:</td>
+                <td className="px-3 py-2 font-bold text-gray-900 dark:text-slate-100 text-right">{formatCurrency(discountAmount)}</td>
                 <td></td>
               </tr>
             )}
             <tr>
-              <td colSpan="6" className="px-3 py-2 text-right font-bold text-primary">TOTAL:</td>
-              <td className="px-3 py-2 font-bold text-primary text-right">{formatCurrency(documentType === 'SI' ? grandTotal : subtotal)}</td>
+              <td colSpan="6" className="px-3 py-2 text-right font-bold text-primary dark:text-blue-400">TOTAL:</td>
+              <td className="px-3 py-2 font-bold text-primary dark:text-blue-400 text-right">{formatCurrency(documentType === 'SI' ? grandTotal : subtotal)}</td>
               <td></td>
             </tr>
           </tfoot>
@@ -456,7 +456,7 @@ const LineItemsTable = ({ items, onItemsChange, documentType, discountPercentage
       </div>
 
       {items.length < maxRows && (
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-gray-500 dark:text-slate-400 text-center">
           {maxRows - items.length} more rows available
         </p>
       )}

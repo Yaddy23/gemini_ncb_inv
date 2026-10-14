@@ -15,19 +15,19 @@ export default function ListToolbar({
   children,
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5 mb-4 sm:mb-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5 mb-4 sm:mb-6 dark:bg-slate-900 dark:border-slate-800">
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-500" />
           <input
             type="text"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-11 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+            className="w-full pl-11 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
           />
           {searching && (
-            <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-primary animate-spin" viewBox="0 0 24 24" fill="none">
+            <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-primary animate-spin dark:text-blue-400" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
             </svg>
@@ -37,7 +37,7 @@ export default function ListToolbar({
           <select
             value={status}
             onChange={(e) => onStatusChange(e.target.value)}
-            className="w-full sm:w-48 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base"
+            className="w-full sm:w-48 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
           >
             {statusOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>

@@ -20,15 +20,15 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.error) {
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 max-w-lg w-full text-center">
-            <AlertTriangle className="w-12 h-12 mx-auto text-amber-500 mb-3" />
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900">Something went wrong</h1>
-            <p className="text-sm text-gray-600 mt-2">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-4 sm:p-6 max-w-lg w-full text-center">
+            <AlertTriangle className="w-12 h-12 mx-auto text-amber-500 dark:text-amber-400 mb-3" />
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100">Something went wrong</h1>
+            <p className="text-sm text-gray-600 dark:text-slate-400 mt-2">
               The app hit an unexpected error. Reload to recover - if it keeps
               happening, the details below say why.
             </p>
-            <pre className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-red-600 text-left whitespace-pre-wrap break-words">
+            <pre className="mt-4 p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg text-xs text-red-600 dark:text-red-400 text-left whitespace-pre-wrap break-words">
               {String(this.state.error?.message || this.state.error)}
             </pre>
             <button

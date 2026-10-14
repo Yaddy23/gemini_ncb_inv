@@ -32,14 +32,14 @@ const DocumentPreview = ({ document, documentType, onClose }) => {
       size="2xl"
       title={
         <span className="flex items-center space-x-2">
-          <FileText className="w-6 h-6 text-primary" />
+          <FileText className="w-6 h-6 text-primary dark:text-blue-400" />
           <span>{title}</span>
         </span>
       }
       footer={
         <button
           onClick={onClose}
-          className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px]"
+          className="px-4 py-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 text-gray-700 dark:text-slate-300 touch-manipulation min-h-[44px]"
         >
           Close
         </button>
@@ -47,10 +47,10 @@ const DocumentPreview = ({ document, documentType, onClose }) => {
     >
       <div>
           {doc.status === 'cancelled' && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm font-bold text-red-800">CANCELLED</p>
-              {doc.cancelReason && <p className="text-sm text-red-700 mt-1">Reason: {doc.cancelReason}</p>}
-              {doc.cancelledAt && <p className="text-sm text-red-600 mt-1">Cancelled on {formatDate(doc.cancelledAt)}</p>}
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/15 border border-red-200 dark:border-red-500/40 rounded-lg">
+              <p className="text-sm font-bold text-red-800 dark:text-red-300">CANCELLED</p>
+              {doc.cancelReason && <p className="text-sm text-red-700 dark:text-red-400 mt-1">Reason: {doc.cancelReason}</p>}
+              {doc.cancelledAt && <p className="text-sm text-red-600 dark:text-red-400 mt-1">Cancelled on {formatDate(doc.cancelledAt)}</p>}
             </div>
           )}
 
@@ -61,91 +61,91 @@ const DocumentPreview = ({ document, documentType, onClose }) => {
           {/* Header grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <p className="text-xs font-medium text-gray-400 uppercase">{title} Number</p>
-              <p className="text-sm font-medium text-gray-900 font-mono">{docNumber}</p>
+              <p className="text-xs font-medium text-gray-400 dark:text-slate-500 uppercase">{title} Number</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-slate-100 font-mono">{docNumber}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-400 uppercase">Date</p>
-              <p className="text-sm font-medium text-gray-900">{formatDate(doc.date)}</p>
+              <p className="text-xs font-medium text-gray-400 dark:text-slate-500 uppercase">Date</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{formatDate(doc.date)}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-400 uppercase">Customer Name</p>
-              <p className="text-sm font-medium text-gray-900">{doc.customerName || '—'}</p>
+              <p className="text-xs font-medium text-gray-400 dark:text-slate-500 uppercase">Customer Name</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{doc.customerName || '—'}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-400 uppercase">Customer Address</p>
-              <p className="text-sm font-medium text-gray-900">{doc.customerAddress || '—'}</p>
+              <p className="text-xs font-medium text-gray-400 dark:text-slate-500 uppercase">Customer Address</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{doc.customerAddress || '—'}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-400 uppercase">Requested By</p>
-              <p className="text-sm font-medium text-gray-900">{doc.marketingExecutive?.name || '—'}</p>
+              <p className="text-xs font-medium text-gray-400 dark:text-slate-500 uppercase">Requested By</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{doc.marketingExecutive?.name || '—'}</p>
             </div>
             {isSI && (
               <>
                 <div>
-                  <p className="text-xs font-medium text-gray-400 uppercase">P.O. Number</p>
-                  <p className="text-sm font-medium text-gray-900 font-mono">{doc.poNumber || '—'}</p>
+                  <p className="text-xs font-medium text-gray-400 dark:text-slate-500 uppercase">P.O. Number</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-slate-100 font-mono">{doc.poNumber || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-400 uppercase">Discount %</p>
-                  <p className="text-sm font-medium text-gray-900">{doc.discountPercentage || 0}%</p>
+                  <p className="text-xs font-medium text-gray-400 dark:text-slate-500 uppercase">Discount %</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{doc.discountPercentage || 0}%</p>
                 </div>
               </>
             )}
           </div>
 
           {/* Items table */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="border border-gray-200 dark:border-slate-800 rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+              <thead className="bg-gray-50 dark:bg-slate-800/60">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">ISBN</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                  <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
-                  <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Unit Price</th>
-                  <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">#</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">ISBN</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Title</th>
+                  <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Qty</th>
+                  <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Unit Price</th>
+                  <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Amount</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-3 py-4 text-sm text-gray-500 text-center">No items</td>
+                    <td colSpan={6} className="px-3 py-4 text-sm text-gray-500 dark:text-slate-400 text-center">No items</td>
                   </tr>
                 ) : (
                   items.map((item, index) => (
                     <tr key={index}>
-                      <td className="px-3 py-2 text-sm text-gray-500">{index + 1}</td>
-                      <td className="px-3 py-2 text-sm text-gray-700 font-mono">{item.isbn || '—'}</td>
-                      <td className="px-3 py-2 text-sm text-gray-700">{item.title || '—'}</td>
-                      <td className="px-3 py-2 text-sm text-gray-700 text-right">{item.qty}</td>
-                      <td className="px-3 py-2 text-sm text-gray-700 text-right">{formatCurrency(item.unitPrice)}</td>
-                      <td className="px-3 py-2 text-sm font-medium text-gray-900 text-right">{formatCurrency(Number(item.amount) || (Number(item.qty) || 0) * (Number(item.unitPrice) || 0))}</td>
+                      <td className="px-3 py-2 text-sm text-gray-500 dark:text-slate-400">{index + 1}</td>
+                      <td className="px-3 py-2 text-sm text-gray-700 dark:text-slate-300 font-mono">{item.isbn || '—'}</td>
+                      <td className="px-3 py-2 text-sm text-gray-700 dark:text-slate-300">{item.title || '—'}</td>
+                      <td className="px-3 py-2 text-sm text-gray-700 dark:text-slate-300 text-right">{item.qty}</td>
+                      <td className="px-3 py-2 text-sm text-gray-700 dark:text-slate-300 text-right">{formatCurrency(item.unitPrice)}</td>
+                      <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-slate-100 text-right">{formatCurrency(Number(item.amount) || (Number(item.qty) || 0) * (Number(item.unitPrice) || 0))}</td>
                     </tr>
                   ))
                 )}
               </tbody>
-              <tfoot className="bg-gray-50">
+              <tfoot className="bg-gray-50 dark:bg-slate-800/60">
                 <tr>
-                  <td colSpan={5} className="px-3 py-2 text-sm font-medium text-gray-700 text-right">Subtotal</td>
-                  <td className="px-3 py-2 text-sm font-medium text-gray-900 text-right">{formatCurrency(subtotal)}</td>
+                  <td colSpan={5} className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 text-right">Subtotal</td>
+                  <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-slate-100 text-right">{formatCurrency(subtotal)}</td>
                 </tr>
                 {isSI && (
                   <tr>
-                    <td colSpan={5} className="px-3 py-2 text-sm font-medium text-gray-700 text-right">Discount ({discountPercentage}%)</td>
-                    <td className="px-3 py-2 text-sm font-medium text-gray-900 text-right">{formatCurrency(discount)}</td>
+                    <td colSpan={5} className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 text-right">Discount ({discountPercentage}%)</td>
+                    <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-slate-100 text-right">{formatCurrency(discount)}</td>
                   </tr>
                 )}
                 <tr>
-                  <td colSpan={5} className="px-3 py-2 text-sm font-bold text-gray-900 text-right">Total</td>
-                  <td className="px-3 py-2 text-sm font-bold text-gray-900 text-right">{formatCurrency(total)}</td>
+                  <td colSpan={5} className="px-3 py-2 text-sm font-bold text-gray-900 dark:text-slate-100 text-right">Total</td>
+                  <td className="px-3 py-2 text-sm font-bold text-gray-900 dark:text-slate-100 text-right">{formatCurrency(total)}</td>
                 </tr>
               </tfoot>
             </table>
           </div>
 
         {/* Created by */}
-        <p className="mt-4 text-xs text-gray-400">Created by {doc.createdBy?.username || '—'} on {formatDate(doc.createdAt)}</p>
+        <p className="mt-4 text-xs text-gray-400 dark:text-slate-500">Created by {doc.createdBy?.username || '—'} on {formatDate(doc.createdAt)}</p>
       </div>
     </Modal>
   );

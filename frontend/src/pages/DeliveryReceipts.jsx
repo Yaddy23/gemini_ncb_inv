@@ -191,11 +191,11 @@ const DeliveryReceipts = ({ user }) => {
     <div className="p-4 sm:p-6">
       <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center space-x-3">
-            <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 flex items-center space-x-3">
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
             <span>Delivery Receipts</span>
           </h1>
-          <p className="mt-1 text-gray-600">Manage delivery receipts and generate sales invoices</p>
+          <p className="mt-1 text-gray-600 dark:text-slate-400">Manage delivery receipts and generate sales invoices</p>
         </div>
         <button onClick={handleNew} className="flex-shrink-0 flex items-center justify-center space-x-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors touch-manipulation min-h-[44px] min-w-[140px]">
           <Plus className="w-5 h-5" />
@@ -214,31 +214,31 @@ const DeliveryReceipts = ({ user }) => {
       />
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center">
-            <Loader className="w-8 h-8 animate-spin text-primary mx-auto mb-2" />
-            <p className="text-gray-500">Loading delivery receipts...</p>
+            <Loader className="w-8 h-8 animate-spin text-primary dark:text-blue-400 mx-auto mb-2" />
+            <p className="text-gray-500 dark:text-slate-400">Loading delivery receipts...</p>
           </div>
         ) : drs.length === 0 ? (
           <EmptyState
             icon={FileText}
             title="No delivery receipts found"
             action={
-              <button onClick={handleNew} className="text-primary hover:underline touch-manipulation min-h-[44px]">Create your first DR</button>
+              <button onClick={handleNew} className="text-primary dark:text-blue-400 hover:underline touch-manipulation min-h-[44px]">Create your first DR</button>
             }
           />
         ) : (
           <>
             {/* Mobile Card Layout */}
             <div className="block md:hidden">
-              <div className="divide-y divide-gray-200">
+              <div className="divide-y divide-gray-200 dark:divide-slate-800">
                 {drs.map((dr) => (
-                  <div key={dr._id} className="p-4 hover:bg-gray-50">
+                  <div key={dr._id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-800/60">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate font-mono">{dr.drNumber}</h3>
-                        <p className="text-sm text-gray-500 truncate">{dr.customerName}</p>
+                        <h3 className="font-semibold text-gray-900 dark:text-slate-100 truncate font-mono">{dr.drNumber}</h3>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 truncate">{dr.customerName}</p>
                       </div>
                       <div className="flex-shrink-0 flex items-center space-x-2">
                         {getStatusBadge(dr.status)}
@@ -246,43 +246,43 @@ const DeliveryReceipts = ({ user }) => {
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                       <div>
-                        <p className="text-gray-400">Date</p>
+                        <p className="text-gray-400 dark:text-slate-500">Date</p>
                         <p className="font-medium">{formatDate(dr.date)}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400">Items</p>
+                        <p className="text-gray-400 dark:text-slate-500">Items</p>
                         <p className="font-medium">{dr.items?.length || 0} items</p>
                       </div>
                       <div>
-                        <p className="text-gray-400">Requested By</p>
+                        <p className="text-gray-400 dark:text-slate-500">Requested By</p>
                         <p className="font-medium flex items-center space-x-1">
                           {dr.marketingExecutive ? (
                             <>
-                              <User className="w-3 h-3 text-gray-400" />
+                              <User className="w-3 h-3 text-gray-400 dark:text-slate-500" />
                               <span>{dr.marketingExecutive.name || dr.marketingExecutive}</span>
                             </>
                           ) : (
-                            <span className="text-gray-400">—</span>
+                            <span className="text-gray-400 dark:text-slate-500">—</span>
                           )}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-400">Total</p>
+                        <p className="text-gray-400 dark:text-slate-500">Total</p>
                         <p className="font-medium text-right">{formatCurrency(dr.totalAmount)}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400">EF Ref</p>
+                        <p className="text-gray-400 dark:text-slate-500">EF Ref</p>
                         <p className="font-medium">{dr.efRef ? dr.efRef.efNumber : '—'}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400">Created</p>
+                        <p className="text-gray-400 dark:text-slate-500">Created</p>
                         <p className="font-medium">{formatDate(dr.createdAt)}</p>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => openPreview(dr, 'DR')}
-                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 touch-manipulation min-h-[44px] transition-colors"
+                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/30 touch-manipulation min-h-[44px] transition-colors"
                         title="Preview document"
                       >
                         <Eye className="w-4 h-4" />
@@ -291,7 +291,7 @@ const DeliveryReceipts = ({ user }) => {
                       {(dr.status === 'issued' || dr.status === 'cancelled') && (
                         <button
                           onClick={() => handleOpenLinkedSI(dr)}
-                          className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 touch-manipulation min-h-[44px] transition-colors"
+                          className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-500/30 touch-manipulation min-h-[44px] transition-colors"
                           title="Open linked sales invoice"
                         >
                           <FileOutput className="w-4 h-4" />
@@ -302,7 +302,7 @@ const DeliveryReceipts = ({ user }) => {
                         <button
                           onClick={() => handleCancel(dr._id)}
                           disabled={cancelling === dr._id}
-                          className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                          className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/30 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
                           title="Cancel document"
                         >
                           <XCircle className="w-4 h-4" />
@@ -311,7 +311,7 @@ const DeliveryReceipts = ({ user }) => {
                       )}
                       <button
                         onClick={() => handleExportExcel(dr._id)}
-                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 touch-manipulation min-h-[44px] transition-colors"
+                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-green-50 dark:bg-emerald-500/15 text-green-700 dark:text-emerald-400 rounded-lg hover:bg-green-100 dark:hover:bg-emerald-500/30 touch-manipulation min-h-[44px] transition-colors"
                         title="Download Excel"
                       >
                         <FileText className="w-4 h-4" />
@@ -320,7 +320,7 @@ const DeliveryReceipts = ({ user }) => {
                       <button
                         onClick={() => handleEdit(dr)}
                         disabled={dr.status !== 'draft'}
-                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/30 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
                         title={dr.status !== 'draft' ? 'Cannot edit issued/cancelled DR' : 'Edit'}
                       >
                         <Edit className="w-4 h-4" />
@@ -329,7 +329,7 @@ const DeliveryReceipts = ({ user }) => {
                       <button
                         onClick={() => handleDelete(dr._id)}
                         disabled={dr.status !== 'draft'}
-                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                        className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/30 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
                         title={dr.status !== 'draft' ? 'Cannot delete issued/cancelled DR' : 'Delete'}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -343,49 +343,49 @@ const DeliveryReceipts = ({ user }) => {
 
             {/* Desktop Table Layout */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+                <thead className="bg-gray-50 dark:bg-slate-800/60">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">DR Number</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested By</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">EF Ref</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">DR Number</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Customer</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Requested By</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Items</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Total</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">EF Ref</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Created</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                   {drs.map((dr) => (
-                    <tr key={dr._id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-mono text-sm font-medium text-gray-900">{dr.drNumber}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{formatDate(dr.date)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{dr.customerName}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500 flex items-center space-x-1">
+                    <tr key={dr._id} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
+                      <td className="px-4 py-3 font-mono text-sm font-medium text-gray-900 dark:text-slate-100">{dr.drNumber}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-slate-300">{formatDate(dr.date)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-slate-300">{dr.customerName}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-slate-400 flex items-center space-x-1">
                         {dr.marketingExecutive ? (
                           <>
-                            <User className="w-3 h-3 text-gray-400" />
+                            <User className="w-3 h-3 text-gray-400 dark:text-slate-500" />
                             <span>{dr.marketingExecutive.name || dr.marketingExecutive}</span>
                           </>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-gray-400 dark:text-slate-500">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{dr.items?.length || 0} items</td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">{formatCurrency(dr.totalAmount)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-slate-400">{dr.items?.length || 0} items</td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-slate-100 text-right">{formatCurrency(dr.totalAmount)}</td>
                       <td className="px-4 py-3">{getStatusBadge(dr.status)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-slate-400">
                         {dr.efRef ? dr.efRef.efNumber : '—'}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{formatDate(dr.createdAt)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-slate-400">{formatDate(dr.createdAt)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center space-x-1 justify-end">
                           <button
                             onClick={() => openPreview(dr, 'DR')}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded touch-manipulation min-h-[44px] min-w-[44px]"
+                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/20 rounded touch-manipulation min-h-[44px] min-w-[44px]"
                             title="Preview document"
                           >
                             <Eye className="w-4 h-4" />
@@ -393,7 +393,7 @@ const DeliveryReceipts = ({ user }) => {
                           {(dr.status === 'issued' || dr.status === 'cancelled') && (
                             <button
                               onClick={() => handleOpenLinkedSI(dr)}
-                              className="p-2 text-indigo-600 hover:bg-indigo-50 rounded touch-manipulation min-h-[44px] min-w-[44px]"
+                              className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 rounded touch-manipulation min-h-[44px] min-w-[44px]"
                               title="Open linked sales invoice"
                             >
                               <FileOutput className="w-4 h-4" />
@@ -403,7 +403,7 @@ const DeliveryReceipts = ({ user }) => {
                             <button
                               onClick={() => handleCancel(dr._id)}
                               disabled={cancelling === dr._id}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
+                              className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/20 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
                               title="Cancel document"
                             >
                               <XCircle className="w-4 h-4" />
@@ -411,7 +411,7 @@ const DeliveryReceipts = ({ user }) => {
                           )}
                           <button
                             onClick={() => handleExportExcel(dr._id)}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded touch-manipulation min-h-[44px] min-w-[44px]"
+                            className="p-2 text-green-600 dark:text-emerald-400 hover:bg-green-50 dark:hover:bg-emerald-500/20 rounded touch-manipulation min-h-[44px] min-w-[44px]"
                             title="Download Excel"
                           >
                             <FileText className="w-4 h-4" />
@@ -419,7 +419,7 @@ const DeliveryReceipts = ({ user }) => {
                           <button
                             onClick={() => handleEdit(dr)}
                             disabled={dr.status !== 'draft'}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
+                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/20 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
                             title={dr.status !== 'draft' ? 'Cannot edit issued/cancelled DR' : 'Edit'}
                           >
                             <Edit className="w-4 h-4" />
@@ -427,7 +427,7 @@ const DeliveryReceipts = ({ user }) => {
                           <button
                             onClick={() => handleDelete(dr._id)}
                             disabled={dr.status !== 'draft'}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
+                            className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/20 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
                             title={dr.status !== 'draft' ? 'Cannot delete issued/cancelled DR' : 'Delete'}
                           >
                             <Trash2 className="w-4 h-4" />

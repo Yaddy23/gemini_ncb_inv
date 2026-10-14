@@ -7,8 +7,8 @@ export default function Pagination({ page, totalPages, total, limit, onPageChang
   if (!total || total <= limit) return null;
 
   return (
-    <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-gray-50">
-      <p className="text-sm text-gray-500 text-center sm:text-left">
+    <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-gray-50 dark:bg-slate-800/60">
+      <p className="text-sm text-gray-500 text-center sm:text-left dark:text-slate-400">
         Showing {(page - 1) * limit + 1}-{Math.min(page * limit, total)} of {total} {label}
       </p>
       <div className="flex items-center space-x-2">
@@ -16,7 +16,7 @@ export default function Pagination({ page, totalPages, total, limit, onPageChang
           onClick={() => onPageChange(Math.max(1, page - 1))}
           disabled={page === 1}
           className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
-            page === 1 ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+            page === 1 ? 'bg-gray-200 text-gray-400 dark:bg-slate-800 dark:text-slate-500' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:border-slate-700'
           }`}
           aria-label="Previous page"
         >
@@ -29,7 +29,7 @@ export default function Pagination({ page, totalPages, total, limit, onPageChang
           onClick={() => onPageChange(Math.min(totalPages, page + 1))}
           disabled={page === totalPages}
           className={`flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] min-w-[44px] ${
-            page === totalPages ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+            page === totalPages ? 'bg-gray-200 text-gray-400 dark:bg-slate-800 dark:text-slate-500' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:border-slate-700'
           }`}
           aria-label="Next page"
         >
