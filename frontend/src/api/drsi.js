@@ -9,6 +9,8 @@ export const drsiApi = {
   deleteDR: (id) => api.delete(`/drsi/dr/${id}`),
   issueDR: (id) => api.post(`/drsi/dr/${id}/issue`),
   cancelDR: (id, cancelReason) => api.post(`/drsi/dr/${id}/cancel`, { cancelReason }),
+  markDRDelivered: (id) => api.post(`/drsi/dr/${id}/deliver`),
+  markDRReturned: (id, returnReason) => api.post(`/drsi/dr/${id}/return`, { returnReason }),
   exportDR: (id) => api.get(`/drsi/dr/${id}/export`, {
     params: { format: 'xlsx' },
     responseType: 'blob'

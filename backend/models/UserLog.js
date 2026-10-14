@@ -39,6 +39,8 @@ const userLogSchema = new mongoose.Schema({
       'DELETE_EF',
       'ISSUE_EF',
       'CANCEL_DR',
+      'DELIVER_DR',
+      'RETURN_DR',
       'CANCEL_SI',
       'CANCEL_EF',
       'EXPIRE_RESERVATIONS',

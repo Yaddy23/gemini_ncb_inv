@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader, FileText, Edit, Trash2, Eye, AlertTriangle, CheckCircle, User, XCircle, FileOutput } from 'lucide-react';
+import { Plus, Loader, FileText, Edit, Trash2, Eye, AlertTriangle, CheckCircle, User, XCircle, FileOutput, Undo2 } from 'lucide-react';
 import { drsiApi } from '../api/drsi';
 import DocumentForm from '../components/drsi/DocumentForm';
 import DocumentPreview from '../components/drsi/DocumentPreview';
@@ -15,11 +15,19 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
+const DELIVERY_OPTIONS = [
+  { value: '', label: 'All Delivery' },
+  { value: 'out_for_delivery', label: 'Out for delivery' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'returned', label: 'Returned' },
+];
+
 const DeliveryReceipts = ({ user }) => {
   const [drs, setDRs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [deliveryFilter, setDeliveryFilter] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -27,6 +35,7 @@ const DeliveryReceipts = ({ user }) => {
   const [editingDR, setEditingDR] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(null);
+  const [deliveryUpdating, setDeliveryUpdating] = useState(null);
   const [previewDoc, setPreviewDoc] = useState(null);
   const [linkedSI, setLinkedSI] = useState(null);
 
@@ -40,6 +49,7 @@ const DeliveryReceipts = ({ user }) => {
       const response = await drsiApi.getDRs({
         search: debouncedSearch,
         status: statusFilter,
+        deliveryStatus: deliveryFilter,
         page,
         limit: 20
       });
@@ -55,7 +65,7 @@ const DeliveryReceipts = ({ user }) => {
 
   useEffect(() => {
     fetchDRs();
-  }, [debouncedSearch, statusFilter, page]);
+  }, [debouncedSearch, statusFilter, deliveryFilter, page]);
 
   const handleSubmit = async (data, action) => {
     setSubmitting(true);
@@ -185,7 +195,41 @@ const DeliveryReceipts = ({ user }) => {
     }
   };
 
+  const handleMarkDelivered = async (id) => {
+    const sure = await confirmDialog('Mark this delivery receipt as delivered?', { title: 'Mark Delivered', confirmText: 'Mark Delivered' });
+    if (!sure) return;
+    setDeliveryUpdating(id);
+    try {
+      await drsiApi.markDRDelivered(id);
+      toast.success('DR marked as delivered');
+      fetchDRs();
+    } catch (err) {
+      toast.error('Error: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setDeliveryUpdating(null);
+    }
+  };
+
+  const handleMarkReturned = async (dr) => {
+    const reason = await promptDialog('Enter return reason:', { title: 'Return DR' });
+    if (!reason || !reason.trim()) return;
+    const sure = await confirmDialog('Return this delivery receipt? Its quantities will be restored to stock. This cannot be undone.', { title: 'Return Document', danger: true, confirmText: 'Return Document' });
+    if (!sure) return;
+    setDeliveryUpdating(dr._id);
+    try {
+      await drsiApi.markDRReturned(dr._id, reason.trim());
+      toast.success('DR returned to stock');
+      fetchDRs();
+    } catch (err) {
+      toast.error('Return failed: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setDeliveryUpdating(null);
+    }
+  };
+
   const getStatusBadge = (status) => <StatusBadge status={status} />;
+
+  const showDeliveryChip = (dr) => dr.status === 'issued' && !dr.efRef && dr.deliveryStatus && dr.deliveryStatus !== 'pending';
 
   return (
     <div className="p-4 sm:p-6">
@@ -211,7 +255,19 @@ const DeliveryReceipts = ({ user }) => {
         status={statusFilter}
         onStatusChange={(v) => { setStatusFilter(v); setPage(1); }}
         statusOptions={STATUS_OPTIONS}
-      />
+      >
+        <select
+          value={deliveryFilter}
+          onChange={(e) => { setDeliveryFilter(e.target.value); setPage(1); }}
+          className="w-full sm:w-48 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:placeholder-slate-500 dark:focus:ring-blue-500"
+        >
+          {DELIVERY_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </ListToolbar>
 
       {/* Table */}
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
@@ -240,8 +296,9 @@ const DeliveryReceipts = ({ user }) => {
                         <h3 className="font-semibold text-gray-900 dark:text-slate-100 truncate font-mono">{dr.drNumber}</h3>
                         <p className="text-sm text-gray-500 dark:text-slate-400 truncate">{dr.customerName}</p>
                       </div>
-                      <div className="flex-shrink-0 flex items-center space-x-2">
+                      <div className="flex-shrink-0 flex flex-wrap gap-1.5 justify-end">
                         {getStatusBadge(dr.status)}
+                        {showDeliveryChip(dr) && <StatusBadge status={dr.deliveryStatus} />}
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm mb-3">
@@ -296,6 +353,28 @@ const DeliveryReceipts = ({ user }) => {
                         >
                           <FileOutput className="w-4 h-4" />
                           <span className="text-sm font-medium">SI</span>
+                        </button>
+                      )}
+                      {dr.status === 'issued' && !dr.efRef && dr.deliveryStatus === 'out_for_delivery' && (
+                        <button
+                          onClick={() => handleMarkDelivered(dr._id)}
+                          disabled={deliveryUpdating === dr._id}
+                          className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-green-50 dark:bg-emerald-500/15 text-green-700 dark:text-emerald-400 rounded-lg hover:bg-green-100 dark:hover:bg-emerald-500/30 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                          title="Mark as delivered"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="text-sm font-medium">Delivered</span>
+                        </button>
+                      )}
+                      {dr.status === 'issued' && !dr.efRef && dr.deliveryStatus === 'out_for_delivery' && (
+                        <button
+                          onClick={() => handleMarkReturned(dr)}
+                          disabled={deliveryUpdating === dr._id}
+                          className="flex-1 min-w-[100px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-500/30 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                          title="Return to stock"
+                        >
+                          <Undo2 className="w-4 h-4" />
+                          <span className="text-sm font-medium">Return</span>
                         </button>
                       )}
                       {user?.role === 'Admin' && dr.status === 'issued' && (
@@ -376,7 +455,16 @@ const DeliveryReceipts = ({ user }) => {
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-slate-400">{dr.items?.length || 0} items</td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-slate-100 text-right">{formatCurrency(dr.totalAmount)}</td>
-                      <td className="px-4 py-3">{getStatusBadge(dr.status)}</td>
+                      <td className="px-4 py-3">
+                        {showDeliveryChip(dr) ? (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {getStatusBadge(dr.status)}
+                            <StatusBadge status={dr.deliveryStatus} />
+                          </div>
+                        ) : (
+                          getStatusBadge(dr.status)
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-slate-400">
                         {dr.efRef ? dr.efRef.efNumber : '—'}
                       </td>
@@ -397,6 +485,26 @@ const DeliveryReceipts = ({ user }) => {
                               title="Open linked sales invoice"
                             >
                               <FileOutput className="w-4 h-4" />
+                            </button>
+                          )}
+                          {dr.status === 'issued' && !dr.efRef && dr.deliveryStatus === 'out_for_delivery' && (
+                            <button
+                              onClick={() => handleMarkDelivered(dr._id)}
+                              disabled={deliveryUpdating === dr._id}
+                              className="p-2 text-green-700 dark:text-emerald-400 hover:bg-green-50 dark:hover:bg-emerald-500/20 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
+                              title="Mark as delivered"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                          )}
+                          {dr.status === 'issued' && !dr.efRef && dr.deliveryStatus === 'out_for_delivery' && (
+                            <button
+                              onClick={() => handleMarkReturned(dr)}
+                              disabled={deliveryUpdating === dr._id}
+                              className="p-2 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/20 rounded disabled:opacity-50 touch-manipulation min-h-[44px] min-w-[44px]"
+                              title="Return to stock"
+                            >
+                              <Undo2 className="w-4 h-4" />
                             </button>
                           )}
                           {user?.role === 'Admin' && dr.status === 'issued' && (

@@ -54,9 +54,18 @@ const DocumentPreview = ({ document, documentType, onClose }) => {
             </div>
           )}
 
-          <div className="flex items-center justify-end mb-4">
+          <div className="flex items-center justify-end gap-2 mb-4">
             {getStatusBadge(doc.status)}
+            {documentType === 'DR' && doc.status === 'issued' && !doc.efRef && doc.deliveryStatus && doc.deliveryStatus !== 'pending' && (
+              <StatusBadge status={doc.deliveryStatus} />
+            )}
           </div>
+          {documentType === 'DR' && doc.status === 'issued' && !doc.efRef && doc.deliveryStatus === 'delivered' && doc.deliveredAt && (
+            <p className="mb-4 text-sm text-gray-500 dark:text-slate-400 text-right">Delivered on {formatDate(doc.deliveredAt)}</p>
+          )}
+          {documentType === 'DR' && doc.status === 'issued' && !doc.efRef && doc.deliveryStatus === 'returned' && doc.returnedAt && (
+            <p className="mb-4 text-sm text-gray-500 dark:text-slate-400 text-right">Returned on {formatDate(doc.returnedAt)}</p>
+          )}
 
           {/* Header grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

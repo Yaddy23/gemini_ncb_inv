@@ -21,6 +21,11 @@ const deliveryReceiptSchema = new mongoose.Schema({
   cancelledAt: { type: Date },
   cancelledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   cancelReason: { type: String, trim: true },
+  deliveryStatus: { type: String, enum: ['pending', 'out_for_delivery', 'delivered', 'returned'], default: 'pending', index: true }, // separate from status - tracks physical delivery of issued standalone DRs
+  deliveredAt: { type: Date },
+  deliveredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  returnedAt: { type: Date },
+  returnReason: { type: String, trim: true },
   efRef: { type: mongoose.Schema.Types.ObjectId, ref: 'EvaluationForm' }, // Reference to source EF
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now },

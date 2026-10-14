@@ -47,6 +47,7 @@ router.get('/dr', async (req, res) => {
       ];
     }
     if (status) query.status = status;
+    if (req.query.deliveryStatus) query.deliveryStatus = req.query.deliveryStatus;
     if (req.query.efRef) query.efRef = req.query.efRef;
 
     const [drs, total] = await Promise.all([
@@ -452,9 +453,12 @@ router.post('/dr/:id/issue', async (req, res) => {
     }
 
     // Atomic claim (guards double-click): flip draft -> issued
+    // Standalone DRs enter delivery tracking as out for delivery (EF-linked DRs move no stock and stay 'pending')
+    const claimUpdate = { status: 'issued' };
+    if (!existing.efRef) claimUpdate.deliveryStatus = 'out_for_delivery';
     const dr = await DeliveryReceipt.findOneAndUpdate(
       { _id: req.params.id, status: 'draft' },
-      { status: 'issued' },
+      claimUpdate,
       { new: true }
     );
     if (!dr) return res.status(400).json({ message: 'DR already issued or cancelled' });
@@ -532,10 +536,96 @@ router.post('/dr/:id/issue', async (req, res) => {
           console.error(`Rollback failed for ISBN ${mutation.book.ISBN}:`, rollbackErr);
         }
       }
-      await DeliveryReceipt.findOneAndUpdate({ _id: dr._id, status: 'issued' }, { status: 'draft' });
+      // Also revert the deliveryStatus the claim set (standalone DRs only)
+      const rollbackUpdate = { status: 'draft' };
+      if (!dr.efRef) rollbackUpdate.deliveryStatus = 'pending';
+      await DeliveryReceipt.findOneAndUpdate({ _id: dr._id, status: 'issued' }, rollbackUpdate);
       console.error('Issue DR failed, rolled back:', err);
       return res.status(500).json({ message: err.message });
     }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Mark DR delivered (issued standalone DRs only - EF-linked DRs are not delivery-tracked)
+router.post('/dr/:id/deliver', async (req, res) => {
+  try {
+    const existing = await DeliveryReceipt.findById(req.params.id);
+    if (!existing) return res.status(404).json({ message: 'DR not found' });
+    if (existing.efRef) return res.status(400).json({ message: 'DR is linked to an Evaluation Form - delivery tracking does not apply' });
+
+    // Atomic claim (guards double-click): out_for_delivery -> delivered
+    const dr = await DeliveryReceipt.findOneAndUpdate(
+      { _id: req.params.id, status: 'issued', deliveryStatus: 'out_for_delivery' },
+      { deliveryStatus: 'delivered', deliveredAt: new Date(), deliveredBy: req.user._id },
+      { new: true }
+    );
+    if (!dr) return res.status(400).json({ message: 'DR is not out for delivery' });
+
+    await logUserActivity(req.user._id, 'DELIVER_DR', `Marked DR ${dr.drNumber} as delivered`, req);
+
+    res.json({ dr });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Return DR (issued standalone DRs) - restores stock; linked SI is left untouched
+router.post('/dr/:id/return', async (req, res) => {
+  try {
+    const { returnReason } = req.body;
+    if (!returnReason || !returnReason.trim()) {
+      return res.status(400).json({ message: 'returnReason is required' });
+    }
+
+    const existing = await DeliveryReceipt.findById(req.params.id);
+    if (!existing) return res.status(404).json({ message: 'DR not found' });
+    if (existing.efRef) return res.status(400).json({ message: 'DR is linked to an Evaluation Form - delivery tracking does not apply' });
+
+    // Atomic claim (guards double-click): stock must restore exactly once
+    const dr = await DeliveryReceipt.findOneAndUpdate(
+      { _id: req.params.id, status: 'issued', deliveryStatus: { $in: ['out_for_delivery', 'delivered'] } },
+      { deliveryStatus: 'returned', returnedAt: new Date(), returnReason: returnReason.trim() },
+      { new: true }
+    );
+    if (!dr) return res.status(400).json({ message: 'DR is not out for delivery or delivered' });
+
+    // Restore stock for each item (reverse of issue) - only for standalone DRs
+    const missingBooks = [];
+    if (!dr.efRef) {
+      for (const item of dr.items) {
+        try {
+          const book = await Book.findOne({ ISBN: item.isbn });
+          if (!book) {
+            missingBooks.push(item.isbn);
+            continue;
+          }
+
+          const previousQty = book.QTY;
+          book.QTY += item.qty;
+          await book.save();
+
+          // Create stock transaction record
+          await StockTransaction.create({
+            ISBN: book.ISBN,
+            action: 'INBOUND',
+            qtyChanged: item.qty,
+            previousQty,
+            newQty: book.QTY,
+            performedBy: req.user._id,
+          });
+        } catch (err) {
+          console.error(`Failed to restore stock for ISBN ${item.isbn}:`, err);
+          missingBooks.push(item.isbn);
+        }
+      }
+    }
+
+    const missingNote = missingBooks.length > 0 ? ` (WARNING: no book record found for ISBNs: ${missingBooks.join(', ')} - stock not restored for those items)` : '';
+    await logUserActivity(req.user._id, 'RETURN_DR', `Returned DR ${dr.drNumber} - Reason: ${returnReason.trim()}${missingNote}`, req);
+
+    res.json({ dr });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -554,15 +644,22 @@ router.post('/dr/:id/cancel', admin, async (req, res) => {
     if (!existing) return res.status(404).json({ message: 'DR not found or not in issued status' });
     if (existing.status !== 'issued') return res.status(400).json({ message: 'DR not found or not in issued status' });
 
+    // Delivery tracking closes the lifecycle: a delivered/returned DR can no longer be cancelled
+    if (['delivered', 'returned'].includes(existing.deliveryStatus)) {
+      return res.status(400).json({ message: 'DR has been delivered or returned and can no longer be cancelled' });
+    }
+
     // Cascade check: linked SI must not be issued
     const linkedSI = await SalesInvoice.findOne({ drRef: existing._id });
     if (linkedSI && linkedSI.status === 'issued') {
       return res.status(400).json({ message: 'Linked SI is already issued - cancel the SI first' });
     }
 
-    // Atomic claim (guards double-click): flip issued -> cancelled
+    // Atomic claim (guards double-click): flip issued -> cancelled.
+    // deliveryStatus guard is repeated here so a concurrent deliver/return that lands
+    // after the pre-read above cannot be cancelled (TOCTOU-safe).
     const dr = await DeliveryReceipt.findOneAndUpdate(
-      { _id: req.params.id, status: 'issued' },
+      { _id: req.params.id, status: 'issued', deliveryStatus: { $nin: ['delivered', 'returned'] } },
       { status: 'cancelled', cancelledAt: new Date(), cancelledBy: req.user._id, cancelReason: cancelReason.trim() },
       { new: true }
     );
