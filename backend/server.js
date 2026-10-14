@@ -52,9 +52,12 @@ const drsiRoutes = require('./routes/drsi');
 const efRoutes = require('./routes/ef');
 const marketingExecutiveRoutes = require('./routes/marketingExecutive');
 const customerRoutes = require('./routes/customers');
+const reservationRoutes = require('./routes/reservations');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
+// Reservations must be matched before the /api/stock prefix
+app.use('/api/stock/reservations', reservationRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/user-logs', userLogRoutes);
 app.use('/api/drsi', drsiRoutes);

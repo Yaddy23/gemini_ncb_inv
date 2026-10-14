@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import {
   ScanBarcode, ShoppingBag, Plus, Users, Loader, AlertTriangle,
@@ -97,6 +97,10 @@ const Dashboard = ({ user }) => {
     todayTransactions: 0
   });
   const [outOfStock, setOutOfStock] = useState({ books: [], count: 0 });
+  const [reservations, setReservations] = useState({
+    holds: [],
+    summary: { totalHolds: 0, totalUnits: 0, staleCount: 0 }
+  });
   const [movement, setMovement] = useState([]);
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -107,11 +111,15 @@ const Dashboard = ({ user }) => {
     const fetchDashboard = async () => {
       try {
         setLoading(true);
-        const [statsResponse, outOfStockResponse, summaryResponse, recentResponse] = await Promise.all([
+        const [statsResponse, outOfStockResponse, summaryResponse, recentResponse, reservationsResponse] = await Promise.all([
           api.get('/books/stats'),
           api.get('/books/out-of-stock'),
           api.get('/stock/summary', { params: { days: 14 } }),
-          api.get('/stock/recent', { params: { limit: 12 } })
+          api.get('/stock/recent', { params: { limit: 12 } }),
+          // Non-fatal: reservations failing must never take down the dashboard
+          api.get('/stock/reservations').catch(() => ({
+            data: { holds: [], summary: { totalHolds: 0, totalUnits: 0, staleCount: 0 } }
+          }))
         ]);
 
         setStats({
@@ -125,6 +133,15 @@ const Dashboard = ({ user }) => {
         });
         setMovement(summaryResponse.data.perDay || []);
         setRecent(recentResponse.data.transactions || []);
+        setReservations({
+          holds: reservationsResponse.data.holds || [],
+          summary: {
+            totalHolds: 0,
+            totalUnits: 0,
+            staleCount: 0,
+            ...(reservationsResponse.data.summary || {})
+          }
+        });
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load dashboard stats');
       } finally {
@@ -237,6 +254,34 @@ const Dashboard = ({ user }) => {
             </div>
           </div>
         </div>
+
+        {/* Active Reservations (Admin only — the page itself is admin-gated) */}
+        {user.role === 'Admin' && (
+        <Link
+          to="/reservations"
+          className="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-5 sm:p-6 border border-gray-100 dark:border-slate-800 transition-all duration-200 hover:shadow-md hover:border-primary/40 dark:hover:border-blue-500/40"
+        >
+          <div className="flex items-start justify-between">
+            <div className="min-w-0">
+              <p className="text-sm sm:text-base font-medium text-gray-500 dark:text-slate-400 truncate">Active Reservations</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 mt-1">{reservations.summary.totalUnits}</p>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-1">
+                {reservations.summary.totalHolds} holds
+                {' · '}
+                <span className={reservations.summary.staleCount > 0 ? 'text-amber-600 dark:text-amber-400' : undefined}>
+                  {reservations.summary.staleCount} stale
+                </span>
+              </p>
+            </div>
+            <div
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ml-3"
+              style={{ color: 'var(--accent-reserve-fg)', backgroundColor: 'var(--accent-reserve-bg)' }}
+            >
+              <Bookmark className="w-5 h-5 sm:w-6 sm:h-6" />
+            </div>
+          </div>
+        </Link>
+        )}
       </div>
 
       {/* Stock movement chart + recent activity */}

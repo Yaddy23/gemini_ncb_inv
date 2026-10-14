@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, LogOut, User, Plus, Barcode, ShoppingBag, Settings, X, FileText, Receipt, FilePlus, Sun, Moon, Monitor } from 'lucide-react';
+import { Menu, LogOut, User, Plus, Barcode, ShoppingBag, Settings, X, FileText, Receipt, FilePlus, Bookmark, Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const NAV_ITEMS = [
@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/import-export', label: 'Import/Export', icon: Plus, adminOnly: true },
   { to: '/evaluation-forms', label: 'Evaluation Forms', icon: FilePlus },
   { to: '/delivery-receipts', label: 'Delivery Receipts', icon: Receipt },
+  { to: '/reservations', label: 'Reservations', icon: Bookmark, adminOnly: true },
   { to: '/sales-invoices', label: 'Sales Invoices', icon: FileText },
   { to: '/admin', label: 'Admin Panel', icon: Settings, adminOnly: true },
   { to: '/profile', label: 'Profile', icon: User },

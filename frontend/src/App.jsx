@@ -14,6 +14,7 @@ import AdminPanel from './pages/AdminPanel';
 import DeliveryReceipts from './pages/DeliveryReceipts';
 import SalesInvoices from './pages/SalesInvoices';
 import EvaluationForms from './pages/EvaluationForms';
+import Reservations from './pages/Reservations';
 import NavBar from './components/NavBar';
 import PrivateRoute from './components/PrivateRoute';
 import { ToastProvider } from './components/Toast';
@@ -200,6 +201,14 @@ function App() {
                 element={
                   <PrivateRoute isAuthenticated={!!user}>
                     <SalesInvoices user={user} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/reservations"
+                element={
+                  <PrivateRoute isAuthenticated={!!user && user.role === 'Admin'}>
+                    <Reservations user={user} />
                   </PrivateRoute>
                 }
               />
