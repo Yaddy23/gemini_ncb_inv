@@ -25,6 +25,13 @@
   --accent-release-fg: #10b981;
   --accent-release-bg: #10b9811a;
   --accent-warn-bg: #f59e0b1a;
+
+  /* Motion tokens (UI Motion batch) */
+  --motion-fast: 150ms;
+  --motion-base: 250ms;
+  --motion-slow: 400ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes slide-up {
@@ -41,6 +48,47 @@
 .animate-slide-up {
   animation: slide-up 0.3s ease-out forwards;
 }
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes scale-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+@keyframes scale-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.96); } }
+@keyframes slide-in-left { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes slide-out-left { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+@keyframes flash-highlight { 0% { background-color: rgb(254 243 199); } 100% { background-color: transparent; } }
+@keyframes flash-highlight-dark { 0% { background-color: rgb(245 158 11 / 0.15); } 100% { background-color: transparent; } }
+
+.animate-fade-in { animation: fade-in var(--motion-base) var(--ease-out) both; }
+.animate-fade-out { animation: fade-out var(--motion-fast) var(--ease-out) both; }
+.animate-scale-in { animation: scale-in var(--motion-base) var(--ease-out) both; }
+.animate-scale-out { animation: scale-out var(--motion-fast) var(--ease-out) both; }
+.animate-slide-in-left { animation: slide-in-left var(--motion-base) var(--ease-out) both; }
+.animate-slide-out-left { animation: slide-out-left var(--motion-fast) var(--ease-in-out) both; }
+
+/* Modal sheet: slides up on phones, scales in at md+ (responsive without Tailwind variants) */
+.modal-enter-sheet { animation: slide-up var(--motion-base) var(--ease-out) both; }
+@media (min-width: 768px) {
+  .modal-enter-sheet { animation-name: scale-in; }
+}
+
+/* Skeleton shimmer sweep (overlay gradient works over both light and dark bases) */
+.skeleton-shimmer { position: relative; overflow: hidden; }
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent);
+  animation: shimmer 1.5s infinite;
+}
+.dark .skeleton-shimmer::after {
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.08), transparent);
+}
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+
+/* Row flash for focus deep-links */
+.flash-highlight { animation: flash-highlight 1.5s var(--ease-out) both; }
+.dark .flash-highlight { animation-name: flash-highlight-dark; }
 
 /* ============================================================
    Dark mode: pages/components carry their own dark: variants
@@ -108,5 +156,14 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   /* Height of the fixed mobile top bar itself, notch included */
   .topbar-height {
     height: calc(4rem + env(safe-area-inset-top, 0px));
+  }
+}
+
+/* Respect users who opt out of motion: near-instant everything */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, LogOut, User, Plus, Barcode, ShoppingBag, Settings, X, FileText, Receipt, FilePlus, Bookmark, Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
@@ -17,16 +17,55 @@ const NAV_ITEMS = [
 
 const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose }) => {
   const location = useLocation();
-  const prevLocationRef = React.useRef(location);
+  const prevLocationRef = useRef(location);
   const { theme, setTheme, resolvedTheme } = useTheme();
 
-  // Close mobile menu on navigation (route change)
-  React.useEffect(() => {
+  // Mobile drawer exit animation: play slide-out/fade-out, then actually close.
+  // EXIT_MS matches --motion-fast (duration of the slide-out/fade-out animations).
+  const EXIT_MS = 150;
+  const [closing, setClosing] = useState(false);
+  const closingRef = useRef(false);
+  const closeTimer = useRef(null);
+
+  // closingRef guards against double-close (rapid link click + close button).
+  const requestClose = useCallback(() => {
+    if (!isMobile || closingRef.current) return;
+    closingRef.current = true;
+    setClosing(true);
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = null;
+      closingRef.current = false;
+      setClosing(false);
+      onClose?.();
+    }, EXIT_MS);
+  }, [isMobile, onClose]);
+
+  // Close mobile menu on navigation (route change, e.g. browser back) — also
+  // through the animated close
+  useEffect(() => {
     if (isMobile && isOpen && location !== prevLocationRef.current) {
-      onClose();
+      requestClose();
     }
     prevLocationRef.current = location;
-  }, [location, isMobile, isOpen, onClose]);
+  }, [location, isMobile, isOpen, requestClose]);
+
+  // Parent closed us directly (isOpen -> false): drop any pending close timer
+  // and reset the closing state
+  useEffect(() => {
+    if (!isOpen) {
+      if (closeTimer.current) {
+        clearTimeout(closeTimer.current);
+        closeTimer.current = null;
+      }
+      closingRef.current = false;
+      setClosing(false);
+    }
+  }, [isOpen]);
+
+  // Clear any pending timer on unmount
+  useEffect(() => () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
 
   // Don't render if mobile and not open
   if (isMobile && !isOpen) {
@@ -55,7 +94,22 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
     : resolvedTheme === 'dark' ? 'Dark' : 'Light';
 
   return (
-    <nav className={sidebarClasses}>
+    <>
+      {/* Mobile backdrop: fades in with the drawer, tap to close (animated) */}
+      {isMobile && (
+        <div
+          className={`fixed inset-0 top-[calc(4rem_+_env(safe-area-inset-top,0px))] z-40 bg-black/50 ${
+            closing ? 'animate-fade-out' : 'animate-fade-in'
+          }`}
+          onMouseDown={requestClose}
+          aria-hidden="true"
+        />
+      )}
+      <nav
+        className={`${sidebarClasses}${
+          isMobile ? ` ${closing ? 'animate-slide-out-left' : 'animate-slide-in-left'}` : ''
+        }`}
+      >
       <div className="flex flex-col h-full p-4">
         {/* Header - only show on desktop or when not collapsed */}
         {!isMobile && (
@@ -108,7 +162,7 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
                 {themeIcon}
               </button>
               <button
-                onClick={onClose}
+                onClick={requestClose}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-400"
                 aria-label="Close menu"
               >
@@ -125,7 +179,7 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
                 <Link
                   to={to}
                   className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 group"
-                  onClick={isMobile ? onClose : undefined}
+                  onClick={isMobile ? requestClose : undefined}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
                   {!isMobile && !collapsed && <span className="transition-opacity duration-200">{label}</span>}
@@ -147,7 +201,8 @@ const NavBar = ({ user, onLogout, collapsed, onToggle, isMobile, isOpen, onClose
           </button>
         </div>
       </div>
-    </nav>
+      </nav>
+    </>
   );
 };
 

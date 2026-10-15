@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { Plus, Edit as EditIcon, Trash2, CheckCircle, RotateCcw, ShoppingBag, KeyRound } from 'lucide-react';
 import { useToast } from '../components/Toast';
-import { Modal, Pagination, AlertBanner, EmptyState } from '../components/ui';
+import { Modal, Pagination, AlertBanner, EmptyState, Skeleton } from '../components/ui';
 import { useDebounce } from '../hooks/useDebounce';
 
 const AdminPanel = ({ user }) => {
@@ -626,11 +626,15 @@ const AdminPanel = ({ user }) => {
           {/* Mobile Card Layout */}
           <div className="block md:hidden">
             {loading ? (
-              <div className="p-6 text-center">
-                <div className="flex space-x-3 justify-center">
-                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-primary self-center dark:text-blue-400">Loading users...</span>
-                </div>
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden dark:divide-slate-800 dark:bg-slate-900">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="p-4 space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-3 w-2/3" />
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-9 w-full rounded-lg" />
+                  </div>
+                ))}
               </div>
             ) : users.length === 0 ? (
               <div className="p-6 text-center text-gray-500 dark:text-slate-400">
@@ -715,11 +719,13 @@ const AdminPanel = ({ user }) => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                 {loading ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-4 text-center">
-                      Loading users...
-                    </td>
-                  </tr>
+                  [0, 1, 2, 3, 4].map((row) => (
+                    <tr key={row}>
+                      {Array.from({ length: 6 }).map((_, col) => (
+                        <td key={col} className="px-6 py-4"><Skeleton className="h-4 w-3/4" /></td>
+                      ))}
+                    </tr>
+                  ))
                 ) : users.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
@@ -866,11 +872,15 @@ const AdminPanel = ({ user }) => {
           {/* Mobile Card Layout */}
           <div className="block md:hidden">
             {loading ? (
-              <div className="p-6 text-center">
-                <div className="flex space-x-3 justify-center">
-                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-primary self-center dark:text-blue-400">Loading logs...</span>
-                </div>
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden dark:divide-slate-800 dark:bg-slate-900">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="p-4 space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-3 w-2/3" />
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-9 w-full rounded-lg" />
+                  </div>
+                ))}
               </div>
             ) : filteredLogs.length === 0 ? (
               <div className="p-6 text-center text-gray-500 dark:text-slate-400">
@@ -918,11 +928,13 @@ const AdminPanel = ({ user }) => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                 {loading ? (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center">
-                      Loading logs...
-                    </td>
-                  </tr>
+                  [0, 1, 2, 3, 4].map((row) => (
+                    <tr key={row}>
+                      {Array.from({ length: 4 }).map((_, col) => (
+                        <td key={col} className="px-6 py-4"><Skeleton className="h-4 w-3/4" /></td>
+                      ))}
+                    </tr>
+                  ))
                 ) : filteredLogs.length === 0 ? (
                   <tr>
                     <td colSpan="4" className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
@@ -1017,11 +1029,15 @@ const AdminPanel = ({ user }) => {
           {/* Mobile Card Layout */}
           <div className="block md:hidden">
             {loading ? (
-              <div className="p-6 text-center">
-                <div className="flex space-x-3 justify-center">
-                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-primary self-center dark:text-blue-400">Loading executives...</span>
-                </div>
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden dark:divide-slate-800 dark:bg-slate-900">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="p-4 space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-3 w-2/3" />
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-9 w-full rounded-lg" />
+                  </div>
+                ))}
               </div>
             ) : executives.length === 0 ? (
               <div className="p-6 text-center text-gray-500 dark:text-slate-400">
@@ -1079,11 +1095,13 @@ const AdminPanel = ({ user }) => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                 {loading ? (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center">
-                      Loading marketing executives...
-                    </td>
-                  </tr>
+                  [0, 1, 2, 3, 4].map((row) => (
+                    <tr key={row}>
+                      {Array.from({ length: 4 }).map((_, col) => (
+                        <td key={col} className="px-6 py-4"><Skeleton className="h-4 w-3/4" /></td>
+                      ))}
+                    </tr>
+                  ))
                 ) : executives.length === 0 ? (
                   <tr>
                     <td colSpan="4" className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
@@ -1165,11 +1183,15 @@ const AdminPanel = ({ user }) => {
           {/* Mobile Card Layout */}
           <div className="block md:hidden">
             {loading ? (
-              <div className="p-6 text-center">
-                <div className="flex space-x-3 justify-center">
-                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-primary self-center dark:text-blue-400">Loading archived books...</span>
-                </div>
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden dark:divide-slate-800 dark:bg-slate-900">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="p-4 space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-3 w-2/3" />
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-9 w-full rounded-lg" />
+                  </div>
+                ))}
               </div>
             ) : archivedBooks.length === 0 ? (
               <div className="p-6 text-center text-gray-500 dark:text-slate-400">
@@ -1241,11 +1263,13 @@ const AdminPanel = ({ user }) => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                 {loading ? (
-                  <tr>
-                    <td colSpan="7" className="px-6 py-4 text-center">
-                      Loading archived books...
-                    </td>
-                  </tr>
+                  [0, 1, 2, 3, 4].map((row) => (
+                    <tr key={row}>
+                      {Array.from({ length: 7 }).map((_, col) => (
+                        <td key={col} className="px-6 py-4"><Skeleton className="h-4 w-3/4" /></td>
+                      ))}
+                    </tr>
+                  ))
                 ) : archivedBooks.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
@@ -1326,11 +1350,15 @@ const AdminPanel = ({ user }) => {
           {/* Mobile Card Layout */}
           <div className="block md:hidden">
             {sessionsLoading ? (
-              <div className="p-6 text-center">
-                <div className="flex space-x-3 justify-center">
-                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-primary self-center dark:text-blue-400">Loading sessions...</span>
-                </div>
+              <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden dark:divide-slate-800 dark:bg-slate-900">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="p-4 space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-3 w-2/3" />
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-9 w-full rounded-lg" />
+                  </div>
+                ))}
               </div>
             ) : filteredSessions.length === 0 ? (
               <div className="p-6 text-center text-gray-500 dark:text-slate-400">
@@ -1393,11 +1421,13 @@ const AdminPanel = ({ user }) => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                 {sessionsLoading ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-4 text-center">
-                      Loading sessions...
-                    </td>
-                  </tr>
+                  [0, 1, 2, 3, 4].map((row) => (
+                    <tr key={row}>
+                      {Array.from({ length: 6 }).map((_, col) => (
+                        <td key={col} className="px-6 py-4"><Skeleton className="h-4 w-3/4" /></td>
+                      ))}
+                    </tr>
+                  ))
                 ) : filteredSessions.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">

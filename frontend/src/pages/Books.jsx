@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { ShoppingBag, Search, Plus, Barcode, Trash, Edit, Loader, CheckCircle, AlertTriangle, History, Filter, ArrowUp, ArrowDown, ChevronsUpDown, RotateCcw } from 'lucide-react';
 import { useToast } from '../components/Toast';
-import { Modal, Pagination, EmptyState, AlertBanner } from '../components/ui';
+import { Modal, Pagination, EmptyState, AlertBanner, Skeleton } from '../components/ui';
 import { useDebounce } from '../hooks/useDebounce';
 
 const Books = ({ user }) => {
@@ -257,10 +257,65 @@ const Books = ({ user }) => {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="flex space-x-3">
-            <Loader className="w-8 h-8 text-primary animate-spin dark:text-blue-400" />
-            <span className="text-primary dark:text-blue-400">Loading books...</span>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center space-x-3 dark:text-slate-100">
+            <ShoppingBag className="w-5 h-5 text-primary dark:text-blue-400" />
+            Book Catalog
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-slate-400">Manage your book inventory</p>
+        </div>
+
+        {/* Search and Controls (placeholder while the list loads) */}
+        <div className="mb-6">
+          <Skeleton className="h-12 w-full rounded-lg" />
+        </div>
+
+        {/* List skeleton - responsive: cards on mobile, table on desktop */}
+        <div className="bg-white rounded-lg shadow dark:bg-slate-900">
+          {/* Mobile Card Skeletons */}
+          <div className="block md:hidden">
+            <div className="divide-y divide-gray-200 dark:divide-slate-800">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="p-4 space-y-2">
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-3 w-2/3" />
+                  <Skeleton className="h-3 w-1/2" />
+                  <Skeleton className="h-9 w-full rounded-lg" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Desktop Table Skeleton - real thead anchors the layout */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800 table-fixed">
+              <thead className="bg-gray-50 dark:bg-slate-800/60">
+                <tr>
+                  {sortHeader('ISBN', 'ISBN', 'w-[120px]')}
+                  {sortHeader('Title', 'TITLE', 'w-[300px]')}
+                  {sortHeader('Author', 'AUTHOR', 'w-[200px]')}
+                  {sortHeader('Year', 'YEAR', 'w-[200px]')}
+                  {sortHeader('Publisher', 'PUBLISHER', 'w-[200px]')}
+                  {sortHeader('Qty', 'QTY', 'w-[80px]')}
+                  {sortHeader('Price', 'PRICE', 'w-[100px]')}
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider truncate dark:text-slate-400">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-slate-900">
+                {[0, 1, 2, 3, 4].map((row) => (
+                  <tr key={row}>
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-3/4" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-3/4" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-3/4" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-3/4" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

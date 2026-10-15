@@ -5,6 +5,9 @@ const ToastContext = createContext(null);
 
 const TOAST_DURATION = 4000;
 
+// Matches --motion-fast: duration of the fade-out exit animation
+const EXIT_MS = 150;
+
 const TOAST_CONFIG = {
   success: { icon: CheckCircle, border: 'border-l-green-500', iconColor: 'text-green-500' },
   error: { icon: AlertCircle, border: 'border-l-red-500', iconColor: 'text-red-500' },
@@ -17,15 +20,12 @@ const ToastItem = ({ toast, onClose }) => {
   const config = TOAST_CONFIG[toast.type] || TOAST_CONFIG.info;
   const Icon = config.icon;
 
-  useEffect(() => {
-    const timer = setTimeout(() => onClose(toast.id), TOAST_DURATION);
-    return () => clearTimeout(timer);
-  }, [toast.id, onClose]);
-
   return (
     <div
       role={toast.type === 'error' ? 'alert' : 'status'}
-      className={`flex items-start space-x-3 w-full max-w-sm bg-white shadow-lg rounded-lg border border-gray-100 border-l-4 p-4 dark:bg-slate-900 dark:border-slate-800 ${config.border}`}
+      className={`flex items-start space-x-3 w-full max-w-sm bg-white shadow-lg rounded-lg border border-gray-100 border-l-4 p-4 dark:bg-slate-900 dark:border-slate-800 ${config.border} ${
+        toast.closing ? 'animate-fade-out' : 'animate-slide-up'
+      }`}
     >
       <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${config.iconColor}`} />
       <p className="flex-1 text-sm text-gray-700 break-words dark:text-slate-300">{toast.message}</p>
@@ -130,14 +130,37 @@ export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
   const [dialogs, setDialogs] = useState([]);
   const dialogsRef = useRef([]);
+  const timersRef = useRef({});
+  const closingIdsRef = useRef(new Set());
 
-  const removeToast = useCallback((id) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+  // Every dismissal (auto-timeout and manual X) routes through here: mark the
+  // toast closing, play the exit animation, then remove it from state.
+  const dismissToast = useCallback((id) => {
+    if (closingIdsRef.current.has(id)) return;
+    closingIdsRef.current.add(id);
+    setToasts(prev => prev.map(t => (t.id === id ? { ...t, closing: true } : t)));
+    // Clear the auto-dismiss timer if it hasn't fired yet
+    if (timersRef.current[id] !== undefined) {
+      clearTimeout(timersRef.current[id]);
+      delete timersRef.current[id];
+    }
+    timersRef.current[id] = setTimeout(() => {
+      delete timersRef.current[id];
+      closingIdsRef.current.delete(id);
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, EXIT_MS);
   }, []);
 
   const addToast = useCallback((type, message) => {
     const id = ++nextId;
     setToasts(prev => [...prev, { id, type, message }]);
+    timersRef.current[id] = setTimeout(() => dismissToast(id), TOAST_DURATION);
+  }, [dismissToast]);
+
+  // Clear any pending timers if the provider unmounts
+  useEffect(() => () => {
+    Object.values(timersRef.current).forEach(clearTimeout);
+    timersRef.current = {};
   }, []);
 
   const toast = useMemo(() => ({
@@ -180,7 +203,7 @@ export const ToastProvider = ({ children }) => {
       <div className="fixed top-[calc(1rem+env(safe-area-inset-top,0px))] right-[calc(1rem+env(safe-area-inset-right,0px))] z-50 flex flex-col gap-2 w-full max-w-sm pointer-events-none">
         {toasts.map(t => (
           <div key={t.id} className="pointer-events-auto">
-            <ToastItem toast={t} onClose={removeToast} />
+            <ToastItem toast={t} onClose={dismissToast} />
           </div>
         ))}
       </div>

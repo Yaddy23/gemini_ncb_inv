@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import {
-  ScanBarcode, ShoppingBag, Plus, Users, Loader, AlertTriangle,
+  ScanBarcode, ShoppingBag, Plus, Users, AlertTriangle,
   ArrowDownCircle, ArrowUpCircle, Package, SlidersHorizontal, Activity,
   Bookmark, RotateCcw
 } from 'lucide-react';
 import StockMovementChart from '../components/dashboard/StockMovementChart';
-import { Modal } from '../components/ui';
+import { Modal, Skeleton } from '../components/ui';
+import { useCountUp } from '../hooks/useCountUp';
 
 // Feed icon + tint per action; inbound/outbound reuse the chart's series
 // colors so the two views read as the same entities. Colors are CSS vars
@@ -107,6 +108,12 @@ const Dashboard = ({ user }) => {
   const [error, setError] = useState(null);
   const [showOutOfStockModal, setShowOutOfStockModal] = useState(false);
 
+  // Feature 35: ease-out count-up on the three headline stats. The hook
+  // re-runs when stats arrive late, so values still land correctly.
+  const animatedTotalBooks = useCountUp(stats.totalBooks);
+  const animatedTotalQuantity = useCountUp(stats.totalQuantity);
+  const animatedTodayTransactions = useCountUp(stats.todayTransactions);
+
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
@@ -155,11 +162,24 @@ const Dashboard = ({ user }) => {
   if (loading) {
     return (
       <div className="p-4 sm:p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="flex space-x-3">
-            <Loader className="w-8 h-8 text-primary dark:text-blue-400 animate-spin" />
-            <span className="text-primary dark:text-blue-400">Loading dashboard...</span>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 h-28 p-5 sm:p-6 flex flex-col justify-center space-y-3"
+            >
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-8 w-24" />
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 sm:mt-8 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-5 sm:p-6">
+          <Skeleton className="h-64 w-full" />
+        </div>
+        <div className="mt-6 sm:mt-8 space-y-2">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
         </div>
       </div>
     );
@@ -198,7 +218,7 @@ const Dashboard = ({ user }) => {
           <div className="flex items-start justify-between">
             <div className="min-w-0">
               <p className="text-sm sm:text-base font-medium text-gray-500 dark:text-slate-400 truncate">Total Book Titles</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 mt-1">{stats.totalBooks}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 mt-1">{animatedTotalBooks}</p>
             </div>
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 dark:bg-blue-500/15 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
               <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
@@ -211,7 +231,7 @@ const Dashboard = ({ user }) => {
           <div className="flex items-start justify-between">
             <div className="min-w-0">
               <p className="text-sm sm:text-base font-medium text-gray-500 dark:text-slate-400 truncate">Total Units in Stock</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 mt-1">{stats.totalQuantity}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 mt-1">{animatedTotalQuantity}</p>
             </div>
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 dark:bg-blue-500/15 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
               <ScanBarcode className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />
@@ -224,7 +244,7 @@ const Dashboard = ({ user }) => {
           <div className="flex items-start justify-between">
             <div className="min-w-0">
               <p className="text-sm sm:text-base font-medium text-gray-500 dark:text-slate-400 truncate">Today's Transactions</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 mt-1">{stats.todayTransactions}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 mt-1">{animatedTodayTransactions}</p>
             </div>
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 dark:bg-blue-500/15 rounded-xl flex items-center justify-center flex-shrink-0 ml-3">
               <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary dark:text-blue-400" />

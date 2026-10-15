@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { FileText } from 'lucide-react';
 import { formatDate, formatCurrency } from '../../utils/numberToWords';
 import { StatusBadge, Modal } from '../ui';
@@ -10,6 +10,14 @@ const TYPE_NAMES = {
 };
 
 const DocumentPreview = ({ document, documentType, onClose }) => {
+  // Route the footer Close through the Modal's animated close (Esc/backdrop are
+  // already animated inside Modal); falls back to a direct close if unwired.
+  const closeRef = useRef(null);
+  const requestClose = () => {
+    if (closeRef.current) closeRef.current();
+    else onClose?.();
+  };
+
   if (!document) return null;
 
   const doc = document;
@@ -29,6 +37,7 @@ const DocumentPreview = ({ document, documentType, onClose }) => {
     <Modal
       open
       onClose={onClose}
+      closeRef={closeRef}
       size="2xl"
       title={
         <span className="flex items-center space-x-2">
@@ -38,7 +47,7 @@ const DocumentPreview = ({ document, documentType, onClose }) => {
       }
       footer={
         <button
-          onClick={onClose}
+          onClick={requestClose}
           className="px-4 py-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 text-gray-700 dark:text-slate-300 touch-manipulation min-h-[44px]"
         >
           Close

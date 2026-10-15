@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bookmark, ChevronDown, ChevronRight, ExternalLink, Loader, RefreshCw, Trash2, Unlock } from 'lucide-react';
+import { Bookmark, ChevronDown, ExternalLink, Loader, RefreshCw, Trash2, Unlock } from 'lucide-react';
 import { reservationsApi } from '../api/reservations';
 import { drsiApi } from '../api/drsi';
 import { formatDate } from '../utils/numberToWords';
 import { useToast } from '../components/Toast';
-import { AlertBanner, EmptyState, ListToolbar } from '../components/ui';
+import { AlertBanner, EmptyState, ListToolbar, Skeleton } from '../components/ui';
 import { useDebounce } from '../hooks/useDebounce';
 
 const STALE_FILTER_OPTIONS = [
@@ -274,10 +274,46 @@ const Reservations = ({ user }) => {
       {/* List */}
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center">
-            <Loader className="w-8 h-8 animate-spin text-primary dark:text-blue-400 mx-auto mb-2" />
-            <p className="text-gray-500 dark:text-slate-400">Loading reservations...</p>
-          </div>
+          <>
+            {/* Mobile: skeleton cards */}
+            <div className="block md:hidden p-4 space-y-2">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-3 w-2/3" />
+                  <Skeleton className="h-3 w-1/2" />
+                  <Skeleton className="h-9 w-full rounded-lg" />
+                </div>
+              ))}
+            </div>
+            {/* Desktop: skeleton rows under the real header */}
+            <div className="hidden md:block">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+                <thead className="bg-gray-50 dark:bg-slate-800/60">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">DR #</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Customer</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Items</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Reserved By</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Created</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Age</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
+                  {[...Array(5)].map((_, r) => (
+                    <tr key={r}>
+                      {Array.from({ length: 7 }).map((_, c) => (
+                        <td key={c} className="px-4 py-3">
+                          <Skeleton className="h-4 w-3/4" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : filteredHolds.length === 0 ? (
           <EmptyState
             icon={Bookmark}
@@ -381,11 +417,9 @@ const Reservations = ({ user }) => {
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center space-x-2">
-                            {expandedId === hold.drId ? (
-                              <ChevronDown className="w-4 h-4 text-gray-400 dark:text-slate-500 flex-shrink-0" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4 text-gray-400 dark:text-slate-500 flex-shrink-0" />
-                            )}
+                            <ChevronDown
+                              className={`w-4 h-4 text-gray-400 dark:text-slate-500 flex-shrink-0 transition-transform duration-200 ${expandedId === hold.drId ? 'rotate-180' : ''}`}
+                            />
                             <span className="font-mono text-sm font-medium text-gray-900 dark:text-slate-100">{hold.drNumber}</span>
                           </div>
                         </td>
@@ -418,27 +452,33 @@ const Reservations = ({ user }) => {
                           </div>
                         </td>
                       </tr>
-                      {expandedId === hold.drId && (
-                        <tr>
-                          <td colSpan={7} className="px-4 pb-4">
-                            <div className="bg-gray-50 dark:bg-slate-800/60 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-800">
-                              <table className="min-w-full">
-                                <thead>
-                                  <tr className="bg-gray-50 dark:bg-slate-800/60">
-                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">ISBN</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Title</th>
-                                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Qty</th>
-                                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Actions</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
-                                  {hold.items?.map((item, idx) => renderItemRow(hold, item, idx))}
-                                </tbody>
-                              </table>
+                      {/* Always rendered; collapses via grid-rows so the
+                          expand/collapse animates instead of popping */}
+                      <tr>
+                        <td colSpan={7} className="p-0">
+                          <div className={`grid transition-all duration-200 ease-out ${expandedId === hold.drId ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                            <div className="overflow-hidden">
+                              <div className="px-4 pb-4">
+                                <div className="bg-gray-50 dark:bg-slate-800/60 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-800">
+                                  <table className="min-w-full">
+                                    <thead>
+                                      <tr className="bg-gray-50 dark:bg-slate-800/60">
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">ISBN</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Title</th>
+                                        <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Qty</th>
+                                        <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Actions</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
+                                      {hold.items?.map((item, idx) => renderItemRow(hold, item, idx))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
                             </div>
-                          </td>
-                        </tr>
-                      )}
+                          </div>
+                        </td>
+                      </tr>
                     </React.Fragment>
                   ))}
                 </tbody>

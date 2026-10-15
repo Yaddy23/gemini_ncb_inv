@@ -5,3 +5,4 @@ export { default as ListToolbar } from './ListToolbar';
 export { default as AlertBanner } from './AlertBanner';
 export { default as Modal } from './Modal';
 export { default as Button } from './Button';
+export { default as Skeleton } from './Skeleton';

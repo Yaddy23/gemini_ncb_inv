@@ -21,7 +21,7 @@ export default function Button({ variant = 'primary', size = 'md', loading = fal
   return (
     <button
       disabled={disabled || loading}
-      className={`flex items-center justify-center gap-2 rounded-lg font-medium transition-colors touch-manipulation disabled:cursor-not-allowed ${VARIANTS[variant] || VARIANTS.primary} ${sizeClass} ${className}`}
+      className={`flex items-center justify-center gap-2 rounded-lg font-medium transition-[transform,colors] active:scale-[0.98] touch-manipulation disabled:cursor-not-allowed ${VARIANTS[variant] || VARIANTS.primary} ${sizeClass} ${className}`}
       {...props}
     >
       {loading && (

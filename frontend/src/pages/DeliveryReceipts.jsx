@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Loader, FileText, Edit, Trash2, Eye, AlertTriangle, CheckCircle, User, XCircle, FileOutput, Undo2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Plus, FileText, Edit, Trash2, Eye, AlertTriangle, CheckCircle, User, XCircle, FileOutput, Undo2 } from 'lucide-react';
 import { drsiApi } from '../api/drsi';
 import DocumentForm from '../components/drsi/DocumentForm';
 import DocumentPreview from '../components/drsi/DocumentPreview';
 import { formatDate, formatCurrency } from '../utils/numberToWords';
 import { useToast } from '../components/Toast';
-import { Pagination, StatusBadge, EmptyState, ListToolbar } from '../components/ui';
+import { Pagination, StatusBadge, EmptyState, ListToolbar, Skeleton } from '../components/ui';
 import { useDebounce } from '../hooks/useDebounce';
 
 const STATUS_OPTIONS = [
@@ -38,10 +39,30 @@ const DeliveryReceipts = ({ user }) => {
   const [deliveryUpdating, setDeliveryUpdating] = useState(null);
   const [previewDoc, setPreviewDoc] = useState(null);
   const [linkedSI, setLinkedSI] = useState(null);
+  const [showPop, setShowPop] = useState(false);
+  const [flashId, setFlashId] = useState(null);
+
+  const location = useLocation();
+  const popTimerRef = useRef(null);
+  const flashTimerRef = useRef(null);
+  const pendingFocusRef = useRef(null);
 
   const { toast, confirmDialog, promptDialog } = useToast();
 
   const debouncedSearch = useDebounce(search, 400);
+
+  // Trigger + auto-dismiss the success "pop" (Feature 35). The timer id is
+  // kept in a ref so a retrigger resets it and unmount cleans it up.
+  const triggerPop = () => {
+    if (popTimerRef.current) clearTimeout(popTimerRef.current);
+    setShowPop(true);
+    popTimerRef.current = setTimeout(() => setShowPop(false), 1200);
+  };
+
+  useEffect(() => () => {
+    if (popTimerRef.current) clearTimeout(popTimerRef.current);
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+  }, []);
 
   const fetchDRs = async () => {
     setLoading(true);
@@ -67,6 +88,31 @@ const DeliveryReceipts = ({ user }) => {
     fetchDRs();
   }, [debouncedSearch, statusFilter, deliveryFilter, page]);
 
+  // Feature 35: Reservations deep-links here with { state: { focusId } }.
+  // Once DRs load, flash + scroll to that row if it is on the current page,
+  // then strip the history state so a refresh doesn't re-flash.
+  useEffect(() => {
+    const focusId = location.state?.focusId;
+    if (focusId) {
+      pendingFocusRef.current = focusId;
+      window.history.replaceState({}, '');
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    const focusId = pendingFocusRef.current;
+    if (!focusId || loading) return;
+    pendingFocusRef.current = null;
+    if (drs.some((d) => d._id === focusId)) {
+      setFlashId(focusId);
+      requestAnimationFrame(() => {
+        document.getElementById(`dr-${focusId}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      });
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+      flashTimerRef.current = setTimeout(() => setFlashId(null), 1600);
+    }
+  }, [loading, drs]);
+
   const handleSubmit = async (data, action) => {
     setSubmitting(true);
     try {
@@ -81,6 +127,7 @@ const DeliveryReceipts = ({ user }) => {
 
       if (action === 'issue') {
         await drsiApi.issueDR(docId);
+        triggerPop();
       }
 
       setFormOpen(false);
@@ -202,6 +249,7 @@ const DeliveryReceipts = ({ user }) => {
     try {
       await drsiApi.markDRDelivered(id);
       toast.success('DR marked as delivered');
+      triggerPop();
       fetchDRs();
     } catch (err) {
       toast.error('Error: ' + (err.response?.data?.message || err.message));
@@ -219,6 +267,7 @@ const DeliveryReceipts = ({ user }) => {
     try {
       await drsiApi.markDRReturned(dr._id, reason.trim());
       toast.success('DR returned to stock');
+      triggerPop();
       fetchDRs();
     } catch (err) {
       toast.error('Return failed: ' + (err.response?.data?.message || err.message));
@@ -272,10 +321,49 @@ const DeliveryReceipts = ({ user }) => {
       {/* Table */}
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center">
-            <Loader className="w-8 h-8 animate-spin text-primary dark:text-blue-400 mx-auto mb-2" />
-            <p className="text-gray-500 dark:text-slate-400">Loading delivery receipts...</p>
-          </div>
+          <>
+            {/* Mobile: skeleton cards */}
+            <div className="block md:hidden p-4 space-y-2">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-3 w-2/3" />
+                  <Skeleton className="h-3 w-1/2" />
+                  <Skeleton className="h-9 w-full rounded-lg" />
+                </div>
+              ))}
+            </div>
+            {/* Desktop: skeleton rows under the real header */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+                <thead className="bg-gray-50 dark:bg-slate-800/60">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">DR Number</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Customer</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Requested By</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Items</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Total</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">EF Ref</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Created</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
+                  {[...Array(5)].map((_, r) => (
+                    <tr key={r}>
+                      {Array.from({ length: 10 }).map((_, c) => (
+                        <td key={c} className="px-4 py-3">
+                          <Skeleton className="h-4 w-3/4" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : drs.length === 0 ? (
           <EmptyState
             icon={FileText}
@@ -290,7 +378,11 @@ const DeliveryReceipts = ({ user }) => {
             <div className="block md:hidden">
               <div className="divide-y divide-gray-200 dark:divide-slate-800">
                 {drs.map((dr) => (
-                  <div key={dr._id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-800/60">
+                  <div
+                    key={dr._id}
+                    id={`dr-${dr._id}`}
+                    className={`p-4 hover:bg-gray-50 dark:hover:bg-slate-800/60 ${flashId === dr._id ? 'flash-highlight' : ''}`}
+                  >
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 dark:text-slate-100 truncate font-mono">{dr.drNumber}</h3>
@@ -439,7 +531,11 @@ const DeliveryReceipts = ({ user }) => {
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                   {drs.map((dr) => (
-                    <tr key={dr._id} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
+                    <tr
+                      key={dr._id}
+                      id={`dr-${dr._id}`}
+                      className={`hover:bg-gray-50 dark:hover:bg-slate-800/60 ${flashId === dr._id ? 'flash-highlight' : ''}`}
+                    >
                       <td className="px-4 py-3 font-mono text-sm font-medium text-gray-900 dark:text-slate-100">{dr.drNumber}</td>
                       <td className="px-4 py-3 text-sm text-gray-700 dark:text-slate-300">{formatDate(dr.date)}</td>
                       <td className="px-4 py-3 text-sm text-gray-700 dark:text-slate-300">{dr.customerName}</td>
@@ -590,6 +686,13 @@ const DeliveryReceipts = ({ user }) => {
           documentType={previewDoc.type}
           onClose={() => setPreviewDoc(null)}
         />
+      )}
+
+      {/* Success "pop" (Feature 35) */}
+      {showPop && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] animate-scale-in bg-green-500 text-white rounded-full p-3 shadow-lg pointer-events-none dark:bg-emerald-500">
+          <CheckCircle className="w-6 h-6" />
+        </div>
       )}
     </div>
   );

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader, FileText, Edit, Trash2, Eye, User, XCircle } from 'lucide-react';
+import { Plus, FileText, Edit, Trash2, Eye, User, XCircle } from 'lucide-react';
 import { drsiApi } from '../api/drsi';
 import DocumentForm from '../components/drsi/DocumentForm';
 import DocumentPreview from '../components/drsi/DocumentPreview';
 import { formatDate, formatCurrency } from '../utils/numberToWords';
 import { useToast } from '../components/Toast';
-import { Pagination, StatusBadge, EmptyState, ListToolbar } from '../components/ui';
+import { Pagination, StatusBadge, EmptyState, ListToolbar, Skeleton } from '../components/ui';
 import { useDebounce } from '../hooks/useDebounce';
 
 const STATUS_OPTIONS = [
@@ -176,10 +176,51 @@ const SalesInvoices = ({ user }) => {
       {/* Table */}
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center">
-            <Loader className="w-8 h-8 animate-spin text-primary dark:text-blue-400 mx-auto mb-2" />
-            <p className="text-gray-500 dark:text-slate-400">Loading sales invoices...</p>
-          </div>
+          <>
+            {/* Mobile Card Skeletons */}
+            <div className="block md:hidden">
+              <div className="divide-y divide-gray-200 dark:divide-slate-800">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="p-4 space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-3 w-2/3" />
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-9 w-full rounded-lg" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop Table Skeleton - real thead anchors the layout */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+                <thead className="bg-gray-50 dark:bg-slate-800/60">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">SI Number</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Customer</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Requested By</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">P.O. #</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Ref DR</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Items</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Total</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Created</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[0, 1, 2, 3, 4].map((row) => (
+                    <tr key={row}>
+                      {['w-24', 'w-20', 'w-3/4', 'w-24', 'w-16', 'w-16', 'w-16', 'w-16', 'w-16', 'w-20', 'w-16'].map((w, col) => (
+                        <td key={col} className="px-4 py-3"><Skeleton className={`h-4 ${w}`} /></td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : sis.length === 0 ? (
           <EmptyState
             icon={FileText}
