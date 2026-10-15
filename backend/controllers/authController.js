@@ -117,6 +117,9 @@ const loginUser = async (req, res) => {
     // Clean up expired sessions
     user.cleanExpiredSessions();
 
+    // Stamp last login time
+    user.lastLoginAt = new Date();
+
     // Generate tokens
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user, req);
@@ -242,6 +245,46 @@ const changePassword = async (req, res) => {
     res.json({ message: 'Password changed successfully' });
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Admin: Reset a user's password (revokes all their sessions)
+// @route   PUT /api/auth/users/:id/password
+// @access  Private/Admin
+const adminResetUserPassword = async (req, res) => {
+  const { id } = req.params;
+  const { newPassword } = req.body;
+
+  // Validate new password strength (same rules as register/change-password)
+  const passwordError = validatePasswordStrength(newPassword);
+  if (passwordError) {
+    return res.status(400).json({ message: passwordError });
+  }
+
+  try {
+    // Admins use the change-password endpoint for their own account
+    if (id === req.user._id.toString()) {
+      return res.status(400).json({ message: 'Use the change-password endpoint for your own account' });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update password (will be hashed by pre-save middleware) and revoke all
+    // sessions - a reset without revocation is moot for anyone holding a
+    // valid refresh token
+    user.password = newPassword;
+    user.revokeAllSessions();
+    await user.save();
+
+    // Log admin action
+    await logUserActivity(req.user._id, 'RESET_USER_PASSWORD', `Reset password for user ${user.username} (all sessions revoked)`, req);
+
+    res.json({ message: `Password reset for ${user.username}. All their sessions were revoked.` });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -659,6 +702,7 @@ module.exports = {
   getUserProfile,
   registerUser,
   changePassword,
+  adminResetUserPassword,
   updateProfile,
   getAllUsers,
   updateUser,

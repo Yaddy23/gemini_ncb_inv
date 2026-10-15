@@ -15,6 +15,7 @@ const userLogSchema = new mongoose.Schema({
       'CREATE_USER',
       'UPDATE_USER',
       'DELETE_USER',
+      'RESET_USER_PASSWORD',
       'EXPORT_LOGS',
       'CREATE_BOOK',
       'UPDATE_BOOK',

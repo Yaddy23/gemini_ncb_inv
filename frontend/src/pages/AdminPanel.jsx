@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Plus, Edit as EditIcon, Trash2, CheckCircle, RotateCcw, ShoppingBag } from 'lucide-react';
+import { Plus, Edit as EditIcon, Trash2, CheckCircle, RotateCcw, ShoppingBag, KeyRound } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { Modal, Pagination, AlertBanner, EmptyState } from '../components/ui';
 import { useDebounce } from '../hooks/useDebounce';
@@ -58,6 +58,13 @@ const AdminPanel = ({ user }) => {
   // Sessions states
   const [sessions, setSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [sessionDayFilter, setSessionDayFilter] = useState('');
+
+  // Reset Password modal state
+  const [resetTarget, setResetTarget] = useState(null);
+  const [resetForm, setResetForm] = useState({ password: '', confirm: '' });
+
+  const currentUserId = user?._id;
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -150,10 +157,40 @@ const AdminPanel = ({ user }) => {
       await api.put(`/auth/users/${userId}`, {
         isActive: !isActive
       });
+      if (isActive) {
+        // Deactivation also revokes the user's sessions so they're logged out immediately
+        try {
+          await api.delete(`/auth/users/${userId}/sessions`);
+        } catch (revokeErr) {
+          console.error('Failed to revoke sessions during deactivation:', revokeErr);
+        }
+      }
       setSuccess('User status updated successfully');
       fetchUsers(currentPage, filters.search);
     } catch (err) {
       setError('Failed to update user status');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle admin password reset (revokes the user's sessions server-side)
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (resetForm.password !== resetForm.confirm) {
+      setError('Passwords do not match');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const response = await api.put(`/auth/users/${resetTarget._id}/password`, { newPassword: resetForm.password });
+      setSuccess(response.data?.message || `Password reset for ${resetTarget.username}. All their sessions were revoked.`);
+      setResetTarget(null);
+      setResetForm({ password: '', confirm: '' });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to reset password');
       console.error(err);
     } finally {
       setLoading(false);
@@ -494,6 +531,17 @@ const AdminPanel = ({ user }) => {
     return <div className="p-4 sm:p-6">Access denied. Admin privileges required.</div>;
   }
 
+  // Sessions day filter (client-side: the endpoint returns all sessions at once).
+  // Compared in local time — same basis as the toLocaleString() rendering below.
+  const filteredSessions = sessionDayFilter
+    ? sessions.filter((s) => {
+        const d = new Date(s.lastUsedAt);
+        const [y, m, day] = sessionDayFilter.split('-').map(Number);
+        return d.getFullYear() === y && d.getMonth() === m - 1 && d.getDate() === day;
+      })
+    : sessions;
+  const sessionsEmptyLabel = sessionDayFilter ? 'No sessions on this day' : 'No active sessions found';
+
   return (
     <>
       <div className="p-4 sm:p-6">
@@ -601,6 +649,9 @@ const AdminPanel = ({ user }) => {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 truncate dark:text-slate-100">{user.username}</h3>
                         <p className="text-sm text-gray-500 truncate dark:text-slate-400">{user.email}</p>
+                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+                          Last login: {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : 'Never'}
+                        </p>
                       </div>
                       <span className={`flex-shrink-0 px-2 py-1 text-xs font-bold rounded-full ${
                         user.role === 'Admin' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300' : 'bg-green-100 text-green-700 dark:bg-emerald-500/20 dark:text-emerald-400'
@@ -625,6 +676,16 @@ const AdminPanel = ({ user }) => {
                       >
                         <span className="text-sm font-medium">Change Role</span>
                       </button>
+                      {user._id !== currentUserId && (
+                        <button
+                          onClick={() => { setResetTarget(user); setResetForm({ password: '', confirm: '' }); }}
+                          disabled={loading}
+                          className="flex-1 min-w-[120px] flex items-center justify-center space-x-2 px-3 py-2.5 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 dark:bg-amber-500/15 dark:text-amber-400 dark:hover:bg-amber-500/30 touch-manipulation min-h-[44px] transition-colors disabled:opacity-50"
+                        >
+                          <KeyRound className="w-4 h-4" />
+                          <span className="text-sm font-medium">Reset Password</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDeleteUser(user._id)}
                         disabled={loading}
@@ -648,19 +709,20 @@ const AdminPanel = ({ user }) => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Role</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Last Login</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-slate-400">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800">
                 {loading ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center">
+                    <td colSpan="6" className="px-6 py-4 text-center">
                       Loading users...
                     </td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
+                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
                       No users found
                     </td>
                   </tr>
@@ -687,6 +749,9 @@ const AdminPanel = ({ user }) => {
                           {user.isActive ? 'Deactivate' : 'Activate'}
                         </button>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
+                        {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : 'Never'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => handleRoleChange(user._id, user.role)}
@@ -695,6 +760,15 @@ const AdminPanel = ({ user }) => {
                         >
                           Change Role
                         </button>
+                        {user._id !== currentUserId && (
+                          <button
+                            onClick={() => { setResetTarget(user); setResetForm({ password: '', confirm: '' }); }}
+                            disabled={loading}
+                              className="ml-2 px-3 py-1 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white rounded"
+                          >
+                            Reset Password
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDeleteUser(user._id)}
                           disabled={loading}
@@ -1222,8 +1296,22 @@ const AdminPanel = ({ user }) => {
       {activeTab === 'sessions' && (
         <div>
           <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="w-full sm:w-auto flex-1 flex flex-col sm:flex-row gap-3">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mt-1 dark:text-slate-100">Active Sessions</h2>
+            <div className="w-full sm:w-auto flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mt-1 dark:text-slate-100">
+                Active Sessions{sessionDayFilter ? ` (${filteredSessions.length})` : ''}
+              </h2>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-500 dark:text-slate-400 whitespace-nowrap">Day:</label>
+                <input
+                  type="date"
+                  value={sessionDayFilter}
+                  onChange={(e) => setSessionDayFilter(e.target.value)}
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation min-h-[44px] text-base dark:border-slate-600 dark:focus:ring-blue-500 [color-scheme:light] dark:[color-scheme:dark]"
+                />
+                {sessionDayFilter && (
+                  <button onClick={() => setSessionDayFilter('')} className="px-3 py-2.5 text-sm text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 touch-manipulation min-h-[44px]">Clear</button>
+                )}
+              </div>
             </div>
             <button
               onClick={handleRevokeAllSessions}
@@ -1244,16 +1332,16 @@ const AdminPanel = ({ user }) => {
                   <span className="text-primary self-center dark:text-blue-400">Loading sessions...</span>
                 </div>
               </div>
-            ) : sessions.length === 0 ? (
+            ) : filteredSessions.length === 0 ? (
               <div className="p-6 text-center text-gray-500 dark:text-slate-400">
                 <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-full dark:bg-slate-800 flex items-center justify-center">
                   <RotateCcw className="w-6 h-6 text-gray-400 dark:text-slate-500" />
                 </div>
-                <p>No active sessions found</p>
+                <p>{sessionsEmptyLabel}</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-200 bg-white rounded-lg overflow-hidden dark:divide-slate-800 dark:bg-slate-900">
-                {sessions.map((session) => (
+                {filteredSessions.map((session) => (
                   <div key={session._id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-800/60">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex-1 min-w-0">
@@ -1310,14 +1398,14 @@ const AdminPanel = ({ user }) => {
                       Loading sessions...
                     </td>
                   </tr>
-                ) : sessions.length === 0 ? (
+                ) : filteredSessions.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
-                      No active sessions found
+                      {sessionsEmptyLabel}
                     </td>
                   </tr>
                 ) : (
-                  sessions.map((session) => (
+                  filteredSessions.map((session) => (
                     <tr key={session._id} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">{session.username || 'Unknown'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-[300px] dark:text-slate-300">{session.userAgent || 'Unknown Device'}</td>
@@ -1517,6 +1605,63 @@ const AdminPanel = ({ user }) => {
               <option value="true">Active</option>
               <option value="false">Inactive</option>
             </select>
+          </div>
+        </form>
+      </Modal>
+    )}
+
+    {/* Reset Password Modal */}
+    {resetTarget && (
+      <Modal
+        open
+        onClose={() => { setResetTarget(null); setResetForm({ password: '', confirm: '' }); }}
+        title={`Reset Password — ${resetTarget.username}`}
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => { setResetTarget(null); setResetForm({ password: '', confirm: '' }); }}
+              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 touch-manipulation min-h-[44px] transition-colors dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800/60 dark:text-slate-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="reset-password-form"
+              disabled={loading}
+              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 touch-manipulation min-h-[44px] transition-colors"
+            >
+              {loading ? 'Resetting...' : 'Reset Password'}
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm text-gray-500 mb-4 dark:text-slate-400">
+          This revokes all of the user's active sessions. They will need to log in again.
+        </p>
+        <form id="reset-password-form" onSubmit={handleResetPassword} className="space-y-4 sm:space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">New Password <span className="text-red-500">*</span></label>
+            <input
+              type="password"
+              value={resetForm.password}
+              onChange={(e) => setResetForm(prev => ({ ...prev, password: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
+              placeholder="Min 8 chars, 1 letter + 1 number"
+              minLength="8"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Confirm Password <span className="text-red-500">*</span></label>
+            <input
+              type="password"
+              value={resetForm.confirm}
+              onChange={(e) => setResetForm(prev => ({ ...prev, confirm: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-500 dark:border-slate-600 dark:placeholder-slate-500 touch-manipulation min-h-[44px] text-base"
+              placeholder="Repeat the new password"
+              required
+            />
           </div>
         </form>
       </Modal>

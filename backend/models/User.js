@@ -39,6 +39,9 @@ const userSchema = new mongoose.Schema({
   lockUntil: {
     type: Date
   },
+  lastLoginAt: {
+    type: Date
+  },
   // Refresh token fields for session management
   refreshToken: {
     type: String
