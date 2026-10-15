@@ -376,13 +376,15 @@ const DocumentForm = ({
 
   return (
     <>
-      {/* Duplicate ISBN Dialog */}
-      <DuplicateDialog />
-
       <Modal
         open
         onClose={handleClose}
         size="sheet"
+        // The duplicate-ISBN dialog overlays this sheet when open; keep the
+        // sheet deaf to backdrop clicks and Esc so they don't close the form
+        // underneath the dialog.
+        closeOnBackdrop={!duplicateDialog.open}
+        closeOnEscape={!duplicateDialog.open}
         title={
           <span className="flex items-center space-x-2">
             <FileText className="w-6 h-6 text-primary dark:text-blue-400" />
@@ -540,6 +542,10 @@ const DocumentForm = ({
           />
         </div>
       </Modal>
+
+      {/* Duplicate ISBN Dialog — rendered AFTER the form's Modal so it paints
+          above it (same z-index; DOM order decides) */}
+      <DuplicateDialog />
     </>
   );
 };

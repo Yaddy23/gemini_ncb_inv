@@ -25,7 +25,7 @@ const getExpiryDays = () => {
   const parsed = parseInt(process.env.RESERVATION_EXPIRY_DAYS, 10);
   if (!Number.isNaN(parsed) && parsed === 0) return null; // disabled
   if (!Number.isNaN(parsed) && parsed > 0) return parsed;
-  return 14; // default
+  return 60; // default: reservations expire after 60 days
 };
 
 const ageDaysOf = (createdAt) => Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000);

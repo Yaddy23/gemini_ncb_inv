@@ -22,8 +22,12 @@ const EXIT_MS = 150;
  *   EXIT_MS before onClose fires); footer buttons rendered by the parent may still call
  *   the parent's onClose directly (abrupt, no exit) or use the optional `closeRef`
  *   to trigger the same animated close.
+ * - Nested modals (e.g. a confirm dialog inside a form sheet): render the child AFTER
+ *   the parent so it paints on top, and guard the parent's close while the child is
+ *   open via `closeOnBackdrop={false}` / `closeOnEscape={false}` — otherwise clicks and
+ *   Esc land on the parent's handlers (it covers the whole screen).
  */
-export default function Modal({ open, onClose, title, footer, size = 'md', closeOnBackdrop = true, closeRef, children }) {
+export default function Modal({ open, onClose, title, footer, size = 'md', closeOnBackdrop = true, closeOnEscape = true, closeRef, children }) {
   const [closing, setClosing] = useState(false);
   const closingRef = useRef(false);
   const closeTimer = useRef(null);
@@ -45,11 +49,11 @@ export default function Modal({ open, onClose, title, footer, size = 'md', close
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
-      if (e.key === 'Escape') requestClose();
+      if (e.key === 'Escape' && closeOnEscape) requestClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, requestClose]);
+  }, [open, requestClose, closeOnEscape]);
 
   // Parent closed us directly (open -> false) or unmounted: drop any pending
   // close timer and reset the closing state.
