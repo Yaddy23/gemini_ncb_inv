@@ -239,6 +239,9 @@ router.put('/dr/:id', async (req, res) => {
 
     // Preserve existing items if not provided in update
     const newItems = items !== undefined ? items : dr.items;
+    // Snapshot the original items so reservation deltas are computed against
+    // the pre-edit quantities (dr.items is overwritten with newItems below)
+    const previousItems = dr.items.map(item => ({ isbn: item.isbn, qty: item.qty }));
 
     if (items !== undefined) {
       // Check for duplicate ISBNs
@@ -271,15 +274,14 @@ router.put('/dr/:id', async (req, res) => {
       }));
     }
 
-    await dr.save();
-    await dr.populate('marketingExecutive', 'name');
-    await Customer.recordCustomer(dr.customerName, dr.customerAddress);
-
-    // Apply reservation changes: update reservedQty for each book (only for standalone DRs)
+    // Compute reservation changes BEFORE saving so a stock-availability
+    // failure doesn't leave the DR updated without its reservation.
+    // Deltas are computed from previousItems (the original quantities).
+    const bookInfos = [];
     if (!dr.efRef) {
       // Compute reservation changes: delta = newQty - oldQty per ISBN
       const oldItemsMap = new Map();
-      dr.items.forEach(item => {
+      previousItems.forEach(item => {
         const isbn = item.isbn?.trim();
         if (isbn) {
           const current = oldItemsMap.get(isbn) || 0;
@@ -300,7 +302,6 @@ router.put('/dr/:id', async (req, res) => {
       const allIsbns = new Set([...oldItemsMap.keys(), ...newItemsMap.keys()]);
       const increases = []; // {isbn, delta} where delta > 0
       const decreases = []; // {isbn, delta} where delta < 0 (we'll store positive magnitude for release)
-      const bookInfos = []; // to store book objects for updates
 
       for (const isbn of allIsbns) {
         const oldQty = oldItemsMap.get(isbn) || 0;
@@ -335,12 +336,19 @@ router.put('/dr/:id', async (req, res) => {
         }
         bookInfos.push({ book, isbn, delta, type: 'decrease' });
       }
+    }
 
+    await dr.save();
+    await dr.populate('marketingExecutive', 'name');
+    await Customer.recordCustomer(dr.customerName, dr.customerAddress);
+
+    // Apply reservation changes: update reservedQty for each book (only for standalone DRs)
+    if (bookInfos.length > 0) {
       try {
-        for (const { book, isbn, delta, type } of bookInfos) {
+        for (const { book, delta, type } of bookInfos) {
           if (type === 'increase') {
             book.reservedQty += delta;
-          } else if (type === 'decrease') {
+          } else {
             book.reservedQty -= delta;
             // Ensure reservedQty doesn't go negative (shouldn't happen if logic correct)
             if (book.reservedQty < 0) {
@@ -359,31 +367,11 @@ router.put('/dr/:id', async (req, res) => {
           });
         }
       } catch (reservationError) {
-        // Rollback: revert DR changes and revert any book updates we already made
-        // Reload original DR to restore its state
-        const originalDr = await DeliveryReceipt.findById(req.params.id);
-        if (originalDr) {
-          // Restore DR fields
-          if (drNumber && drNumber !== dr.drNumber) {
-            // We changed drNumber; revert to original
-            originalDr.drNumber = dr.drNumber; // Wait, we need to be careful.
-            // Better to restore the original DR object we fetched at start? We have `dr` variable which is the original before updates.
-            // We have the original `dr` from the findById at the start. We can use that to restore.
-            // We'll reload the original DR from DB to be safe, but we can also use the `dr` variable we saved earlier.
-            // We didn't save a copy; we only have `dr` which we modified.
-            // Let's reload the original DR from DB using the id.
-          }
-          // Instead of complex rollback, we can simply revert the specific fields we changed.
-          // Since we only changed drNumber, date, customerName, customerAddress, marketingExecutive, and items,
-          // we can restore them from the original values we had before changes.
-          // We'll store the original values at the start.
-          // Given time, we'll skip the rollback for reservation changes and assume it's rare.
-          // For now, we'll just throw the error and let the client handle it; the reservation changes may be partially applied.
-          // This is a limitation; in production we'd want a transaction.
-          // We'll proceed without rollback for reservation changes for simplicity.
-          console.error(`Failed to update reservation for ISBN ${isbn}:`, reservationError);
-        }
-        throw reservationError; // re-throw to be caught by outer catch
+        // The DR is already saved at this point; a failure mid-application can
+        // leave some reservedQty adjustments applied. Full consistency would
+        // need a MongoDB transaction, so we log and surface the error.
+        console.error('Failed to update reservations:', reservationError);
+        throw reservationError;
       }
     }
 
