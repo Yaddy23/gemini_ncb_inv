@@ -12,7 +12,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { Wifi, WifiOff, Loader, RefreshCw } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import api from '../api/axios';
-import { getQueuedCount, drainQueue, migrateLocalStorageQueue, registerBackgroundSync } from '../lib/offlineQueue';
+import { getQueuedCount, drainQueue, migrateLocalStorageQueue, registerBackgroundSync, saveCurrentToken } from '../lib/offlineQueue';
 import { refreshCatalog } from '../lib/bookCatalog';
 
 const OnlineContext = createContext({
@@ -41,11 +41,14 @@ export const OnlineProvider = ({ children }) => {
     getQueuedCount().then(count => setQueuedCount(count)).catch(() => {});
   }, []);
 
-  // One-time: migrate the pre-PWA localStorage scan queue into IndexedDB
+  // One-time: migrate the pre-PWA localStorage scan queue into IndexedDB,
+  // and seed the token mirror the drainer reads (localStorage is unavailable
+  // in the service worker, so IndexedDB is the freshest copy it can reach)
   useEffect(() => {
-    migrateLocalStorageQueue(api.defaults.baseURL || '/api', () => localStorage.getItem('token'))
+    migrateLocalStorageQueue(api.defaults.baseURL || '/api', () => localStorage.getItem('accessToken'))
       .then(() => refreshQueuedCount())
       .catch(() => {});
+    saveCurrentToken(localStorage.getItem('accessToken')).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -81,7 +84,7 @@ export const OnlineProvider = ({ children }) => {
       if (ok > 0) toast.success(`Synced ${ok} offline scan${ok > 1 ? 's' : ''} in the background`);
       if (rejected > 0) toast.error(`${rejected} queued scan${rejected > 1 ? 's were' : ' was'} rejected by the server (stock validation)`);
       if (notFound > 0) toast.error(`${notFound} queued scan${notFound > 1 ? 's' : ''} dropped - book no longer in inventory`);
-      if (auth > 0) toast.error('Some queued scans were dropped - your session expired, please log in again');
+      if (auth > 0) toast.error('Some queued scans couldn\'t sync - your session expired. Please log in again and they\'ll retry');
     };
     navigator.serviceWorker.addEventListener('message', handleMessage);
     return () => navigator.serviceWorker.removeEventListener('message', handleMessage);
@@ -110,7 +113,7 @@ export const OnlineProvider = ({ children }) => {
       if (summary.ok > 0) toast.success(`Synced ${summary.ok} offline scan${summary.ok > 1 ? 's' : ''}`);
       if (summary.rejected > 0) toast.error(`${summary.rejected} queued scan${summary.rejected > 1 ? 's were' : ' was'} rejected by the server (stock validation)`);
       if (summary.notFound > 0) toast.error(`${summary.notFound} queued scan${summary.notFound > 1 ? 's' : ''} dropped - book no longer in inventory`);
-      if (summary.auth > 0) toast.error('Some queued scans were dropped - your session expired, please log in again');
+      if (summary.auth > 0) toast.error('Some queued scans couldn\'t sync - your session expired. Please log in again and they\'ll retry');
       if (summary.remaining > 0) {
         // Couldn't finish (e.g. connection dropped mid-flush) - try again
         // when the browser detects connectivity

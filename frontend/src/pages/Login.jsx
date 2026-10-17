@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import { saveCurrentToken } from '../lib/offlineQueue';
 import { useToast } from '../components/Toast';
 import { LogIn, User, Lock } from 'lucide-react';
 
@@ -31,6 +32,9 @@ const Login = ({ onLogin }) => {
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(userData));
+      // Mirror the access token into IndexedDB for the offline scan queue
+      // drainer (the service worker can't read localStorage)
+      saveCurrentToken(accessToken);
 
       onLogin(userData);
       toast.success('Welcome back!');

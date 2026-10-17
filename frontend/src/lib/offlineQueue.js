@@ -11,6 +11,7 @@
 
 import {
   STORE_QUEUE,
+  STORE_SETTINGS,
   idbGetAll,
   idbGet,
   idbPut,
@@ -19,6 +20,37 @@ import {
 
 const STALE_CLAIM_MS = 60 * 1000; // reclaim a claim older than a minute
 const SYNC_TAG = 'stock-sync';
+const TOKEN_KEY = 'accessToken';
+
+// Mirror of the page's current access token, stored in IndexedDB because the
+// service worker cannot read localStorage. Tokens captured at scan time go
+// stale (access tokens last 15 minutes), so the drainer always prefers this
+// freshest copy; the token stored on each queue item is only a fallback.
+export async function saveCurrentToken(token) {
+  if (!token) return;
+  try {
+    await idbPut(STORE_SETTINGS, { key: TOKEN_KEY, token });
+  } catch (err) {
+    // IDB unavailable - the item's captured token remains the fallback
+  }
+}
+
+export async function getCurrentToken() {
+  try {
+    const record = await idbGet(STORE_SETTINGS, TOKEN_KEY);
+    return record?.token || null;
+  } catch (err) {
+    return null;
+  }
+}
+
+export async function clearCurrentToken() {
+  try {
+    await idbDelete(STORE_SETTINGS, TOKEN_KEY);
+  } catch (err) {
+    // IDB unavailable - nothing to clear
+  }
+}
 
 function notifyQueueChanged() {
   // Only exists in the page context, not in the service worker
@@ -164,7 +196,7 @@ async function readMessage(response) {
 //   'ok'        - synced, book is the updated book from the server
 //   'not-found' - dropped, ISBN no longer exists server-side
 //   'rejected'  - dropped, stock validation refused it (e.g. reserved stock)
-//   'auth'      - dropped, token expired while queued
+//   'auth'      - kept queued, token (even refreshed) was rejected - log in again
 // Returns a summary { ok, notFound, rejected, auth, remaining }.
 export async function drainQueue(onResult = () => {}) {
   const summary = { ok: 0, notFound: 0, rejected: 0, auth: 0, remaining: 0 };
@@ -175,11 +207,15 @@ export async function drainQueue(onResult = () => {}) {
     if (!item) break;
 
     try {
+      // Prefer the mirrored current token over the one captured at scan
+      // time - queued scans routinely outlive the 15-minute access token
+      const currentToken = await getCurrentToken();
+      const token = currentToken || item.token;
       const response = await fetch(item.url, {
         method: item.method || 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          ...(item.token ? { Authorization: `Bearer ${item.token}` } : {})
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify(item.body)
       });
@@ -198,9 +234,13 @@ export async function drainQueue(onResult = () => {}) {
         summary.rejected++;
         onResult({ status: 'rejected', item, message: await readMessage(response) });
       } else if (response.status === 401) {
-        await removeItem(item.id);
+        // Keep the scan queued - dropping it would silently lose a stock
+        // movement. Stop the drain: logging in again (which refreshes the
+        // mirror above) is the fix, and the next flush retries the item.
+        await releaseItem(item);
         summary.auth++;
         onResult({ status: 'auth', item, message: 'Session expired' });
+        break;
       } else {
         // Server error (5xx) - release the claim and stop; retry on next trigger
         await releaseItem(item);

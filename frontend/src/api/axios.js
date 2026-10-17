@@ -1,10 +1,20 @@
 import axios from 'axios';
+import { saveCurrentToken, clearCurrentToken } from '../lib/offlineQueue';
 
 // Create axios instance with base URL from environment variable
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   withCredentials: true,
 });
+
+// Wipe the session client-side: localStorage plus the IndexedDB token mirror
+// the offline scan queue drainer reads
+const purgeAuth = () => {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+  clearCurrentToken();
+};
 
 let isRefreshing = false;
 let failedQueue = [];
@@ -42,9 +52,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       // If it's the refresh endpoint itself failing, don't try to refresh again
       if (originalRequest.url === '/auth/refresh') {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
+        purgeAuth();
         window.location.href = '/login';
         return Promise.reject(error);
       }
@@ -69,9 +77,7 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('refreshToken');
       if (!refreshToken) {
         isRefreshing = false;
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
+        purgeAuth();
         window.location.href = '/login';
         return Promise.reject(error);
       }
@@ -87,6 +93,7 @@ api.interceptors.response.use(
 
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', newRefreshToken);
+        saveCurrentToken(accessToken);
 
         api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
@@ -95,9 +102,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
+        purgeAuth();
         window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {
@@ -107,9 +112,7 @@ api.interceptors.response.use(
 
     // For other 401 errors (not during refresh attempt), redirect to login
     if (error.response?.status === 401) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      purgeAuth();
       window.location.href = '/login';
     }
 

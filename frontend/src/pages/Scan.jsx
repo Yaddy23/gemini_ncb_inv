@@ -279,7 +279,7 @@ const Scan = ({ user }) => {
       // page flush or the service worker's Background Sync)
       const queued = await enqueueScan({
         apiBase: api.defaults.baseURL || '/api',
-        token: localStorage.getItem('token'),
+        token: localStorage.getItem('accessToken'),
         isbn: code,
         title: book.TITLE,
         mode,
@@ -366,16 +366,19 @@ const Scan = ({ user }) => {
           ]);
           // Update book info display for the last successful scan
           if (book) setBookInfo(book);
+        } else if (status === 'auth') {
+          // Kept queued: a 401 no longer drops the scan. Logging back in
+          // refreshes the token mirror and the next flush retries it, so
+          // leave the optimistic pending entry in place.
+          toast.error('⛔ Session expired — scan still queued, please log in again');
         } else {
-          // Dropped (not found / rejected / auth) - remove the optimistic
+          // Dropped (not found / rejected) - remove the optimistic
           // pending entry so it doesn't linger
           setRecentScans(prev => prev.filter(s => !(s.isbn === meta.isbn && s.pending)));
           if (status === 'not-found') {
             toast.error(`⛔ Queued scan dropped for ${meta.isbn}: ${message}`);
           } else if (status === 'rejected') {
             toast.error(`⛔ Scan rejected for ${meta.isbn}: ${message}`);
-          } else if (status === 'auth') {
-            toast.error('⛔ Session expired - queued scan dropped, please log in again');
           }
         }
       });

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import api from './api/axios';
+import { clearCurrentToken } from './lib/offlineQueue';
 
 // Components
 import Login from './pages/Login';
@@ -72,6 +73,7 @@ function App() {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      clearCurrentToken();
     }
   };
 

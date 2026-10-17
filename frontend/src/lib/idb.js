@@ -3,9 +3,10 @@
 // only globalThis.indexedDB (available in both window and worker contexts).
 
 const DB_NAME = 'bims-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 export const STORE_QUEUE = 'queue';     // offline scan queue items
 export const STORE_CATALOG = 'catalog'; // offline book catalog {ISBN, TITLE, QTY, reservedQty}
+export const STORE_SETTINGS = 'settings'; // key/value records (e.g. current access token)
 
 let dbPromise = null;
 
@@ -20,6 +21,9 @@ export function openDB() {
         }
         if (!db.objectStoreNames.contains(STORE_CATALOG)) {
           db.createObjectStore(STORE_CATALOG, { keyPath: 'ISBN' });
+        }
+        if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
+          db.createObjectStore(STORE_SETTINGS, { keyPath: 'key' });
         }
       };
       req.onsuccess = () => {
