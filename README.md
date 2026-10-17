@@ -1,13 +1,16 @@
 # Book Inventory Management System
 
-A full-stack, installable (PWA) Book Inventory Management System with real-time barcode scanning (online and offline), JWT authentication with refresh tokens and session management, role-based access control, a full document lifecycle (Evaluation Forms → Delivery Receipts → Sales Invoices), and bulk import/export — built with React and Express on MongoDB. Deployed on Render.
+A full-stack, installable (PWA) Book Inventory Management System with real-time barcode scanning (online and offline), JWT authentication with refresh tokens and session management, role-based access control, a full document lifecycle (Evaluation Forms → Delivery Receipts → Sales Invoices) with delivery tracking, stock reservations with expiry, dark mode, and bulk import/export — built with React and Express on MongoDB. Deployed on Render.
+
+> **Using the app?** See [WORKFLOW.md](WORKFLOW.md) — a step-by-step guide to every workflow (stock in/out, EF → DR → SI, reservations, admin tasks) with the actual buttons to press.
 
 ## Features
 
 ### Authentication & Security
 - **JWT authentication** with short-lived access tokens and refresh tokens
-- **Session management**: users can view and revoke their own sessions; Admins can view all active sessions and revoke any user's sessions
+- **Session management**: users can view and revoke their own sessions; Admins can view all active sessions (filterable by day), and revoke any user's sessions
 - **Role-based access control** (Admin vs Staff)
+- **Admin password reset** with automatic revocation of the user's sessions, plus last-login tracking in the Users tab
 - **Login rate limiting** and bcrypt password hashing
 - **Activity audit log** of security- and data-relevant actions (user logs, filterable and exportable by Admin)
 
@@ -16,6 +19,8 @@ A full-stack, installable (PWA) Book Inventory Management System with real-time 
 - **Book lookup by ISBN** with Open Library API fallback for titles not yet in the catalog
 - **Stock movements**: inbound, outbound and adjustments — every change writes a stock transaction (previous/new quantity, performed by)
 - **Stock reservation**: DR drafts reserve stock (RESERVE/RELEASE transactions) so the same units can't be promised twice
+- **Reserved stock protection**: outbound is refused if it would drop stock below zero or below the reserved quantity, so reserved copies can't be shipped out from under a customer order
+- **Reservations dashboard** (Admin): every draft-DR hold with age, plus per-line release and a bulk "expire stale" release for Admins. Holds older than `RESERVATION_EXPIRY_DAYS` (default 60; `0` disables staleness) are flagged — releasing them is a manual action; there is no background auto-expiry job
 - **Per-book transaction history**
 - **Soft archive/restore** of books (Admin only) — archives keep the audit trail intact
 
@@ -28,7 +33,8 @@ A full-stack, installable (PWA) Book Inventory Management System with real-time 
 
 ### Documents: EF → DR → SI Lifecycle
 - **Evaluation Forms (EF)** → **Delivery Receipts (DR)** → **Sales Invoices (SI)** with linked documents and full draft → issued → cancelled lifecycle
-- **Issue EF**: creates a linked DR draft; **Issue DR**: decrements stock and creates a linked SI draft; **Issue SI**: finalizes the invoice
+- **Issue EF**: decrements stock and creates a linked DR draft; **Issue DR**: standalone DRs decrement their reserved stock and enter delivery tracking, while both standalone and EF-linked DRs create a linked SI draft; **Issue SI**: finalizes the invoice
+- **Delivery tracking** on issued standalone DRs: `out_for_delivery → delivered / returned` with dates — returned DRs restore stock exactly once and don't touch the linked SI (DRs linked from an EF skip delivery tracking and stay `pending`)
 - **Cancellation with cascade and reason**: cancelling an EF cascades to its linked draft DR (and that DR's draft SI); cancelling an issued DR restores stock. Cancelled documents are stamped `*** CANCELLED ***` in exports
 - **Professional Excel exports** from templated workbooks (header images, formatted totals, amount-in-words)
 - **Document previews** before export
@@ -39,12 +45,16 @@ A full-stack, installable (PWA) Book Inventory Management System with real-time 
 - 14-day stock movement chart (inbound vs outbound)
 - Recent activity feed with per-action icons
 
+### UI
+- **Dark mode** — light / dark / follow-system theme with persistence
+- **Motion polish** — animated modals/drawer/toasts, skeleton loaders on every list, `prefers-reduced-motion` respected globally
+
 ### Admin Panel
-- **Users** — create/manage users and roles, revoke a user's sessions
+- **Users** — create/manage users and roles, revoke a user's sessions, reset a user's password (revokes their sessions), last-login column
 - **Activity Logs** — paginated, filterable audit log with export
 - **Marketing Executives** — CRUD for the "Requested By" dropdown used across EF/DR/SI
 - **Archived Books** — view and restore archived books
-- **Sessions** — all active sessions across users, with revocation
+- **Sessions** — all active sessions across users, filterable by day, with revocation
 
 ### Bulk Operations (Admin only)
 - **Import** from `.xlsx` / `.xls` / `.csv` with three duplicate strategies (skip, update, merge/increment)
@@ -106,8 +116,10 @@ npm install
    JWT_SECRET=your_jwt_secret_key_here_change_in_production
    NODE_ENV=development
    CLIENT_URL=http://localhost:3000
+   RESERVATION_EXPIRY_DAYS=60
    ```
    - `CLIENT_URL` is added to the CORS allowlist (production); localhost origins are always allowed in development.
+   - `RESERVATION_EXPIRY_DAYS` sets how old a draft-DR reservation must be before it's flagged stale on the Reservations dashboard (default 60; `0` disables staleness entirely).
 
 5. **Seed the Database (Optional)**
 ```bash
@@ -141,23 +153,24 @@ npm run dev
 ## API Endpoints
 
 ### Authentication (`/api/auth`)
-- `POST /login` — Login (rate limited); returns access + refresh tokens
+- `POST /login` — Login (rate limited: 10 attempts / 15 min / IP; the account locks for 15 minutes after 5 failed attempts). Access tokens last 15 minutes, refresh tokens 7 days
 - `POST /refresh` — Rotate refresh token
 - `GET /me` — Current user profile
 - `PUT /profile` — Update profile
 - `PUT /change-password` — Change password
-- `POST /logout` — Logout (revokes refresh token)
+- `POST /logout` — Logout (logs the event and prunes expired sessions; revoke the refresh token via the session endpoints)
 - `GET /sessions` — List own sessions
 - `DELETE /sessions` / `DELETE /sessions/:sessionId` — Revoke sessions
 - `POST /register` — Register user (Admin only)
 - `GET /users` — List users (Admin only)
 - `PUT /users/:id` — Update user role/status (Admin only)
+- `PUT /users/:id/password` — Reset a user's password (revokes all their sessions) (Admin only)
 - `DELETE /users/:id` — Delete user (Admin only)
 - `DELETE /users/:id/sessions` — Revoke a user's sessions (Admin only)
 - `GET /admin/sessions` — All active sessions (Admin only)
 
 ### Books (`/api/books`)
-- `GET /` — Paginated list with search, filters, sorting
+- `GET /` — Paginated list with search, filters, sorting (`archived=true` shows only archived books, Admin only)
 - `GET /stats` — Dashboard stats (totals, low/out-of-stock counts, today's transactions)
 - `GET /out-of-stock` — Accurate out-of-stock count + list
 - `GET /catalog` — Minimal catalog for the offline PWA cache
@@ -177,16 +190,23 @@ npm run dev
 - `GET /transactions` — Transaction history with filters (Admin only)
 - `GET /transactions/export` — Transaction export (Admin only)
 
+### Reservations (`/api/stock/reservations`)
+- `GET /` — All draft-DR stock holds with age and stale flags (Admin only)
+- `POST /expire-stale` — Release all stale reservations (returns stock, deletes the draft DRs) (Admin only)
+- `POST /release-item` — Release a single line item from a reservation (Staff and Admin)
+
 ### Delivery Receipts (`/api/drsi/dr`)
-- `GET /` — Paginated DR list with filters
+- `GET /` — Paginated DR list with filters (search, status, delivery status, linked EF)
 - `POST /` — Create DR draft (reserves stock)
 - `GET /:id` / `PUT /:id` / `DELETE /:id` — Draft management
 - `POST /:id/issue` — Issue DR (decrement stock, create linked SI draft)
+- `POST /:id/deliver` — Mark an out-for-delivery DR as delivered
+- `POST /:id/return` — Mark a DR returned (restores stock) 
 - `POST /:id/cancel` — Cancel issued DR (restores stock) — Admin only
 - `GET /:id/export` — Export DR to Excel
 
 ### Sales Invoices (`/api/drsi/si`)
-- `GET /` — Paginated SI list with filters
+- `GET /` — Paginated SI list with filters (search, status, linked DR)
 - `POST /` — Create SI draft
 - `GET /:id` / `PUT /:id` / `DELETE /:id` — Draft management
 - `POST /:id/issue` — Issue SI
@@ -226,6 +246,8 @@ npm run dev
 | Capability | Staff | Admin |
 |---|---|---|
 | Dashboard, Books (view), Scanning (incl. offline) | ✓ | ✓ |
+| Reservations dashboard (view holds, release lines, expire stale) | — | ✓ |
+| Release a single reservation line (`release-item`) | ✓ | ✓ |
 | EF/DR/SI: create, edit drafts, issue, delete drafts, preview, Excel export | ✓ | ✓ |
 | Cancel issued documents | — | ✓ |
 | Create/edit book records, archive/restore | — | ✓ |
@@ -239,11 +261,15 @@ npm run dev
 ## Document Workflows
 
 ### Evaluation Form → Delivery Receipt → Sales Invoice
-1. **Create EF**: fill the evaluation form with line items, select "Requested By" (Marketing Executive)
-2. **Issue EF**: creates a linked DR draft with the same data, marks the EF as issued
-3. **Issue DR**: decrements stock (including the draft's reservation) and creates a linked SI draft
-4. **Issue SI**: finalizes the sales invoice
-5. **Cancel** (Admin only): an EF cancel cascades to its linked draft DR/SI; cancelling an issued DR restores stock; cancelled documents are stamped in exports
+1. **Create EF**: fill the evaluation form with line items (stock availability is validated against unreserved stock), select "Requested By" (Marketing Executive)
+2. **Issue EF**: stock is decremented immediately (OUTBOUND transactions) and a linked DR draft is created with the same data
+3. **Issue DR**:
+   - **Standalone DR** (created directly in the DR tab): reserves stock as a draft; issuing decrements stock and moves it to `out_for_delivery`
+   - **EF-linked DR**: no further stock movement (stock left at EF issue); delivery stays `pending`
+   - Both automatically create a linked SI draft (number derived from the DR number)
+4. **Issue SI**: finalizes the sales invoice (no stock impact)
+5. **Delivery tracking** (standalone DRs): `out_for_delivery → delivered`, or `→ returned` (a return restores stock; the linked SI is untouched)
+6. **Cancel** (Admin only, reason required): an EF cancel cascades to its linked draft DR and that DR's draft SI; cancelling an issued DR restores stock and cancels its linked draft SI. Cancels are blocked upward if the linked document is already issued. Cancelled documents are stamped in exports
 
 ### Export Templates
 - **EF**: `EF_FORM.xlsx` — header image, EF number in G3 (28pt bold), Marketing Executive in G4, date in G5
